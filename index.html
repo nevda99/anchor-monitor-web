@@ -131,7 +131,6 @@
   </style>
 </head>
 <body>
-  <!-- 登录界面 -->
   <div id="loginBox" class="login-box">
     <h1>🎯 主播数据监控平台</h1>
     <form id="loginForm">
@@ -148,14 +147,12 @@
     </form>
   </div>
 
-  <!-- 数据看板 -->
   <div id="dashboard" class="container dashboard">
     <div class="header">
       <h1 id="dashboardTitle">数据看板</h1>
       <button class="logout-btn" onclick="logout()">退出登录</button>
     </div>
 
-    <!-- 汇总卡片 -->
     <div class="stats">
       <div class="stat-card">
         <div class="label">主播总数</div>
@@ -175,169 +172,156 @@
       </div>
     </div>
 
-    <!-- 日期筛选 -->
     <div class="date-filter">
       <label>选择日期：</label>
       <input type="date" id="dateFilter" onchange="loadData()">
     </div>
 
-    <!-- 数据表格 -->
     <div id="tableContainer">
       <div class="loading">加载中...</div>
     </div>
   </div>
 
   <script>
-    // Supabase配置
-    const SUPABASE_URL = 'https://yoywhdfqhymduaxhalhq.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlveXdoZGZxaHltZHVheGhhbGhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNjI0NDcsImV4cCI6MjA5MTczODQ0N30.sWYLzZM3olMfaC2IcRaBkHqFT2UPEzUsFWAxqstkHcA';
-    
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
-    let currentUser = null;
-    let currentSource = null;
+    (function() {
+      const SUPABASE_URL = 'https://yoywhdfqhymduaxhalhq.supabase.co';
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlveXdoZGZxaHltZHVheGhhbGhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNjI0NDcsImV4cCI6MjA5MTczODQ0N30.sWYLzZM3olMfaC2IcRaBkHqFT2UPEzUsFWAxqstkHcA';
+      
+      const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      
+      let currentUser = null;
+      let currentSource = null;
 
-    // 登录
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      const loginBtn = document.getElementById('loginBtn');
-      const loginError = document.getElementById('loginError');
-      
-      loginBtn.disabled = true;
-      loginBtn.textContent = '登录中...';
-      loginError.textContent = '';
-      
-      try {
-        const { data, error } = await supabase
-          .from('user_accounts')
-          .select('*')
-          .eq('username', username)
-          .eq('password', password)
-          .single();
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const loginBtn = document.getElementById('loginBtn');
+        const loginError = document.getElementById('loginError');
         
-        if (error || !data) {
-          throw new Error('账号或密码错误');
+        loginBtn.disabled = true;
+        loginBtn.textContent = '登录中...';
+        loginError.textContent = '';
+        
+        try {
+          const { data, error } = await supabaseClient
+            .from('user_accounts')
+            .select('*')
+            .eq('username', username)
+            .eq('password', password)
+            .single();
+          
+          if (error || !data) {
+            throw new Error('账号或密码错误');
+          }
+          
+          currentUser = data.username;
+          currentSource = data.source;
+          
+          document.getElementById('loginBox').style.display = 'none';
+          document.getElementById('dashboard').classList.add('active');
+          document.getElementById('dashboardTitle').textContent = `${data.display_name} - 数据看板`;
+          document.getElementById('dateFilter').valueAsDate = new Date();
+          
+          loadData();
+        } catch (err) {
+          loginError.textContent = err.message;
+        } finally {
+          loginBtn.disabled = false;
+          loginBtn.textContent = '登录';
         }
-        
-        currentUser = data.username;
-        currentSource = data.source;
-        
-        // 显示看板
-        document.getElementById('loginBox').style.display = 'none';
-        document.getElementById('dashboard').classList.add('active');
-        document.getElementById('dashboardTitle').textContent = `${data.display_name} - 数据看板`;
-        
-        // 设置默认日期为今天
-        document.getElementById('dateFilter').valueAsDate = new Date();
-        
-        // 加载数据
-        loadData();
-      } catch (err) {
-        loginError.textContent = err.message;
-      } finally {
-        loginBtn.disabled = false;
-        loginBtn.textContent = '登录';
-      }
-    });
+      });
 
-    // 退出登录
-    function logout() {
-      currentUser = null;
-      currentSource = null;
-      document.getElementById('loginBox').style.display = 'block';
-      document.getElementById('dashboard').classList.remove('active');
-      document.getElementById('loginForm').reset();
-    }
+      window.logout = function() {
+        currentUser = null;
+        currentSource = null;
+        document.getElementById('loginBox').style.display = 'block';
+        document.getElementById('dashboard').classList.remove('active');
+        document.getElementById('loginForm').reset();
+      };
 
-    // 加载数据
-    async function loadData() {
-      const dateFilter = document.getElementById('dateFilter').value;
-      if (!dateFilter) return;
-      
-      document.getElementById('tableContainer').innerHTML = '<div class="loading">加载中...</div>';
-      
-      try {
-        const { data, error } = await supabase
-          .from('anchor_data')
-          .select('*')
-          .eq('date', dateFilter)
-          .eq('source', currentSource)
-          .order('completion_rate', { ascending: false });
+      window.loadData = async function() {
+        const dateFilter = document.getElementById('dateFilter').value;
+        if (!dateFilter) return;
         
-        if (error) throw error;
+        document.getElementById('tableContainer').innerHTML = '<div class="loading">加载中...</div>';
         
-        if (!data || data.length === 0) {
-          document.getElementById('tableContainer').innerHTML = '<div class="loading">暂无数据</div>';
-          updateStats(0, 0, 0, 0);
-          return;
+        try {
+          const { data, error } = await supabaseClient
+            .from('anchor_data')
+            .select('*')
+            .eq('date', dateFilter)
+            .eq('source', currentSource)
+            .order('completion_rate', { ascending: false });
+          
+          if (error) throw error;
+          
+          if (!data || data.length === 0) {
+            document.getElementById('tableContainer').innerHTML = '<div class="loading">暂无数据</div>';
+            updateStats(0, 0, 0, 0);
+            return;
+          }
+          
+          const totalTarget = data.reduce((sum, item) => sum + item.target, 0);
+          const totalActual = data.reduce((sum, item) => sum + item.actual, 0);
+          const avgCompletion = totalTarget > 0 ? (totalActual / totalTarget * 100).toFixed(2) : 0;
+          
+          updateStats(data.length, totalTarget, totalActual, avgCompletion);
+          renderTable(data);
+        } catch (err) {
+          document.getElementById('tableContainer').innerHTML = `<div class="loading">加载失败: ${err.message}</div>`;
         }
-        
-        // 计算汇总
-        const totalTarget = data.reduce((sum, item) => sum + item.target, 0);
-        const totalActual = data.reduce((sum, item) => sum + item.actual, 0);
-        const avgCompletion = totalTarget > 0 ? (totalActual / totalTarget * 100).toFixed(2) : 0;
-        
-        updateStats(data.length, totalTarget, totalActual, avgCompletion);
-        renderTable(data);
-      } catch (err) {
-        document.getElementById('tableContainer').innerHTML = `<div class="loading">加载失败: ${err.message}</div>`;
+      };
+
+      function updateStats(count, target, actual, completion) {
+        document.getElementById('totalAnchors').textContent = count;
+        document.getElementById('totalTarget').textContent = formatNumber(target);
+        document.getElementById('totalActual').textContent = formatNumber(actual);
+        document.getElementById('completionRate').textContent = completion + '%';
       }
-    }
 
-    // 更新汇总卡片
-    function updateStats(count, target, actual, completion) {
-      document.getElementById('totalAnchors').textContent = count;
-      document.getElementById('totalTarget').textContent = formatNumber(target);
-      document.getElementById('totalActual').textContent = formatNumber(actual);
-      document.getElementById('completionRate').textContent = completion + '%';
-    }
-
-    // 渲染表格
-    function renderTable(data) {
-      const html = `
-        <table>
-          <thead>
-            <tr>
-              <th>主播名称</th>
-              <th>目标</th>
-              <th>实际完成</th>
-              <th>完成度</th>
-              <th>时间进度</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.map(item => `
+      function renderTable(data) {
+        const html = `
+          <table>
+            <thead>
               <tr>
-                <td>${item.anchor_name}</td>
-                <td>${formatNumber(item.target)}</td>
-                <td>${formatNumber(item.actual)}</td>
-                <td>
-                  <span class="completion-rate ${getRateClass(item.completion_rate)}">
-                    ${item.completion_rate.toFixed(2)}%
-                  </span>
-                </td>
-                <td>${item.time_progress}</td>
+                <th>主播名称</th>
+                <th>目标</th>
+                <th>实际完成</th>
+                <th>完成度</th>
+                <th>时间进度</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-      document.getElementById('tableContainer').innerHTML = html;
-    }
+            </thead>
+            <tbody>
+              ${data.map(item => `
+                <tr>
+                  <td>${item.anchor_name}</td>
+                  <td>${formatNumber(item.target)}</td>
+                  <td>${formatNumber(item.actual)}</td>
+                  <td>
+                    <span class="completion-rate ${getRateClass(item.completion_rate)}">
+                      ${item.completion_rate.toFixed(2)}%
+                    </span>
+                  </td>
+                  <td>${item.time_progress}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        document.getElementById('tableContainer').innerHTML = html;
+      }
 
-    // 数字格式化
-    function formatNumber(num) {
-      return num.toLocaleString('zh-CN');
-    }
+      function formatNumber(num) {
+        return num.toLocaleString('zh-CN');
+      }
 
-    // 完成度颜色
-    function getRateClass(rate) {
-      if (rate >= 80) return 'rate-high';
-      if (rate >= 50) return 'rate-medium';
-      return 'rate-low';
-    }
+      function getRateClass(rate) {
+        if (rate >= 80) return 'rate-high';
+        if (rate >= 50) return 'rate-medium';
+        return 'rate-low';
+      }
+    })();
   </script>
 </body>
 </html>
