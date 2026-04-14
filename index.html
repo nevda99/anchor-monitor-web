@@ -13,7 +13,7 @@
       min-height: 100vh;
       padding: 20px;
     }
-    .container { max-width: 1200px; margin: 0 auto; }
+    .container { max-width: 1400px; margin: 0 auto; }
     .login-box {
       background: white;
       padding: 40px;
@@ -85,6 +85,14 @@
     }
     .stat-card .label { font-size: 14px; opacity: 0.9; margin-bottom: 10px; }
     .stat-card .value { font-size: 32px; font-weight: bold; }
+    .stat-card .subtitle { 
+      font-size: 13px; 
+      opacity: 0.85; 
+      margin-top: 8px; 
+      font-weight: normal;
+    }
+    .subtitle.ahead { color: #d4ffd4; }
+    .subtitle.behind { color: #ffd4d4; }
     .date-filter {
       margin-bottom: 20px;
       padding: 15px;
@@ -110,11 +118,12 @@
       color: white;
     }
     th, td {
-      padding: 15px;
+      padding: 12px 15px;
       text-align: left;
       border-bottom: 1px solid #f0f0f0;
     }
-    th { font-weight: 600; }
+    th { font-weight: 600; font-size: 14px; }
+    td { font-size: 13px; }
     tbody tr:hover { background: #f9f9f9; }
     tbody tr:last-child td { border-bottom: none; }
     .completion-rate {
@@ -123,9 +132,8 @@
       border-radius: 5px;
       display: inline-block;
     }
-    .rate-high { color: #67c23a; background: #f0f9ff; }
-    .rate-medium { color: #e6a23c; background: #fef0e6; }
-    .rate-low { color: #f56c6c; background: #fef0f0; }
+    .rate-ahead { color: #67c23a; background: #f0f9ff; }
+    .rate-behind { color: #f56c6c; background: #fef0f0; }
     .error { color: #f56c6c; text-align: center; margin-top: 10px; font-size: 14px; }
     .loading { text-align: center; padding: 40px; color: #666; }
   </style>
@@ -169,6 +177,7 @@
       <div class="stat-card">
         <div class="label">完成度</div>
         <div class="value" id="completionRate">0%</div>
+        <div class="subtitle" id="completionSubtitle"></div>
       </div>
     </div>
 
@@ -191,6 +200,7 @@
       
       let currentUser = null;
       let currentSource = null;
+      let currentTimeProgress = 0;
 
       document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -258,26 +268,46 @@
           
           if (!data || data.length === 0) {
             document.getElementById('tableContainer').innerHTML = '<div class="loading">暂无数据</div>';
-            updateStats(0, 0, 0, 0);
+            updateStats(0, 0, 0, 0, '0%');
             return;
           }
+          
+          // 获取时间进度（从第一条数据）
+          currentTimeProgress = parseFloat(data[0].time_progress);
           
           const totalTarget = data.reduce((sum, item) => sum + item.target, 0);
           const totalActual = data.reduce((sum, item) => sum + item.actual, 0);
           const avgCompletion = totalTarget > 0 ? (totalActual / totalTarget * 100).toFixed(2) : 0;
           
-          updateStats(data.length, totalTarget, totalActual, avgCompletion);
+          updateStats(data.length, totalTarget, totalActual, avgCompletion, data[0].time_progress);
           renderTable(data);
         } catch (err) {
           document.getElementById('tableContainer').innerHTML = `<div class="loading">加载失败: ${err.message}</div>`;
         }
       };
 
-      function updateStats(count, target, actual, completion) {
+      function updateStats(count, target, actual, completion, timeProgress) {
         document.getElementById('totalAnchors').textContent = count;
         document.getElementById('totalTarget').textContent = formatNumber(target);
         document.getElementById('totalActual').textContent = formatNumber(actual);
         document.getElementById('completionRate').textContent = completion + '%';
+        
+        // 计算与时间进度的差异
+        const timeProgressNum = parseFloat(timeProgress);
+        const completionNum = parseFloat(completion);
+        const diff = completionNum - timeProgressNum;
+        const subtitle = document.getElementById('completionSubtitle');
+        
+        if (diff > 0) {
+          subtitle.textContent = `超过时间进度 ${diff.toFixed(2)}%`;
+          subtitle.className = 'subtitle ahead';
+        } else if (diff < 0) {
+          subtitle.textContent = `落后时间进度 ${Math.abs(diff).toFixed(2)}%`;
+          subtitle.className = 'subtitle behind';
+        } else {
+          subtitle.textContent = `与时间进度持平`;
+          subtitle.className = 'subtitle';
+        }
       }
 
       function renderTable(data) {
@@ -285,6 +315,7 @@
           <table>
             <thead>
               <tr>
+                <th>主播ID</th>
                 <th>主播名称</th>
                 <th>目标</th>
                 <th>实际完成</th>
@@ -293,19 +324,23 @@
               </tr>
             </thead>
             <tbody>
-              ${data.map(item => `
-                <tr>
-                  <td>${item.anchor_name}</td>
-                  <td>${formatNumber(item.target)}</td>
-                  <td>${formatNumber(item.actual)}</td>
-                  <td>
-                    <span class="completion-rate ${getRateClass(item.completion_rate)}">
-                      ${item.completion_rate.toFixed(2)}%
-                    </span>
-                  </td>
-                  <td>${item.time_progress}</td>
-                </tr>
-              `).join('')}
+              ${data.map(item => {
+                const isAhead = item.completion_rate >= currentTimeProgress;
+                return `
+                  <tr>
+                    <td>${item.anchor_id}</td>
+                    <td>${item.anchor_name}</td>
+                    <td>${formatNumber(item.target)}</td>
+                    <td>${formatNumber(item.actual)}</td>
+                    <td>
+                      <span class="completion-rate ${isAhead ? 'rate-ahead' : 'rate-behind'}">
+                        ${item.completion_rate.toFixed(2)}%
+                      </span>
+                    </td>
+                    <td>${item.time_progress}</td>
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
         `;
@@ -314,12 +349,6 @@
 
       function formatNumber(num) {
         return num.toLocaleString('zh-CN');
-      }
-
-      function getRateClass(rate) {
-        if (rate >= 80) return 'rate-high';
-        if (rate >= 50) return 'rate-medium';
-        return 'rate-low';
       }
     })();
   </script>
