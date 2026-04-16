@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>主播数据监控平台</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -69,6 +70,26 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
+    }
+    .download-btn {
+      padding: 8px 20px;
+      background: #67c23a;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    .download-btn:hover {
+      background: #5daf34;
+    }
+    .download-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .header-buttons {
+      display: flex;
+      gap: 10px;
     }
     .stats {
       display: grid;
@@ -158,7 +179,10 @@
   <div id="dashboard" class="container dashboard">
     <div class="header">
       <h1 id="dashboardTitle">数据看板</h1>
-      <button class="logout-btn" onclick="logout()">退出登录</button>
+      <div class="header-buttons">
+        <button class="download-btn" onclick="downloadExcel()" id="downloadBtn">📥 下载Excel</button>
+        <button class="logout-btn" onclick="logout()">退出登录</button>
+      </div>
     </div>
 
     <div class="stats">
@@ -201,6 +225,7 @@
       let currentUser = null;
       let currentSource = null;
       let currentTimeProgress = 0;
+      let currentData = [];
 
       document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -274,6 +299,7 @@
           
           // 获取时间进度（从第一条数据）
           currentTimeProgress = parseFloat(data[0].time_progress);
+          currentData = data; // 保存当前数据用于下载
           
           const totalTarget = data.reduce((sum, item) => sum + item.target, 0);
           const totalActual = data.reduce((sum, item) => sum + item.actual, 0);
@@ -283,6 +309,92 @@
           renderTable(data);
         } catch (err) {
           document.getElementById('tableContainer').innerHTML = `<div class="loading">加载失败: ${err.message}</div>`;
+        }
+      };
+
+      window.downloadExcel = function() {
+        if (!currentData || currentData.length === 0) {
+          alert('暂无数据可下载');
+          return;
+        }
+
+        const downloadBtn = document.getElementById('downloadBtn');
+        downloadBtn.disabled = true;
+        downloadBtn.textContent = '生成中...';
+
+        try {
+          // 准备Excel数据
+          const excelData = currentData.map((item, index) => {
+            const isAhead = item.completion_rate >= currentTimeProgress;
+            const diff = (item.completion_rate - currentTimeProgress).toFixed(2);
+            return {
+              '序号': index + 1,
+              '主播ID': item.anchor_id,
+              '主播名称': item.anchor_name,
+              '主播来源': item.source,
+              '目标': item.target,
+              '实际完成': item.actual,
+              '完成度': item.completion_rate.toFixed(2) + '%',
+              '时间进度': item.time_progress,
+              '进度差异': (diff > 0 ? '+' : '') + diff + '%',
+              '状态': isAhead ? '超前' : '落后'
+            };
+          });
+
+          // 添加汇总行
+          const totalTarget = currentData.reduce((sum, item) => sum + item.target, 0);
+          const totalActual = currentData.reduce((sum, item) => sum + item.actual, 0);
+          const avgCompletion = totalTarget > 0 ? (totalActual / totalTarget * 100).toFixed(2) : 0;
+          const diff = (avgCompletion - currentTimeProgress).toFixed(2);
+
+          excelData.push({
+            '序号': '',
+            '主播ID': '汇总',
+            '主播名称': '',
+            '主播来源': '',
+            '目标': totalTarget,
+            '实际完成': totalActual,
+            '完成度': avgCompletion + '%',
+            '时间进度': currentData[0].time_progress,
+            '进度差异': (diff > 0 ? '+' : '') + diff + '%',
+            '状态': avgCompletion >= currentTimeProgress ? '超前' : '落后'
+          });
+
+          // 创建工作簿
+          const wb = XLSX.utils.book_new();
+          const ws = XLSX.utils.json_to_sheet(excelData);
+
+          // 设置列宽
+          ws['!cols'] = [
+            { wch: 6 },  // 序号
+            { wch: 12 }, // 主播ID
+            { wch: 25 }, // 主播名称
+            { wch: 18 }, // 主播来源
+            { wch: 12 }, // 目标
+            { wch: 12 }, // 实际完成
+            { wch: 10 }, // 完成度
+            { wch: 12 }, // 时间进度
+            { wch: 12 }, // 进度差异
+            { wch: 8 }   // 状态
+          ];
+
+          // 添加工作表
+          XLSX.utils.book_append_sheet(wb, ws, '主播数据');
+
+          // 生成文件名
+          const dateStr = document.getElementById('dateFilter').value;
+          const sourceName = currentSource.replace(/[/\\?%*:|"<>]/g, '_'); // 替换非法字符
+          const fileName = `${sourceName}_主播数据_${dateStr}.xlsx`;
+
+          // 下载文件
+          XLSX.writeFile(wb, fileName);
+
+          alert('Excel文件已下载！');
+        } catch (err) {
+          alert('下载失败: ' + err.message);
+        } finally {
+          downloadBtn.disabled = false;
+          downloadBtn.textContent = '📥 下载Excel';
         }
       };
 
