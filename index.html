@@ -157,6 +157,85 @@
     .rate-behind { color: #f56c6c; background: #fef0f0; }
     .error { color: #f56c6c; text-align: center; margin-top: 10px; font-size: 14px; }
     .loading { text-align: center; padding: 40px; color: #666; }
+    
+    /* 管理员专用样式 */
+    .admin-selector {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #fff3cd;
+      border-radius: 5px;
+      border: 2px solid #ffc107;
+    }
+    .admin-selector label {
+      font-weight: 600;
+      color: #856404;
+      margin-right: 10px;
+    }
+    .admin-selector select {
+      padding: 8px 15px;
+      border: 1px solid #ffc107;
+      border-radius: 5px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+      min-width: 200px;
+    }
+    .admin-badge {
+      background: #ffc107;
+      color: #856404;
+      padding: 4px 12px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    .admin-summary {
+      margin-bottom: 30px;
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    .admin-summary h3 {
+      margin-bottom: 15px;
+      color: #333;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+    .summary-item {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .summary-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .summary-item-name {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    .summary-item-stats {
+      font-size: 13px;
+      color: #666;
+    }
+    .summary-item-completion {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+    .summary-item-completion.ahead {
+      color: #67c23a;
+    }
+    .summary-item-completion.behind {
+      color: #f56c6c;
+    }
   </style>
 </head>
 <body>
@@ -178,11 +257,28 @@
 
   <div id="dashboard" class="container dashboard">
     <div class="header">
-      <h1 id="dashboardTitle">数据看板</h1>
+      <h1 id="dashboardTitle">数据看板<span id="adminBadge"></span></h1>
       <div class="header-buttons">
         <button class="download-btn" onclick="downloadExcel()" id="downloadBtn">📥 下载Excel</button>
         <button class="logout-btn" onclick="logout()">退出登录</button>
       </div>
+    </div>
+
+    <!-- 管理员机构选择器 -->
+    <div id="adminSelector" class="admin-selector" style="display:none;">
+      <label>🔧 选择机构：</label>
+      <select id="sourceSelector" onchange="onSourceChange()">
+        <option value="">-- 请选择机构 --</option>
+      </select>
+      <span style="margin-left: 15px; color: #856404; font-size: 13px;">
+        💡 管理员可以查看所有机构的数据
+      </span>
+    </div>
+
+    <!-- 管理员汇总视图 -->
+    <div id="adminSummary" class="admin-summary" style="display:none;">
+      <h3>📊 各机构完成度概览</h3>
+      <div id="summaryGrid" class="summary-grid"></div>
     </div>
 
     <div class="stats">
@@ -226,6 +322,8 @@
       let currentSource = null;
       let currentTimeProgress = 0;
       let currentData = [];
+      let isAdmin = false;
+      let allSources = [];
 
       document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -252,12 +350,21 @@
           
           currentUser = data.username;
           currentSource = data.source;
+          isAdmin = (data.source === 'admin');
           
           document.getElementById('loginBox').style.display = 'none';
           document.getElementById('dashboard').classList.add('active');
-          document.getElementById('dashboardTitle').textContent = `${data.display_name} - 数据看板`;
-          document.getElementById('dateFilter').valueAsDate = new Date();
           
+          if (isAdmin) {
+            document.getElementById('dashboardTitle').innerHTML = `${data.display_name} - 数据看板<span class="admin-badge">管理员</span>`;
+            document.getElementById('adminSelector').style.display = 'block';
+            document.getElementById('adminSummary').style.display = 'block';
+            await loadAdminSources();
+          } else {
+            document.getElementById('dashboardTitle').textContent = `${data.display_name} - 数据看板`;
+          }
+          
+          document.getElementById('dateFilter').valueAsDate = new Date();
           loadData();
         } catch (err) {
           loginError.textContent = err.message;
@@ -270,14 +377,142 @@
       window.logout = function() {
         currentUser = null;
         currentSource = null;
+        isAdmin = false;
+        allSources = [];
         document.getElementById('loginBox').style.display = 'block';
         document.getElementById('dashboard').classList.remove('active');
         document.getElementById('loginForm').reset();
+        document.getElementById('adminSelector').style.display = 'none';
+        document.getElementById('adminSummary').style.display = 'none';
+      };
+
+      // 管理员：加载所有机构
+      async function loadAdminSources() {
+        try {
+          const dateFilter = document.getElementById('dateFilter').value;
+          const { data, error } = await supabaseClient
+            .from('anchor_data')
+            .select('source')
+            .eq('date', dateFilter);
+          
+          if (error) throw error;
+          
+          // 获取所有唯一的机构
+          const uniqueSources = [...new Set(data.map(item => item.source))].sort();
+          allSources = uniqueSources;
+          
+          // 填充下拉列表
+          const selector = document.getElementById('sourceSelector');
+          selector.innerHTML = '<option value="">-- 请选择机构 --</option>';
+          uniqueSources.forEach(source => {
+            const option = document.createElement('option');
+            option.value = source;
+            option.textContent = source;
+            selector.appendChild(option);
+          });
+          
+          // 加载汇总数据
+          await loadAdminSummary();
+        } catch (err) {
+          console.error('加载机构列表失败:', err);
+        }
+      }
+
+      // 管理员：加载汇总数据
+      async function loadAdminSummary() {
+        try {
+          const dateFilter = document.getElementById('dateFilter').value;
+          const { data, error } = await supabaseClient
+            .from('anchor_data')
+            .select('*')
+            .eq('date', dateFilter);
+          
+          if (error) throw error;
+          if (!data || data.length === 0) {
+            document.getElementById('summaryGrid').innerHTML = '<div style="padding:20px;">暂无数据</div>';
+            return;
+          }
+          
+          // 获取时间进度
+          const timeProgress = parseFloat(data[0].time_progress);
+          
+          // 按机构统计
+          const summaryBySource = {};
+          data.forEach(item => {
+            if (!summaryBySource[item.source]) {
+              summaryBySource[item.source] = {
+                count: 0,
+                totalTarget: 0,
+                totalActual: 0
+              };
+            }
+            summaryBySource[item.source].count++;
+            summaryBySource[item.source].totalTarget += item.target;
+            summaryBySource[item.source].totalActual += item.actual;
+          });
+          
+          // 生成汇总卡片
+          const summaryGrid = document.getElementById('summaryGrid');
+          let summaryHtml = '';
+          
+          Object.keys(summaryBySource).sort().forEach(source => {
+            const stats = summaryBySource[source];
+            const completion = stats.totalTarget > 0 ? (stats.totalActual / stats.totalTarget * 100) : 0;
+            const isAhead = completion >= timeProgress;
+            const diff = (completion - timeProgress).toFixed(2);
+            
+            summaryHtml += `
+              <div class="summary-item" onclick="selectSource('${source}')">
+                <div class="summary-item-name">${source}</div>
+                <div class="summary-item-stats">
+                  主播数：${stats.count}人 | 完成：${formatNumber(stats.totalActual)} / ${formatNumber(stats.totalTarget)}
+                </div>
+                <div class="summary-item-completion ${isAhead ? 'ahead' : 'behind'}">
+                  ${completion.toFixed(2)}% 
+                  <span style="font-size:14px;">(${diff > 0 ? '+' : ''}${diff}%)</span>
+                </div>
+              </div>
+            `;
+          });
+          
+          summaryGrid.innerHTML = summaryHtml;
+        } catch (err) {
+          console.error('加载汇总数据失败:', err);
+        }
+      }
+
+      // 管理员：选择机构
+      window.selectSource = function(source) {
+        currentSource = source;
+        document.getElementById('sourceSelector').value = source;
+        loadData();
+      };
+
+      // 管理员：下拉选择机构
+      window.onSourceChange = function() {
+        const selector = document.getElementById('sourceSelector');
+        currentSource = selector.value;
+        if (currentSource) {
+          loadData();
+        }
       };
 
       window.loadData = async function() {
         const dateFilter = document.getElementById('dateFilter').value;
         if (!dateFilter) return;
+        
+        // 如果是管理员且没选择机构，重新加载机构列表和汇总
+        if (isAdmin && !currentSource) {
+          await loadAdminSources();
+          return;
+        }
+        
+        // 如果是管理员但没选机构，不加载详细数据
+        if (isAdmin && !currentSource) {
+          document.getElementById('tableContainer').innerHTML = '<div class="loading">请先选择机构</div>';
+          updateStats(0, 0, 0, 0, '0%');
+          return;
+        }
         
         document.getElementById('tableContainer').innerHTML = '<div class="loading">加载中...</div>';
         
@@ -307,6 +542,11 @@
           
           updateStats(data.length, totalTarget, totalActual, avgCompletion, data[0].time_progress);
           renderTable(data);
+          
+          // 如果是管理员，更新汇总视图
+          if (isAdmin) {
+            await loadAdminSummary();
+          }
         } catch (err) {
           document.getElementById('tableContainer').innerHTML = `<div class="loading">加载失败: ${err.message}</div>`;
         }
