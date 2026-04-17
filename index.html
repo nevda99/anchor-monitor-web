@@ -404,6 +404,12 @@
           // 填充下拉列表
           const selector = document.getElementById('sourceSelector');
           selector.innerHTML = '<option value="">-- 请选择机构 --</option>';
+          // 添加"汇总"选项
+          const allOption = document.createElement('option');
+          allOption.value = '__ALL__';
+          allOption.textContent = '🔷 汇总（全部主播）';
+          selector.appendChild(allOption);
+          // 添加各机构选项
           uniqueSources.forEach(source => {
             const option = document.createElement('option');
             option.value = source;
@@ -455,6 +461,30 @@
           const summaryGrid = document.getElementById('summaryGrid');
           let summaryHtml = '';
           
+          // 添加总汇总卡片
+          const totalStats = {
+            count: data.length,
+            totalTarget: data.reduce((sum, item) => sum + item.target, 0),
+            totalActual: data.reduce((sum, item) => sum + item.actual, 0)
+          };
+          const totalCompletion = totalStats.totalTarget > 0 ? (totalStats.totalActual / totalStats.totalTarget * 100) : 0;
+          const totalIsAhead = totalCompletion >= timeProgress;
+          const totalDiff = (totalCompletion - timeProgress).toFixed(2);
+          
+          summaryHtml += `
+            <div class="summary-item" onclick="selectSource('__ALL__')" style="border: 2px solid #409EFF;">
+              <div class="summary-item-name">🔷 汇总（全部主播）</div>
+              <div class="summary-item-stats">
+                主播数：${totalStats.count}人 | 完成：${formatNumber(totalStats.totalActual)} / ${formatNumber(totalStats.totalTarget)}
+              </div>
+              <div class="summary-item-completion ${totalIsAhead ? 'ahead' : 'behind'}">
+                ${totalCompletion.toFixed(2)}% 
+                <span style="font-size:14px;">(${totalDiff > 0 ? '+' : ''}${totalDiff}%)</span>
+              </div>
+            </div>
+          `;
+          
+          // 添加各机构卡片
           Object.keys(summaryBySource).sort().forEach(source => {
             const stats = summaryBySource[source];
             const completion = stats.totalTarget > 0 ? (stats.totalActual / stats.totalTarget * 100) : 0;
@@ -517,12 +547,19 @@
         document.getElementById('tableContainer').innerHTML = '<div class="loading">加载中...</div>';
         
         try {
-          const { data, error } = await supabaseClient
+          let query = supabaseClient
             .from('anchor_data')
             .select('*')
-            .eq('date', dateFilter)
-            .eq('source', currentSource)
-            .order('completion_rate', { ascending: false });
+            .eq('date', dateFilter);
+          
+          // 如果不是"汇总"选项，则按机构过滤
+          if (currentSource !== '__ALL__') {
+            query = query.eq('source', currentSource);
+          }
+          
+          query = query.order('completion_rate', { ascending: false });
+          
+          const { data, error } = await query;
           
           if (error) throw error;
           
@@ -663,12 +700,16 @@
       }
 
       function renderTable(data) {
+        // 判断是否显示主播来源列（当前是汇总视图）
+        const showSourceColumn = currentSource === '__ALL__';
+        
         const html = `
           <table>
             <thead>
               <tr>
                 <th>主播ID</th>
                 <th>主播名称</th>
+                ${showSourceColumn ? '<th>主播来源</th>' : ''}
                 <th>目标</th>
                 <th>实际完成</th>
                 <th>完成度</th>
@@ -682,6 +723,7 @@
                   <tr>
                     <td>${item.anchor_id}</td>
                     <td>${item.anchor_name}</td>
+                    ${showSourceColumn ? `<td>${item.source}</td>` : ''}
                     <td>${formatNumber(item.target)}</td>
                     <td>${formatNumber(item.actual)}</td>
                     <td>
