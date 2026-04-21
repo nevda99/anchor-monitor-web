@@ -283,6 +283,14 @@
     <div id="adminSummary" class="admin-summary" style="display:none;">
       <h3>📊 各机构完成度概览</h3>
       <div id="summaryGrid" class="summary-grid"></div>
+      
+      <h3 style="margin-top:30px;">👥 用户访问统计</h3>
+      <button onclick="loadAccessStats()" class="download-btn" style="margin-bottom:15px;">
+        🔄 刷新统计
+      </button>
+      <div id="accessStatsContainer" style="overflow-x:auto;">
+        <p style="color:#999;">点击"刷新统计"查看访问数据</p>
+      </div>
     </div>
 
     <div class="stats">
@@ -377,6 +385,9 @@
         currentSource = data.source;
         isAdmin = (data.source === 'admin');
         
+        // 记录访问日志
+        logAccess(data.username, data.source);
+        
         document.getElementById('loginBox').style.display = 'none';
         document.getElementById('dashboard').classList.add('active');
         
@@ -391,6 +402,26 @@
         
         document.getElementById('dateFilter').valueAsDate = new Date();
         loadData();
+      }
+
+      // 记录访问日志
+      async function logAccess(username, source) {
+        try {
+          const { error } = await supabase
+            .from('access_logs')
+            .insert([{
+              username: username,
+              source: source,
+              action: 'login',
+              user_agent: navigator.userAgent
+            }]);
+          
+          if (error) {
+            console.warn('记录访问日志失败:', error);
+          }
+        } catch (err) {
+          console.warn('记录访问日志异常:', err);
+        }
       }
 
       document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -827,6 +858,77 @@
 
       function formatNumber(num) {
         return num.toLocaleString('zh-CN');
+      }
+
+      // 加载访问统计（管理员专用）
+      async function loadAccessStats() {
+        if (!isAdmin) {
+          alert('仅管理员可查看访问统计');
+          return;
+        }
+
+        const container = document.getElementById('accessStatsContainer');
+        container.innerHTML = '<p style="color:#999;">加载中...</p>';
+
+        try {
+          // 获取访问统计
+          const { data, error } = await supabase
+            .from('user_login_stats')
+            .select('*')
+            .order('login_count', { ascending: false });
+
+          if (error) throw error;
+
+          if (!data || data.length === 0) {
+            container.innerHTML = '<p style="color:#999;">暂无访问记录</p>';
+            return;
+          }
+
+          // 生成统计表格
+          let html = `
+            <table style="min-width:600px;">
+              <thead>
+                <tr>
+                  <th>排名</th>
+                  <th>用户名</th>
+                  <th>机构</th>
+                  <th>登录次数</th>
+                  <th>首次登录</th>
+                  <th>最近登录</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+
+          data.forEach((item, index) => {
+            const firstLogin = new Date(item.first_login).toLocaleString('zh-CN');
+            const lastLogin = new Date(item.last_login).toLocaleString('zh-CN');
+            
+            html += `
+              <tr>
+                <td>${index + 1}</td>
+                <td><strong>${item.username}</strong></td>
+                <td>${item.source || '-'}</td>
+                <td><strong style="color:#667eea;">${item.login_count}</strong></td>
+                <td style="font-size:12px;">${firstLogin}</td>
+                <td style="font-size:12px;">${lastLogin}</td>
+              </tr>
+            `;
+          });
+
+          html += `
+              </tbody>
+            </table>
+            <p style="margin-top:15px;color:#999;font-size:13px;">
+              总计：${data.length} 个用户，累计登录 ${data.reduce((sum, item) => sum + item.login_count, 0)} 次
+            </p>
+          `;
+
+          container.innerHTML = html;
+        } catch (err) {
+          console.error('加载访问统计失败:', err);
+          container.innerHTML = `<p style="color:#f56c6c;">加载失败: ${err.message}</p>`;
+        }
       }
     })();
   </script>
