@@ -236,6 +236,122 @@
     .summary-item-completion.behind {
       color: #67c23a;
     }
+    
+    /* 移动端优化 */
+    @media screen and (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .dashboard {
+        padding: 15px;
+      }
+      
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+      
+      .header h1 {
+        font-size: 18px;
+      }
+      
+      .header-buttons {
+        width: 100%;
+        flex-direction: column;
+      }
+      
+      .download-btn,
+      .logout-btn {
+        width: 100%;
+        margin: 0;
+      }
+      
+      .stats {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+      
+      .stat-card {
+        padding: 15px;
+      }
+      
+      .stat-card .value {
+        font-size: 24px;
+      }
+      
+      /* 表格横向滚动 */
+      #tableContainer {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -15px;
+        padding: 0 15px;
+      }
+      
+      table {
+        min-width: 650px;
+        font-size: 12px;
+      }
+      
+      th, td {
+        padding: 8px 4px;
+        font-size: 11px;
+      }
+      
+      /* 缩短列标题 */
+      th {
+        font-size: 10px;
+        line-height: 1.3;
+        padding: 10px 4px;
+      }
+      
+      /* 完成度标签移动端优化 */
+      .completion-rate {
+        padding: 3px 6px;
+        font-size: 11px;
+      }
+      
+      /* 管理员选择器移动端优化 */
+      .admin-selector {
+        padding: 10px;
+      }
+      
+      .admin-selector select {
+        width: 100%;
+        min-width: auto;
+      }
+      
+      /* 汇总卡片移动端优化 */
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .summary-item {
+        padding: 12px;
+      }
+      
+      .summary-item-completion {
+        font-size: 18px;
+      }
+      
+      /* 日期选择器移动端优化 */
+      .date-filter {
+        padding: 10px;
+      }
+      
+      .date-filter input {
+        width: 100%;
+        padding: 10px;
+      }
+      
+      /* 登录框移动端优化 */
+      .login-box {
+        padding: 20px;
+        margin: 50px auto;
+        max-width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -845,22 +961,22 @@
           <table>
             <thead>
               <tr>
-                <th>主播ID</th>
-                <th>主播名称</th>
-                ${showSourceColumn ? '<th>主播来源</th>' : ''}
+                <th>ID</th>
+                <th>名称</th>
+                ${showSourceColumn ? '<th>来源</th>' : ''}
                 <th style="cursor:pointer;" onclick="sortTable('target')">
-                  目标 <span style="font-size:12px;">${getSortIcon('target')}</span>
+                  目标 ${getSortIcon('target')}
                 </th>
                 <th style="cursor:pointer;" onclick="sortTable('actual')">
-                  实际完成 <span style="font-size:12px;">${getSortIcon('actual')}</span>
+                  完成 ${getSortIcon('actual')}
                 </th>
                 <th style="cursor:pointer;" onclick="sortTable('completion_rate')">
-                  完成度 <span style="font-size:12px;">${getSortIcon('completion_rate')}</span>
+                  完成度 ${getSortIcon('completion_rate')}
                 </th>
                 <th style="cursor:pointer;" onclick="sortTable('streaming_minutes')">
-                  昨日开播时长(小时) <span style="font-size:12px;">${getSortIcon('streaming_minutes')}</span>
+                  开播(h) ${getSortIcon('streaming_minutes')}
                 </th>
-                <th>时间进度</th>
+                <th>进度</th>
               </tr>
             </thead>
             <tbody>
