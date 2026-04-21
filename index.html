@@ -283,14 +283,6 @@
     <div id="adminSummary" class="admin-summary" style="display:none;">
       <h3>📊 各机构完成度概览</h3>
       <div id="summaryGrid" class="summary-grid"></div>
-      
-      <h3 style="margin-top:30px;">👥 用户访问统计</h3>
-      <button onclick="loadAccessStats()" class="download-btn" style="margin-bottom:15px;">
-        🔄 刷新统计
-      </button>
-      <div id="accessStatsContainer" style="overflow-x:auto;">
-        <p style="color:#999;">点击"刷新统计"查看访问数据</p>
-      </div>
     </div>
 
     <div class="stats">
@@ -336,6 +328,12 @@
       let currentData = [];
       let isAdmin = false;
       let allSources = [];
+      
+      // 排序状态
+      let sortConfig = {
+        column: null,  // 当前排序列: 'target', 'actual', 'completion_rate', 'streaming_minutes'
+        direction: 'desc'  // 排序方向: 'asc' 或 'desc'
+      };
 
       // 页面加载时检查是否有保存的登录信息
       window.addEventListener('DOMContentLoaded', function() {
@@ -816,6 +814,33 @@
         // 判断是否显示主播来源列（当前是汇总视图）
         const showSourceColumn = currentSource === '__ALL__';
         
+        // 排序函数
+        const sortedData = [...data];
+        if (sortConfig.column) {
+          sortedData.sort((a, b) => {
+            let aVal = a[sortConfig.column];
+            let bVal = b[sortConfig.column];
+            
+            // 处理开播时长（需要转换为小时）
+            if (sortConfig.column === 'streaming_minutes') {
+              aVal = (aVal || 0) / 60;
+              bVal = (bVal || 0) / 60;
+            }
+            
+            if (sortConfig.direction === 'asc') {
+              return aVal - bVal;
+            } else {
+              return bVal - aVal;
+            }
+          });
+        }
+        
+        // 生成排序图标
+        const getSortIcon = (column) => {
+          if (sortConfig.column !== column) return '⇅';
+          return sortConfig.direction === 'desc' ? '↓' : '↑';
+        };
+        
         const html = `
           <table>
             <thead>
@@ -823,15 +848,23 @@
                 <th>主播ID</th>
                 <th>主播名称</th>
                 ${showSourceColumn ? '<th>主播来源</th>' : ''}
-                <th>目标</th>
-                <th>实际完成</th>
-                <th>完成度</th>
-                <th>昨日开播时长(小时)</th>
+                <th style="cursor:pointer;" onclick="sortTable('target')">
+                  目标 <span style="font-size:12px;">${getSortIcon('target')}</span>
+                </th>
+                <th style="cursor:pointer;" onclick="sortTable('actual')">
+                  实际完成 <span style="font-size:12px;">${getSortIcon('actual')}</span>
+                </th>
+                <th style="cursor:pointer;" onclick="sortTable('completion_rate')">
+                  完成度 <span style="font-size:12px;">${getSortIcon('completion_rate')}</span>
+                </th>
+                <th style="cursor:pointer;" onclick="sortTable('streaming_minutes')">
+                  昨日开播时长(小时) <span style="font-size:12px;">${getSortIcon('streaming_minutes')}</span>
+                </th>
                 <th>时间进度</th>
               </tr>
             </thead>
             <tbody>
-              ${data.map(item => {
+              ${sortedData.map(item => {
                 const isAhead = item.completion_rate >= currentTimeProgress;
                 return `
                   <tr>
@@ -855,81 +888,24 @@
         `;
         document.getElementById('tableContainer').innerHTML = html;
       }
+      
+      // 排序函数
+      function sortTable(column) {
+        if (sortConfig.column === column) {
+          // 同一列，切换排序方向
+          sortConfig.direction = sortConfig.direction === 'desc' ? 'asc' : 'desc';
+        } else {
+          // 新列，默认降序
+          sortConfig.column = column;
+          sortConfig.direction = 'desc';
+        }
+        renderTable(currentData);
+      }
 
       function formatNumber(num) {
         return num.toLocaleString('zh-CN');
       }
 
-      // 加载访问统计（管理员专用）
-      async function loadAccessStats() {
-        if (!isAdmin) {
-          alert('仅管理员可查看访问统计');
-          return;
-        }
-
-        const container = document.getElementById('accessStatsContainer');
-        container.innerHTML = '<p style="color:#999;">加载中...</p>';
-
-        try {
-          // 获取访问统计
-          const { data, error } = await supabase
-            .from('user_login_stats')
-            .select('*')
-            .order('login_count', { ascending: false });
-
-          if (error) throw error;
-
-          if (!data || data.length === 0) {
-            container.innerHTML = '<p style="color:#999;">暂无访问记录</p>';
-            return;
-          }
-
-          // 生成统计表格
-          let html = `
-            <table style="min-width:600px;">
-              <thead>
-                <tr>
-                  <th>排名</th>
-                  <th>用户名</th>
-                  <th>机构</th>
-                  <th>登录次数</th>
-                  <th>首次登录</th>
-                  <th>最近登录</th>
-                </tr>
-              </thead>
-              <tbody>
-          `;
-
-          data.forEach((item, index) => {
-            const firstLogin = new Date(item.first_login).toLocaleString('zh-CN');
-            const lastLogin = new Date(item.last_login).toLocaleString('zh-CN');
-            
-            html += `
-              <tr>
-                <td>${index + 1}</td>
-                <td><strong>${item.username}</strong></td>
-                <td>${item.source || '-'}</td>
-                <td><strong style="color:#667eea;">${item.login_count}</strong></td>
-                <td style="font-size:12px;">${firstLogin}</td>
-                <td style="font-size:12px;">${lastLogin}</td>
-              </tr>
-            `;
-          });
-
-          html += `
-              </tbody>
-            </table>
-            <p style="margin-top:15px;color:#999;font-size:13px;">
-              总计：${data.length} 个用户，累计登录 ${data.reduce((sum, item) => sum + item.login_count, 0)} 次
-            </p>
-          `;
-
-          container.innerHTML = html;
-        } catch (err) {
-          console.error('加载访问统计失败:', err);
-          container.innerHTML = `<p style="color:#f56c6c;">加载失败: ${err.message}</p>`;
-        }
-      }
     })();
   </script>
 </body>
