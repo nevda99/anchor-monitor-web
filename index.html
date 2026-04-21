@@ -107,13 +107,23 @@
     .stat-card .label { font-size: 14px; opacity: 0.9; margin-bottom: 10px; }
     .stat-card .value { font-size: 32px; font-weight: bold; }
     .stat-card .subtitle { 
-      font-size: 13px; 
-      opacity: 0.85; 
-      margin-top: 8px; 
-      font-weight: normal;
+      font-size: 14px; 
+      margin-top: 10px; 
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: inline-block;
     }
-    .subtitle.ahead { color: #ffd4d4; }
-    .subtitle.behind { color: #d4ffd4; }
+    .subtitle.ahead { 
+      background: rgba(255, 212, 212, 0.3);
+      color: #ffd4d4;
+      border: 1px solid rgba(255, 212, 212, 0.5);
+    }
+    .subtitle.behind { 
+      background: rgba(212, 255, 212, 0.3);
+      color: #d4ffd4;
+      border: 1px solid rgba(212, 255, 212, 0.5);
+    }
     .date-filter {
       margin-bottom: 20px;
       padding: 15px;
@@ -297,6 +307,11 @@
       
       .stat-card .value {
         font-size: 24px;
+      }
+      
+      .stat-card .subtitle {
+        font-size: 12px;
+        padding: 5px 10px;
       }
       
       /* 表格横向滚动 */
