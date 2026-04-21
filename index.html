@@ -690,6 +690,7 @@
               '目标': item.target,
               '实际完成': item.actual,
               '完成度': item.completion_rate.toFixed(2) + '%',
+              '开播时长(分钟)': item.streaming_minutes ? item.streaming_minutes.toFixed(2) : '0.00',
               '时间进度': item.time_progress,
               '进度差异': (diff > 0 ? '+' : '') + diff + '%',
               '状态': isAhead ? '超前' : '落后'
@@ -699,6 +700,7 @@
           // 添加汇总行
           const totalTarget = currentData.reduce((sum, item) => sum + item.target, 0);
           const totalActual = currentData.reduce((sum, item) => sum + item.actual, 0);
+          const totalStreamingMinutes = currentData.reduce((sum, item) => sum + (item.streaming_minutes || 0), 0);
           const avgCompletion = totalTarget > 0 ? (totalActual / totalTarget * 100).toFixed(2) : 0;
           const diff = (avgCompletion - currentTimeProgress).toFixed(2);
 
@@ -710,6 +712,7 @@
             '目标': totalTarget,
             '实际完成': totalActual,
             '完成度': avgCompletion + '%',
+            '开播时长(分钟)': totalStreamingMinutes.toFixed(2),
             '时间进度': currentData[0].time_progress,
             '进度差异': (diff > 0 ? '+' : '') + diff + '%',
             '状态': avgCompletion >= currentTimeProgress ? '超前' : '落后'
@@ -728,6 +731,7 @@
             { wch: 12 }, // 目标
             { wch: 12 }, // 实际完成
             { wch: 10 }, // 完成度
+            { wch: 15 }, // 开播时长(分钟)
             { wch: 12 }, // 时间进度
             { wch: 12 }, // 进度差异
             { wch: 8 }   // 状态
@@ -791,6 +795,7 @@
                 <th>目标</th>
                 <th>实际完成</th>
                 <th>完成度</th>
+                <th>开播时长(分钟)</th>
                 <th>时间进度</th>
               </tr>
             </thead>
@@ -809,6 +814,7 @@
                         ${item.completion_rate.toFixed(2)}%
                       </span>
                     </td>
+                    <td>${item.streaming_minutes ? item.streaming_minutes.toFixed(2) : '0.00'}</td>
                     <td>${item.time_progress}</td>
                   </tr>
                 `;
