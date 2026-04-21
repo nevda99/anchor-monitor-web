@@ -731,10 +731,18 @@
           const totalCompletion = totalStats.totalTarget > 0 ? (totalStats.totalActual / totalStats.totalTarget * 100) : 0;
           const totalIsAhead = totalCompletion >= timeProgress;
           const totalDiff = (totalCompletion - timeProgress).toFixed(2);
-          const totalStatusText = totalDiff > 0 ? `当前进度超前 ${totalDiff}%` : `当前进度落后 ${Math.abs(totalDiff)}%`;
+          
+          // 计算绝对值差距
+          const totalAbsoluteGap = Math.round(totalStats.totalTarget * (timeProgress / 100) - totalStats.totalActual);
+          const totalStatusText = totalDiff > 0 
+            ? `当前进度超前 ${totalDiff}%` 
+            : `当前进度落后 ${Math.abs(totalDiff)}%，落后 ${formatNumber(Math.abs(totalAbsoluteGap))}`;
+          
+          // 判断是否为当前选中的机构
+          const isAllSelected = currentSource === '__ALL__';
           
           summaryHtml += `
-            <div class="summary-item" onclick="selectSource('__ALL__')" style="border: 2px solid #409EFF;">
+            <div class="summary-item" onclick="selectSource('__ALL__')" style="border: 2px solid ${isAllSelected ? '#409EFF' : 'transparent'};">
               <div class="summary-item-name">🔷 汇总（全部主播）</div>
               <div class="summary-item-stats">
                 主播数：${totalStats.count}人 | 完成：${formatNumber(totalStats.totalActual)} / ${formatNumber(totalStats.totalTarget)}
@@ -754,10 +762,18 @@
             const completion = stats.totalTarget > 0 ? (stats.totalActual / stats.totalTarget * 100) : 0;
             const isAhead = completion >= timeProgress;
             const diff = (completion - timeProgress).toFixed(2);
-            const statusText = diff > 0 ? `当前进度超前 ${diff}%` : `当前进度落后 ${Math.abs(diff)}%`;
+            
+            // 计算绝对值差距
+            const absoluteGap = Math.round(stats.totalTarget * (timeProgress / 100) - stats.totalActual);
+            const statusText = diff > 0 
+              ? `当前进度超前 ${diff}%` 
+              : `当前进度落后 ${Math.abs(diff)}%，落后 ${formatNumber(Math.abs(absoluteGap))}`;
+            
+            // 判断是否为当前选中的机构
+            const isSelected = currentSource === source;
             
             summaryHtml += `
-              <div class="summary-item" onclick="selectSource('${source}')">
+              <div class="summary-item" onclick="selectSource('${source}')" style="border: 2px solid ${isSelected ? '#409EFF' : 'transparent'};">
                 <div class="summary-item-name">${source}</div>
                 <div class="summary-item-stats">
                   主播数：${stats.count}人 | 完成：${formatNumber(stats.totalActual)} / ${formatNumber(stats.totalTarget)}
@@ -962,7 +978,9 @@
           subtitle.textContent = `当前进度超前 ${diff.toFixed(2)}%`;
           subtitle.className = 'subtitle ahead';
         } else if (diff < 0) {
-          subtitle.textContent = `当前进度落后 ${Math.abs(diff).toFixed(2)}%`;
+          // 计算绝对值差距
+          const absoluteGap = Math.round(target * (timeProgressNum / 100) - actual);
+          subtitle.textContent = `当前进度落后 ${Math.abs(diff).toFixed(2)}%，落后 ${formatNumber(absoluteGap)}`;
           subtitle.className = 'subtitle behind';
         } else {
           subtitle.textContent = `与时间进度持平`;
