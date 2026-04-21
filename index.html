@@ -889,8 +889,8 @@
         document.getElementById('tableContainer').innerHTML = html;
       }
       
-      // 排序函数
-      function sortTable(column) {
+      // 排序函数（暴露到全局作用域供HTML调用）
+      window.sortTable = function(column) {
         if (sortConfig.column === column) {
           // 同一列，切换排序方向
           sortConfig.direction = sortConfig.direction === 'desc' ? 'asc' : 'desc';
@@ -900,7 +900,7 @@
           sortConfig.direction = 'desc';
         }
         renderTable(currentData);
-      }
+      };
 
       function formatNumber(num) {
         return num.toLocaleString('zh-CN');
