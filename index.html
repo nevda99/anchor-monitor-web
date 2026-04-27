@@ -553,7 +553,7 @@
         }
         
         // 取数据库最新日期
-        const { data: latestRow } = await supabase
+        const { data: latestRow } = await supabaseClient
           .from('anchor_data')
           .select('date')
           .order('date', { ascending: false })
