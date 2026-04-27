@@ -532,7 +532,7 @@
       }
 
       // 统一的登录处理函数
-      function performLogin(data) {
+      async function performLogin(data) {
         currentUser = data.username;
         currentSource = data.source;
         isAdmin = (data.source === 'admin');
