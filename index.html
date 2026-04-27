@@ -552,7 +552,17 @@
           document.getElementById('dashboardTitle').textContent = `${data.display_name} - 数据看板`;
         }
         
-        document.getElementById('dateFilter').valueAsDate = new Date();
+        // 取数据库最新日期
+        const { data: latestRow } = await supabase
+          .from('anchor_data')
+          .select('date')
+          .order('date', { ascending: false })
+          .limit(1);
+        if (latestRow && latestRow.length > 0) {
+          document.getElementById('dateFilter').value = latestRow[0].date;
+        } else {
+          document.getElementById('dateFilter').valueAsDate = new Date();
+        }
         loadData();
       }
 
