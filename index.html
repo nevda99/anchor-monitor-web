@@ -776,14 +776,19 @@
             .select('source')
             .eq('date', dateFilter)
             .eq('system', currentSystem);
+          // 二级管理员直接在查询层过滤，避免前端filter时subAdminSources为空的问题
+          if (currentRole === 'sub_admin') {
+            if (subAdminSources.length === 0) {
+              // 还没拉到映射，先不显示
+              document.getElementById('summaryGrid').innerHTML = '<div style="padding:20px;">加载权限中...</div>';
+              return;
+            }
+            query = query.in('source', subAdminSources);
+          }
           const { data, error } = await query;
           if (error) throw error;
           
           let uniqueSources = [...new Set(data.map(item => item.source))].sort();
-          // 二级管理员只能看自己的机构
-          if (currentRole === 'sub_admin') {
-            uniqueSources = uniqueSources.filter(s => subAdminSources.includes(s));
-          }
           allSources = uniqueSources;
           
           const selector = document.getElementById('sourceSelector');
@@ -809,6 +814,11 @@
       async function loadAdminSummary() {
         try {
           const dateFilter = document.getElementById('dateFilter').value;
+          // 二级管理员未拿到权限列表时直接返回空
+          if (currentRole === 'sub_admin' && subAdminSources.length === 0) {
+            document.getElementById('summaryGrid').innerHTML = '<div style="padding:20px;">暂无权限</div>';
+            return;
+          }
           let allData = [];
           let from = 0;
           const pageSize = 1000;
@@ -819,7 +829,7 @@
               .eq('date', dateFilter)
               .eq('system', currentSystem);
             // 二级管理员只看自己的机构
-            if (currentRole === 'sub_admin' && subAdminSources.length > 0) {
+            if (currentRole === 'sub_admin') {
               query = query.in('source', subAdminSources);
             }
             query = query.range(from, from + pageSize - 1);
