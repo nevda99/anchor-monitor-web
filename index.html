@@ -776,11 +776,12 @@
             .select('source')
             .eq('date', dateFilter)
             .eq('system', currentSystem);
-          // 二级管理员直接在查询层过滤，避免前端filter时subAdminSources为空的问题
+          // 二级管理员在查询层过滤，只取自己管辖的机构
           if (currentRole === 'sub_admin') {
             if (subAdminSources.length === 0) {
-              // 还没拉到映射，先不显示
-              document.getElementById('summaryGrid').innerHTML = '<div style="padding:20px;">加载权限中...</div>';
+              // 映射表为空说明账号无任何机构权限
+              document.getElementById('summaryGrid').innerHTML = '<div style="padding:20px;">暂无管辖机构</div>';
+              document.getElementById('sourceSelector').innerHTML = '<option value="">-- 无可用机构 --</option>';
               return;
             }
             query = query.in('source', subAdminSources);
