@@ -666,7 +666,7 @@
       // 记录访问日志
       async function logAccess(username, source) {
         try {
-          const { error } = await supabase
+          const { error } = await supabaseClient
             .from('access_logs')
             .insert([{
               username: username,
