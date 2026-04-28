@@ -585,18 +585,17 @@
         
         const systemLabel = currentSystem === 'crc' ? '国艺核心主播' : '主动看播对赌';
         
-        // 先取该系统最新日期，保证后续查询时日期已就绪
+        // 先取该系统最新日期
         const { data: latestRow } = await supabaseClient
           .from('anchor_data')
           .select('date')
           .eq('system', currentSystem)
           .order('date', { ascending: false })
           .limit(1);
-        if (latestRow && latestRow.length > 0) {
-          document.getElementById('dateFilter').value = latestRow[0].date;
-        } else {
-          document.getElementById('dateFilter').valueAsDate = new Date();
-        }
+        const latestDate = (latestRow && latestRow.length > 0)
+          ? latestRow[0].date
+          : new Date().toISOString().slice(0, 10);
+        document.getElementById('dateFilter').value = latestDate;
 
         if (currentRole === 'super_admin') {
           const badge = currentSystem === 'crc' ? '总管理员' : '管理员';
@@ -607,20 +606,18 @@
             document.getElementById('systemTabs').classList.add('visible');
           }
           updateSystemTabs();
-          await loadAdminSources();
+          await loadAdminSources(latestDate);
         } else if (currentRole === 'sub_admin') {
-          const { data: mappings, error: mapErr } = await supabaseClient
+          const { data: mappings } = await supabaseClient
             .from('sub_admin_sources')
             .select('source_name')
             .eq('username', data.username)
             .eq('system', currentSystem);
-          console.log('[DEBUG] sub_admin:', data.username, currentSystem, JSON.stringify(mappings), mapErr);
           subAdminSources = (mappings || []).map(m => m.source_name);
-          console.log('[DEBUG] subAdminSources:', subAdminSources.length, subAdminSources);
           document.getElementById('dashboardTitle').innerHTML = `${data.display_name} - ${systemLabel}<span class="admin-badge" style="background:#e6a23c;">二级管理</span>`;
           document.getElementById('adminSelector').style.display = 'block';
           document.getElementById('adminSummary').style.display = 'block';
-          await loadAdminSources();
+          await loadAdminSources(latestDate);
         } else {
           document.getElementById('dashboardTitle').textContent = `${data.display_name} - ${systemLabel}`;
           loadData();
@@ -768,9 +765,9 @@
       };
 
       // 管理员：加载所有机构
-      async function loadAdminSources() {
+      async function loadAdminSources(dateOverride) {
         try {
-          const dateFilter = document.getElementById('dateFilter').value;
+          const dateFilter = dateOverride || document.getElementById('dateFilter').value;
           let query = supabaseClient
             .from('anchor_data')
             .select('source')
@@ -805,16 +802,16 @@
             selector.appendChild(option);
           });
           
-          await loadAdminSummary();
+          await loadAdminSummary(dateOverride);
         } catch (err) {
           console.error('加载机构列表失败:', err);
         }
       }
 
       // 管理员：加载汇总数据
-      async function loadAdminSummary() {
+      async function loadAdminSummary(dateOverride) {
         try {
-          const dateFilter = document.getElementById('dateFilter').value;
+          const dateFilter = dateOverride || document.getElementById('dateFilter').value;
           // 二级管理员未拿到权限列表时直接返回空
           if (currentRole === 'sub_admin' && subAdminSources.length === 0) {
             document.getElementById('summaryGrid').innerHTML = '<div style="padding:20px;">暂无权限</div>';
