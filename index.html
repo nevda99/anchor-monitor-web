@@ -462,6 +462,14 @@
 
     <!-- 管理员机构选择器 -->
     <div id="adminSelector" class="admin-selector" style="display:none;">
+      <!-- crc系统二级组织过滤器 -->
+      <span id="groupFilterWrap" style="display:none;">
+        <label>🏢 二级组织：</label>
+        <select id="groupSelector" onchange="onGroupChange()">
+          <option value="">-- 全部 --</option>
+        </select>
+        <span style="margin:0 8px;color:#bbb;">|</span>
+      </span>
       <label>🔧 选择机构：</label>
       <select id="sourceSelector" onchange="onSourceChange()">
         <option value="">-- 请选择机构 --</option>
@@ -788,7 +796,38 @@
           
           let uniqueSources = [...new Set(data.map(item => item.source))].sort();
           allSources = uniqueSources;
-          
+          window._allSourceOptions = uniqueSources;
+
+          // crc系统：填充二级组织下拉
+          const SOURCE_GROUP_MAP = {
+            '不可控个播': '个播大类', '可控个播': '个播大类', '个播（需建联）': '个播大类',
+            '二后生家': '电商家族', '马美如团队': '电商家族',
+            '艺术垂类': '艺术垂类', '艺术垂类-妍妍家族': '艺术垂类',
+            '大勇': '机构-魏家班', '魏三': '机构-魏家班',
+            '李广': '机构-李广',
+            '臻医堂': '机构-臻医堂',
+            '星恒-百万粉': '机构-星恒', '星恒-非百万粉': '机构-星恒',
+            '南徒': '机构-星恒', '宝哥': '机构-星恒', '小张帝': '机构-星恒', '李小帅': '机构-星恒',
+            '徐小二': '机构-徐小二',
+            '杨泽-百万粉': '杨润泽个人', '润泽-宝哥': '杨润泽个人',
+            '润泽-火胖': '杨润泽个人', '润泽-非百万粉': '杨润泽个人',
+          };
+          window._SOURCE_GROUP_MAP = SOURCE_GROUP_MAP;
+
+          if (currentSystem === 'crc') {
+            const uniqueGroups = [...new Set(uniqueSources.map(s => SOURCE_GROUP_MAP[s] || '其他'))].sort();
+            const groupSel = document.getElementById('groupSelector');
+            groupSel.innerHTML = '<option value="">— 全部 —</option>';
+            uniqueGroups.forEach(g => {
+              const opt = document.createElement('option');
+              opt.value = g; opt.textContent = g;
+              groupSel.appendChild(opt);
+            });
+            document.getElementById('groupFilterWrap').style.display = 'inline';
+          } else {
+            document.getElementById('groupFilterWrap').style.display = 'none';
+          }
+
           const selector = document.getElementById('sourceSelector');
           selector.innerHTML = '<option value="">-- 请选择机构 --</option>';
           const allOption = document.createElement('option');
@@ -915,8 +954,12 @@
             '润泽-火胖': '杨润泽个人', '润泽-非百万粉': '杨润泽个人',
           };
 
-          // 添加各机构卡片
+          // 添加各机构卡片（crc系统按二级组织筛选）
+          const groupFilter = window._currentGroupFilter || '';
+          const groupMapForFilter = window._SOURCE_GROUP_MAP || {};
           Object.keys(summaryBySource).sort().forEach(source => {
+            // 有组筛选时跳过不属于该组的机构
+            if (groupFilter && (groupMapForFilter[source] || '其他') !== groupFilter) return;
             const stats = summaryBySource[source];
             const completion = stats.totalTarget > 0 ? (stats.totalActual / stats.totalTarget * 100) : 0;
             const isAhead = completion >= timeProgress;
@@ -974,6 +1017,36 @@
         }
       };
 
+      // crc系统：二级组织筛选
+      window.onGroupChange = function() {
+        const selectedGroup = document.getElementById('groupSelector').value;
+        const allSrc = window._allSourceOptions || [];
+        const map = window._SOURCE_GROUP_MAP || {};
+        const selector = document.getElementById('sourceSelector');
+
+        // 重建机构下拉，按组过滤
+        selector.innerHTML = '<option value="">-- 请选择机构 --</option>';
+        const allOpt = document.createElement('option');
+        allOpt.value = '__ALL__';
+        allOpt.textContent = '🔷 汇总（' + (selectedGroup || '全部') + '）';
+        selector.appendChild(allOpt);
+        allSrc.forEach(src => {
+          if (!selectedGroup || (map[src] || '其他') === selectedGroup) {
+            const opt = document.createElement('option');
+            opt.value = src; opt.textContent = src;
+            selector.appendChild(opt);
+          }
+        });
+
+        // 更新 allSources 供汇总筛选使用
+        currentSource = '__ALL__';
+        selector.value = '__ALL__';
+
+        // 重新渲染汇总：只显示该组的机构卡片
+        window._currentGroupFilter = selectedGroup;
+        loadAdminSummary();
+      };
+
       window.loadData = async function() {
         const dateFilter = document.getElementById('dateFilter').value;
         if (!dateFilter) return;
@@ -1005,6 +1078,11 @@
             } else if (currentRole === 'sub_admin' && subAdminSources.length > 0) {
               // 二级管理员汇总时只看自己的机构
               query = query.in('source', subAdminSources);
+            } else if (currentSource === '__ALL__' && window._currentGroupFilter && currentSystem === 'crc') {
+              // crc系统按二级组织筛选
+              const gMap = window._SOURCE_GROUP_MAP || {};
+              const groupSources = (window._allSourceOptions || []).filter(s => (gMap[s] || '其他') === window._currentGroupFilter);
+              if (groupSources.length > 0) query = query.in('source', groupSources);
             }
             query = query.order('completion_rate', { ascending: false }).range(from, from + pageSize - 1);
             const { data: pageData, error } = await query;
