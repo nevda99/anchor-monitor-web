@@ -776,23 +776,34 @@
       async function loadAdminSources(dateOverride) {
         try {
           const dateFilter = dateOverride || document.getElementById('dateFilter').value;
-          let query = supabaseClient
-            .from('anchor_data')
-            .select('source')
-            .eq('date', dateFilter)
-            .eq('system', currentSystem);
-          // 二级管理员在查询层过滤，只取自己管辖的机构
-          if (currentRole === 'sub_admin') {
-            if (subAdminSources.length === 0) {
-              // 映射表为空说明账号无任何机构权限
-              document.getElementById('summaryGrid').innerHTML = '<div style="padding:20px;">暂无管辖机构</div>';
-              document.getElementById('sourceSelector').innerHTML = '<option value="">-- 无可用机构 --</option>';
-              return;
+          // 分页拉取所有source（避免1000行默认限制）
+          let allSourceData = [];
+          let from = 0;
+          const pageSize = 1000;
+          while (true) {
+            let query = supabaseClient
+              .from('anchor_data')
+              .select('source')
+              .eq('date', dateFilter)
+              .eq('system', currentSystem);
+            // 二级管理员在查询层过滤
+            if (currentRole === 'sub_admin') {
+              if (subAdminSources.length === 0) {
+                document.getElementById('summaryGrid').innerHTML = '<div style="padding:20px;">暂无管辖机构</div>';
+                document.getElementById('sourceSelector').innerHTML = '<option value="">-- 无可用机构 --</option>';
+                return;
+              }
+              query = query.in('source', subAdminSources);
             }
-            query = query.in('source', subAdminSources);
+            query = query.range(from, from + pageSize - 1);
+            const { data: pageData, error } = await query;
+            if (error) throw error;
+            if (!pageData || pageData.length === 0) break;
+            allSourceData = allSourceData.concat(pageData);
+            if (pageData.length < pageSize) break;
+            from += pageSize;
           }
-          const { data, error } = await query;
-          if (error) throw error;
+          const data = allSourceData;
           
           let uniqueSources = [...new Set(data.map(item => item.source))].sort();
           allSources = uniqueSources;
@@ -810,8 +821,8 @@
             '南徒': '机构-星恒', '宝哥': '机构-星恒', '小张帝': '机构-星恒', '李小帅': '机构-星恒',
             '火胖': '机构-星恒',
             '徐小二': '机构-徐小二',
-            '杨泽-百万粉': '杨润泽单独', '润泽-宝哥': '杨润泽单独',
-            '润泽-火胖': '杨润泽单独', '润泽-非百万粉': '杨润泽单独',
+            '杨泽-百万粉': '杨润泽个人', '润泽-宝哥': '杨润泽个人',
+            '润泽-火胖': '杨润泽个人', '润泽-非百万粉': '杨润泽个人',
           };
           window._SOURCE_GROUP_MAP = SOURCE_GROUP_MAP;
 
@@ -952,8 +963,8 @@
             '南徒': '机构-星恒', '宝哥': '机构-星恒', '小张帝': '机构-星恒', '李小帅': '机构-星恒',
             '火胖': '机构-星恒',
             '徐小二': '机构-徐小二',
-            '杨泽-百万粉': '杨润泽单独', '润泽-宝哥': '杨润泽单独',
-            '润泽-火胖': '杨润泽单独', '润泽-非百万粉': '杨润泽单独',
+            '杨泽-百万粉': '杨润泽个人', '润泽-宝哥': '杨润泽个人',
+            '润泽-火胖': '杨润泽个人', '润泽-非百万粉': '杨润泽个人',
           };
 
           // 添加各机构卡片（crc系统按二级组织筛选）
