@@ -900,6 +900,21 @@
             </div>
           `;
           
+          // crc系统：三级机构→二级组织映射（用于小标签）
+          const SOURCE_GROUP_MAP = {
+            '不可控个播': '个播大类', '可控个播': '个播大类', '个播（需建联）': '个播大类',
+            '二后生家': '电商家族', '马美如团队': '电商家族',
+            '艺术垂类': '艺术垂类', '艺术垂类-妍妍家族': '艺术垂类',
+            '大勇': '机构-魏家班', '魏三': '机构-魏家班',
+            '李广': '机构-李广',
+            '臻医堂': '机构-臻医堂',
+            '星恒-百万粉': '机构-星恒', '星恒-非百万粉': '机构-星恒',
+            '南徒': '机构-星恒', '宝哥': '机构-星恒', '小张帝': '机构-星恒', '李小帅': '机构-星恒',
+            '徐小二': '机构-徐小二',
+            '杨泽-百万粉': '杨润泽个人', '润泽-宝哥': '杨润泽个人',
+            '润泽-火胖': '杨润泽个人', '润泽-非百万粉': '杨润泽个人',
+          };
+
           // 添加各机构卡片
           Object.keys(summaryBySource).sort().forEach(source => {
             const stats = summaryBySource[source];
@@ -916,9 +931,14 @@
             // 判断是否为当前选中的机构
             const isSelected = currentSource === source;
             
+            // crc系统显示所属二级组织小标签
+            const groupTag = (currentSystem === 'crc' && SOURCE_GROUP_MAP[source])
+              ? `<span style="font-size:10px;background:#e8f4fd;color:#1a7abf;border-radius:3px;padding:1px 5px;margin-left:5px;font-weight:normal;">${SOURCE_GROUP_MAP[source]}</span>`
+              : '';
+            
             summaryHtml += `
               <div class="summary-item" onclick="selectSource('${source}')" style="border: 2px solid ${isSelected ? '#409EFF' : 'transparent'};">
-                <div class="summary-item-name">${source}</div>
+                <div class="summary-item-name">${source}${groupTag}</div>
                 <div class="summary-item-stats">
                   主播数：${stats.count}人 | 完成：${formatNumber(stats.totalActual)} / ${formatNumber(stats.totalTarget)}
                 </div>
