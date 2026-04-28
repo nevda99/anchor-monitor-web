@@ -609,12 +609,14 @@
           updateSystemTabs();
           await loadAdminSources();
         } else if (currentRole === 'sub_admin') {
-          const { data: mappings } = await supabaseClient
+          const { data: mappings, error: mapErr } = await supabaseClient
             .from('sub_admin_sources')
             .select('source_name')
             .eq('username', data.username)
             .eq('system', currentSystem);
+          console.log('[DEBUG] sub_admin:', data.username, currentSystem, JSON.stringify(mappings), mapErr);
           subAdminSources = (mappings || []).map(m => m.source_name);
+          console.log('[DEBUG] subAdminSources:', subAdminSources.length, subAdminSources);
           document.getElementById('dashboardTitle').innerHTML = `${data.display_name} - ${systemLabel}<span class="admin-badge" style="background:#e6a23c;">二级管理</span>`;
           document.getElementById('adminSelector').style.display = 'block';
           document.getElementById('adminSummary').style.display = 'block';
