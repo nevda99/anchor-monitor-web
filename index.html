@@ -585,34 +585,7 @@
         
         const systemLabel = currentSystem === 'crc' ? '国艺核心主播' : '主动看播对赌';
         
-        if (currentRole === 'super_admin') {
-          const badge = currentSystem === 'crc' ? '总管理员' : '管理员';
-          document.getElementById('dashboardTitle').innerHTML = `${data.display_name} - ${systemLabel}<span class="admin-badge">${badge}</span>`;
-          document.getElementById('adminSelector').style.display = 'block';
-          document.getElementById('adminSummary').style.display = 'block';
-          // bet系统的admin可以跨系统切换Tab
-          if (data.username === 'admin' && data.system === 'bet') {
-            document.getElementById('systemTabs').classList.add('visible');
-          }
-          // 更新Tab激活状态
-          updateSystemTabs();
-          loadAdminSources();
-        } else if (currentRole === 'sub_admin') {
-          const { data: mappings } = await supabaseClient
-            .from('sub_admin_sources')
-            .select('source_name')
-            .eq('username', data.username)
-            .eq('system', currentSystem);
-          subAdminSources = (mappings || []).map(m => m.source_name);
-          document.getElementById('dashboardTitle').innerHTML = `${data.display_name} - ${systemLabel}<span class="admin-badge" style="background:#e6a23c;">二级管理</span>`;
-          document.getElementById('adminSelector').style.display = 'block';
-          document.getElementById('adminSummary').style.display = 'block';
-          loadAdminSources();
-        } else {
-          document.getElementById('dashboardTitle').textContent = `${data.display_name} - ${systemLabel}`;
-        }
-        
-        // 取该系统最新日期
+        // 先取该系统最新日期，保证后续查询时日期已就绪
         const { data: latestRow } = await supabaseClient
           .from('anchor_data')
           .select('date')
@@ -624,7 +597,32 @@
         } else {
           document.getElementById('dateFilter').valueAsDate = new Date();
         }
-        loadData();
+
+        if (currentRole === 'super_admin') {
+          const badge = currentSystem === 'crc' ? '总管理员' : '管理员';
+          document.getElementById('dashboardTitle').innerHTML = `${data.display_name} - ${systemLabel}<span class="admin-badge">${badge}</span>`;
+          document.getElementById('adminSelector').style.display = 'block';
+          document.getElementById('adminSummary').style.display = 'block';
+          if (data.username === 'admin' && data.system === 'bet') {
+            document.getElementById('systemTabs').classList.add('visible');
+          }
+          updateSystemTabs();
+          await loadAdminSources();
+        } else if (currentRole === 'sub_admin') {
+          const { data: mappings } = await supabaseClient
+            .from('sub_admin_sources')
+            .select('source_name')
+            .eq('username', data.username)
+            .eq('system', currentSystem);
+          subAdminSources = (mappings || []).map(m => m.source_name);
+          document.getElementById('dashboardTitle').innerHTML = `${data.display_name} - ${systemLabel}<span class="admin-badge" style="background:#e6a23c;">二级管理</span>`;
+          document.getElementById('adminSelector').style.display = 'block';
+          document.getElementById('adminSummary').style.display = 'block';
+          await loadAdminSources();
+        } else {
+          document.getElementById('dashboardTitle').textContent = `${data.display_name} - ${systemLabel}`;
+          loadData();
+        }
       }
 
       // 更新Tab激活状态
