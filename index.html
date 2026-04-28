@@ -190,6 +190,30 @@
       cursor: pointer;
       min-width: 200px;
     }
+    /* 系统切换Tab */
+    .system-tabs {
+      display: none;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .system-tabs.visible { display: flex; gap: 0; }
+    .sys-tab {
+      padding: 10px 28px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: #888;
+      border: none;
+      background: transparent;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+    .sys-tab:hover { color: #667eea; }
+    .sys-tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
     .admin-badge {
       background: #ffc107;
       color: #856404;
@@ -430,6 +454,12 @@
       </div>
     </div>
 
+    <!-- 超管系统切换Tab（仅admin可见） -->
+    <div class="system-tabs" id="systemTabs">
+      <button class="sys-tab" id="tab-bet" onclick="switchViewSystem('bet')">主动看播对赌后台</button>
+      <button class="sys-tab" id="tab-crc" onclick="switchViewSystem('crc')">国艺核心主播周任务查看</button>
+    </div>
+
     <!-- 管理员机构选择器 -->
     <div id="adminSelector" class="admin-selector" style="display:none;">
       <label>🔧 选择机构：</label>
@@ -560,6 +590,12 @@
           document.getElementById('dashboardTitle').innerHTML = `${data.display_name} - ${systemLabel}<span class="admin-badge">${badge}</span>`;
           document.getElementById('adminSelector').style.display = 'block';
           document.getElementById('adminSummary').style.display = 'block';
+          // bet系统的admin可以跨系统切换Tab
+          if (data.username === 'admin' && data.system === 'bet') {
+            document.getElementById('systemTabs').classList.add('visible');
+          }
+          // 更新Tab激活状态
+          updateSystemTabs();
           loadAdminSources();
         } else if (currentRole === 'sub_admin') {
           const { data: mappings } = await supabaseClient
@@ -590,6 +626,42 @@
         }
         loadData();
       }
+
+      // 更新Tab激活状态
+      function updateSystemTabs() {
+        document.getElementById('tab-bet').classList.toggle('active', currentSystem === 'bet');
+        document.getElementById('tab-crc').classList.toggle('active', currentSystem === 'crc');
+      }
+
+      // 超管切换查看系统
+      window.switchViewSystem = async function(targetSystem) {
+        if (currentSystem === targetSystem) return;
+        currentSystem = targetSystem;
+        currentSource = null;
+        subAdminSources = [];
+        updateSystemTabs();
+        
+        const systemLabel = currentSystem === 'crc' ? '国艺核心主播' : '主动看播对赌';
+        document.getElementById('dashboardTitle').innerHTML = `系统管理员 - ${systemLabel}<span class="admin-badge">管理员</span>`;
+        
+        // 重置机构选择器
+        document.getElementById('sourceSelector').innerHTML = '<option value="">-- 请选择机构 --</option>';
+        document.getElementById('summaryGrid').innerHTML = '';
+        document.getElementById('tableContainer').innerHTML = '<div class="loading">切换中...</div>';
+        updateStats(0, 0, 0, 0, '0%');
+        
+        // 取新系统最新日期
+        const { data: latestRow } = await supabaseClient
+          .from('anchor_data')
+          .select('date')
+          .eq('system', currentSystem)
+          .order('date', { ascending: false })
+          .limit(1);
+        if (latestRow && latestRow.length > 0) {
+          document.getElementById('dateFilter').value = latestRow[0].date;
+        }
+        loadAdminSources();
+      };
 
       // 记录访问日志
       async function logAccess(username, source) {
