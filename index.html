@@ -397,6 +397,14 @@
     <h1>🎯 主播数据监控平台</h1>
     <form id="loginForm">
       <div class="form-group">
+        <label>选择系统</label>
+        <select id="systemSelect" required style="width:100%;padding:12px;border:1px solid #ddd;border-radius:5px;font-size:14px;color:#333;">
+          <option value="">-- 请选择系统 --</option>
+          <option value="bet">主动看播对赌后台</option>
+          <option value="crc">国艺核心主播周任务查看</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label>账号</label>
         <input type="text" id="username" required placeholder="请输入账号">
       </div>
@@ -478,10 +486,13 @@
       
       let currentUser = null;
       let currentSource = null;
+      let currentSystem = null;
+      let currentRole = 'source';
       let currentTimeProgress = 0;
       let currentData = [];
       let isAdmin = false;
       let allSources = [];
+      let subAdminSources = [];
       
       // 排序状态
       let sortConfig = {
@@ -489,42 +500,39 @@
         direction: 'desc'  // 排序方向: 'asc' 或 'desc'
       };
 
-      // 页面加载时检查是否有保存的登录信息
+      // 页面加载时恢复系统选择 + 自动登录
       window.addEventListener('DOMContentLoaded', function() {
+        const savedSystem = localStorage.getItem('saved_system');
+        if (savedSystem) {
+          document.getElementById('systemSelect').value = savedSystem;
+        }
         const savedUsername = localStorage.getItem('saved_username');
         const savedPassword = localStorage.getItem('saved_password');
         const rememberMe = localStorage.getItem('remember_me') === 'true';
-        
-        if (savedUsername && savedPassword && rememberMe) {
-          // 自动填充账号密码
+        if (savedUsername && savedPassword && rememberMe && savedSystem) {
           document.getElementById('username').value = savedUsername;
           document.getElementById('password').value = savedPassword;
           document.getElementById('rememberMe').checked = true;
-          
-          // 自动登录
-          autoLogin(savedUsername, savedPassword);
+          autoLogin(savedUsername, savedPassword, savedSystem);
         }
       });
 
       // 自动登录函数
-      async function autoLogin(username, password) {
+      async function autoLogin(username, password, system) {
         try {
           const { data, error } = await supabaseClient
             .from('user_accounts')
             .select('*')
             .eq('username', username)
             .eq('password', password)
+            .eq('system', system)
             .single();
-          
           if (error || !data) {
-            // 登录失败，清除保存的信息
             localStorage.removeItem('saved_username');
             localStorage.removeItem('saved_password');
             localStorage.removeItem('remember_me');
             return;
           }
-          
-          // 登录成功
           performLogin(data);
         } catch (err) {
           console.error('自动登录失败:', err);
@@ -535,27 +543,44 @@
       async function performLogin(data) {
         currentUser = data.username;
         currentSource = data.source;
-        isAdmin = (data.source === 'admin');
+        currentSystem = data.system || 'bet';
+        currentRole = data.role || 'source';
+        isAdmin = (currentRole === 'super_admin' || currentRole === 'sub_admin');
+        subAdminSources = [];
         
-        // 记录访问日志
         logAccess(data.username, data.source);
         
         document.getElementById('loginBox').style.display = 'none';
         document.getElementById('dashboard').classList.add('active');
         
-        if (isAdmin) {
-          document.getElementById('dashboardTitle').innerHTML = `${data.display_name} - 数据看板<span class="admin-badge">管理员</span>`;
+        const systemLabel = currentSystem === 'crc' ? '国艺核心主播' : '主动看播对赌';
+        
+        if (currentRole === 'super_admin') {
+          const badge = currentSystem === 'crc' ? '总管理员' : '管理员';
+          document.getElementById('dashboardTitle').innerHTML = `${data.display_name} - ${systemLabel}<span class="admin-badge">${badge}</span>`;
+          document.getElementById('adminSelector').style.display = 'block';
+          document.getElementById('adminSummary').style.display = 'block';
+          loadAdminSources();
+        } else if (currentRole === 'sub_admin') {
+          const { data: mappings } = await supabaseClient
+            .from('sub_admin_sources')
+            .select('source_name')
+            .eq('username', data.username)
+            .eq('system', currentSystem);
+          subAdminSources = (mappings || []).map(m => m.source_name);
+          document.getElementById('dashboardTitle').innerHTML = `${data.display_name} - ${systemLabel}<span class="admin-badge" style="background:#e6a23c;">二级管理</span>`;
           document.getElementById('adminSelector').style.display = 'block';
           document.getElementById('adminSummary').style.display = 'block';
           loadAdminSources();
         } else {
-          document.getElementById('dashboardTitle').textContent = `${data.display_name} - 数据看板`;
+          document.getElementById('dashboardTitle').textContent = `${data.display_name} - ${systemLabel}`;
         }
         
-        // 取数据库最新日期
+        // 取该系统最新日期
         const { data: latestRow } = await supabaseClient
           .from('anchor_data')
           .select('date')
+          .eq('system', currentSystem)
           .order('date', { ascending: false })
           .limit(1);
         if (latestRow && latestRow.length > 0) {
@@ -588,11 +613,17 @@
 
       document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const selectedSystem = document.getElementById('systemSelect').value;
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         const rememberMe = document.getElementById('rememberMe').checked;
         const loginBtn = document.getElementById('loginBtn');
         const loginError = document.getElementById('loginError');
+        
+        if (!selectedSystem) {
+          loginError.textContent = '请先选择系统';
+          return;
+        }
         
         loginBtn.disabled = true;
         loginBtn.textContent = '登录中...';
@@ -604,13 +635,15 @@
             .select('*')
             .eq('username', username)
             .eq('password', password)
+            .eq('system', selectedSystem)
             .single();
           
           if (error || !data) {
-            throw new Error('账号或密码错误');
+            throw new Error('账号或密码错误，或所选系统不匹配');
           }
           
-          // 保存或清除记住的账号密码
+          // 始终记住系统选择
+          localStorage.setItem('saved_system', selectedSystem);
           if (rememberMe) {
             localStorage.setItem('saved_username', username);
             localStorage.setItem('saved_password', password);
@@ -621,7 +654,6 @@
             localStorage.removeItem('remember_me');
           }
           
-          // 执行登录
           performLogin(data);
         } catch (err) {
           loginError.textContent = err.message;
@@ -632,20 +664,26 @@
       });
 
       window.logout = function() {
-        // 保留"记住密码"状态，只清空当前会话
         const rememberMe = localStorage.getItem('remember_me') === 'true';
         
         currentUser = null;
         currentSource = null;
+        currentSystem = null;
+        currentRole = 'source';
         isAdmin = false;
         allSources = [];
+        subAdminSources = [];
         document.getElementById('loginBox').style.display = 'block';
         document.getElementById('dashboard').classList.remove('active');
         document.getElementById('loginForm').reset();
         document.getElementById('adminSelector').style.display = 'none';
         document.getElementById('adminSummary').style.display = 'none';
         
-        // 如果之前勾选了"记住密码"，重新填充账号密码
+        // 恢复系统选择
+        const savedSystem = localStorage.getItem('saved_system');
+        if (savedSystem) {
+          document.getElementById('systemSelect').value = savedSystem;
+        }
         if (rememberMe) {
           const savedUsername = localStorage.getItem('saved_username');
           const savedPassword = localStorage.getItem('saved_password');
@@ -661,26 +699,27 @@
       async function loadAdminSources() {
         try {
           const dateFilter = document.getElementById('dateFilter').value;
-          const { data, error } = await supabaseClient
+          let query = supabaseClient
             .from('anchor_data')
             .select('source')
-            .eq('date', dateFilter);
-          
+            .eq('date', dateFilter)
+            .eq('system', currentSystem);
+          const { data, error } = await query;
           if (error) throw error;
           
-          // 获取所有唯一的机构
-          const uniqueSources = [...new Set(data.map(item => item.source))].sort();
+          let uniqueSources = [...new Set(data.map(item => item.source))].sort();
+          // 二级管理员只能看自己的机构
+          if (currentRole === 'sub_admin') {
+            uniqueSources = uniqueSources.filter(s => subAdminSources.includes(s));
+          }
           allSources = uniqueSources;
           
-          // 填充下拉列表
           const selector = document.getElementById('sourceSelector');
           selector.innerHTML = '<option value="">-- 请选择机构 --</option>';
-          // 添加"汇总"选项
           const allOption = document.createElement('option');
           allOption.value = '__ALL__';
           allOption.textContent = '🔷 汇总（全部主播）';
           selector.appendChild(allOption);
-          // 添加各机构选项
           uniqueSources.forEach(source => {
             const option = document.createElement('option');
             option.value = source;
@@ -688,7 +727,6 @@
             selector.appendChild(option);
           });
           
-          // 加载汇总数据
           await loadAdminSummary();
         } catch (err) {
           console.error('加载机构列表失败:', err);
@@ -699,16 +737,21 @@
       async function loadAdminSummary() {
         try {
           const dateFilter = document.getElementById('dateFilter').value;
-          // 分批拉取突破1000条限制
           let allData = [];
           let from = 0;
           const pageSize = 1000;
           while (true) {
-            const { data: pageData, error } = await supabaseClient
+            let query = supabaseClient
               .from('anchor_data')
               .select('*')
               .eq('date', dateFilter)
-              .range(from, from + pageSize - 1);
+              .eq('system', currentSystem);
+            // 二级管理员只看自己的机构
+            if (currentRole === 'sub_admin' && subAdminSources.length > 0) {
+              query = query.in('source', subAdminSources);
+            }
+            query = query.range(from, from + pageSize - 1);
+            const { data: pageData, error } = await query;
             if (error) throw error;
             if (!pageData || pageData.length === 0) break;
             allData = allData.concat(pageData);
@@ -835,13 +878,10 @@
         const dateFilter = document.getElementById('dateFilter').value;
         if (!dateFilter) return;
         
-        // 如果是管理员且没选择机构，重新加载机构列表和汇总
         if (isAdmin && !currentSource) {
           await loadAdminSources();
           return;
         }
-        
-        // 如果是管理员但没选机构，不加载详细数据
         if (isAdmin && !currentSource) {
           document.getElementById('tableContainer').innerHTML = '<div class="loading">请先选择机构</div>';
           updateStats(0, 0, 0, 0, '0%');
@@ -851,7 +891,6 @@
         document.getElementById('tableContainer').innerHTML = '<div class="loading">加载中...</div>';
         
         try {
-          // 分批拉取突破1000条限制
           let allData = [];
           let from = 0;
           const pageSize = 1000;
@@ -859,9 +898,13 @@
             let query = supabaseClient
               .from('anchor_data')
               .select('*')
-              .eq('date', dateFilter);
+              .eq('date', dateFilter)
+              .eq('system', currentSystem);
             if (currentSource !== '__ALL__') {
               query = query.eq('source', currentSource);
+            } else if (currentRole === 'sub_admin' && subAdminSources.length > 0) {
+              // 二级管理员汇总时只看自己的机构
+              query = query.in('source', subAdminSources);
             }
             query = query.order('completion_rate', { ascending: false }).range(from, from + pageSize - 1);
             const { data: pageData, error } = await query;
