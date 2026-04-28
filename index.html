@@ -699,12 +699,23 @@
       async function loadAdminSummary() {
         try {
           const dateFilter = document.getElementById('dateFilter').value;
-          const { data, error } = await supabaseClient
-            .from('anchor_data')
-            .select('*')
-            .eq('date', dateFilter);
-          
-          if (error) throw error;
+          // 分批拉取突破1000条限制
+          let allData = [];
+          let from = 0;
+          const pageSize = 1000;
+          while (true) {
+            const { data: pageData, error } = await supabaseClient
+              .from('anchor_data')
+              .select('*')
+              .eq('date', dateFilter)
+              .range(from, from + pageSize - 1);
+            if (error) throw error;
+            if (!pageData || pageData.length === 0) break;
+            allData = allData.concat(pageData);
+            if (pageData.length < pageSize) break;
+            from += pageSize;
+          }
+          const data = allData;
           if (!data || data.length === 0) {
             document.getElementById('summaryGrid').innerHTML = '<div style="padding:20px;">暂无数据</div>';
             return;
@@ -840,21 +851,27 @@
         document.getElementById('tableContainer').innerHTML = '<div class="loading">加载中...</div>';
         
         try {
-          let query = supabaseClient
-            .from('anchor_data')
-            .select('*')
-            .eq('date', dateFilter);
-          
-          // 如果不是"汇总"选项，则按机构过滤
-          if (currentSource !== '__ALL__') {
-            query = query.eq('source', currentSource);
+          // 分批拉取突破1000条限制
+          let allData = [];
+          let from = 0;
+          const pageSize = 1000;
+          while (true) {
+            let query = supabaseClient
+              .from('anchor_data')
+              .select('*')
+              .eq('date', dateFilter);
+            if (currentSource !== '__ALL__') {
+              query = query.eq('source', currentSource);
+            }
+            query = query.order('completion_rate', { ascending: false }).range(from, from + pageSize - 1);
+            const { data: pageData, error } = await query;
+            if (error) throw error;
+            if (!pageData || pageData.length === 0) break;
+            allData = allData.concat(pageData);
+            if (pageData.length < pageSize) break;
+            from += pageSize;
           }
-          
-          query = query.order('completion_rate', { ascending: false });
-          
-          const { data, error } = await query;
-          
-          if (error) throw error;
+          const data = allData;
           
           if (!data || data.length === 0) {
             document.getElementById('tableContainer').innerHTML = '<div class="loading">暂无数据</div>';
