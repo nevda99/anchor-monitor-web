@@ -738,7 +738,7 @@
         for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split('\t');
           if (!cols[idIdx]) continue;
-          rows.push({ anchor_id: String(cols[idIdx]).trim(), value: Number(cols[valueIdx]) || 0 });
+          rows.push({ anchor_id: String(cols[idIdx]).trim(), value: Number(String(cols[valueIdx]).replace(/,/g, '').trim()) || 0 });
         }
         return rows;
       }
