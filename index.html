@@ -917,11 +917,19 @@
           const summaryGrid = document.getElementById('summaryGrid');
           let summaryHtml = '';
           
+          // 如果有二级组织筛选，总汇总只统计该组的数据
+          const activeGroupFilter = window._currentGroupFilter || '';
+          const activeGroupMap = window._SOURCE_GROUP_MAP || {};
+          const summaryData = activeGroupFilter
+            ? data.filter(item => (activeGroupMap[item.source] || '其他') === activeGroupFilter)
+            : data;
+          const groupLabel = activeGroupFilter || '全部';
+
           // 添加总汇总卡片
           const totalStats = {
-            count: data.length,
-            totalTarget: data.reduce((sum, item) => sum + item.target, 0),
-            totalActual: data.reduce((sum, item) => sum + item.actual, 0)
+            count: summaryData.length,
+            totalTarget: summaryData.reduce((sum, item) => sum + item.target, 0),
+            totalActual: summaryData.reduce((sum, item) => sum + item.actual, 0)
           };
           const totalCompletion = totalStats.totalTarget > 0 ? (totalStats.totalActual / totalStats.totalTarget * 100) : 0;
           const totalIsAhead = totalCompletion >= timeProgress;
@@ -938,7 +946,7 @@
           
           summaryHtml += `
             <div class="summary-item" onclick="selectSource('__ALL__')" style="border: 2px solid ${isAllSelected ? '#409EFF' : 'transparent'};">
-              <div class="summary-item-name">🔷 汇总（全部主播）</div>
+              <div class="summary-item-name">🔷 汇总（${groupLabel}）</div>
               <div class="summary-item-stats">
                 主播数：${totalStats.count}人 | 完成：${formatNumber(totalStats.totalActual)} / ${formatNumber(totalStats.totalTarget)}
               </div>
