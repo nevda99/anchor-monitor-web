@@ -771,9 +771,7 @@
         if (parsedUAD.length) {
           el.style.color = '#67c23a';
           el.textContent = `✅ 已识别 ${parsedUAD.length} 条（首条ID: ${parsedUAD[0].anchor_id}, 值: ${parsedUAD[0].value}）`;
-          // 自动读取日期并填充（UAD数据通常是周汇总，取结束日期）
-          const d = extractDateFromText(text);
-          if (d) autoFillDateAndProgress(d);
+          // UAD是周汇总，不从这里取日期
         } else {
           el.style.color = '#f56c6c';
           const raw = text.trim().split(/\r?\n/);
