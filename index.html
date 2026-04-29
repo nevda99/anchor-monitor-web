@@ -460,6 +460,70 @@
       <button class="sys-tab" id="tab-crc" onclick="switchViewSystem('crc')">国艺核心主播周任务查看</button>
     </div>
 
+    <!-- 数据更新入口（仅super_admin可见，折叠） -->
+    <div id="uploadPanel" style="display:none; margin-bottom:16px;">
+      <div id="uploadToggle" onclick="toggleUploadPanel()"
+        style="background:#f0f4ff;border:1px solid #c7d2fe;border-radius:8px;padding:10px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;">
+        <span style="font-weight:600;color:#4f46e5;">📥 数据更新入口</span>
+        <span id="uploadToggleIcon" style="color:#888;font-size:12px;">▼ 展开</span>
+      </div>
+      <div id="uploadBody" style="display:none;background:#fafbff;border:1px solid #c7d2fe;border-top:none;border-radius:0 0 8px 8px;padding:16px;">
+        <div style="color:#555;font-size:13px;margin-bottom:12px;">
+          上传或粘贴 <b>UAD 数据</b> 和 <b>开播时长数据</b>，系统自动更新 bet + crc 两个系统。
+        </div>
+
+        <!-- UAD -->
+        <div style="margin-bottom:12px;">
+          <div style="font-weight:600;margin-bottom:6px;color:#333;">① UAD 数据（主动看播天数）</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <textarea id="uadPasteArea" placeholder="从BI看板复制后粘贴到这里（含标题行）&#10;格式：主播ID  主播名称  近1天UA主动看播天数"
+              style="flex:1;min-width:280px;height:90px;padding:8px;border:1px solid #ddd;border-radius:5px;font-size:12px;resize:vertical;"
+              oninput="parseUAD()"></textarea>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:#667eea;color:white;border-radius:5px;cursor:pointer;font-size:13px;">
+                📂 上传文件
+                <input type="file" id="uadFile" accept=".xlsx,.csv,.xls" style="display:none;" onchange="readUADFile(this)">
+              </label>
+              <div id="uadStatus" style="font-size:12px;color:#666;padding:4px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 推流 -->
+        <div style="margin-bottom:12px;">
+          <div style="font-weight:600;margin-bottom:6px;color:#333;">② 开播时长数据</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <textarea id="stPasteArea" placeholder="从BI看板复制后粘贴到这里（含标题行）&#10;格式：主播ID  主播名称  近1天推流时长_万分钟"
+              style="flex:1;min-width:280px;height:90px;padding:8px;border:1px solid #ddd;border-radius:5px;font-size:12px;resize:vertical;"
+              oninput="parseST()"></textarea>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:#667eea;color:white;border-radius:5px;cursor:pointer;font-size:13px;">
+                📂 上传文件
+                <input type="file" id="stFile" accept=".xlsx,.csv,.xls" style="display:none;" onchange="readSTFile(this)">
+              </label>
+              <div id="stStatus" style="font-size:12px;color:#666;padding:4px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 时间进度 + 日期 + 提交 -->
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:8px;">
+          <div style="font-size:13px;color:#333;">
+            📅 数据日期：<input type="date" id="uploadDate" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;" onchange="document.getElementById('uploadProgress').value=calcAutoProgress(this.value)">
+          </div>
+          <div style="font-size:13px;color:#333;">
+            ⏱ 时间进度：<input type="text" id="uploadProgress" placeholder="自动计算" readonly
+              style="width:80px;padding:5px 8px;border:1px solid #ddd;border-radius:4px;background:#f5f5f5;">
+          </div>
+          <button onclick="submitUpdate()" id="submitBtn"
+            style="padding:8px 20px;background:#409eff;color:white;border:none;border-radius:5px;cursor:pointer;font-size:14px;font-weight:600;">
+            🚀 确认更新
+          </button>
+          <div id="uploadResult" style="font-size:13px;"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- 管理员机构选择器 -->
     <div id="adminSelector" class="admin-selector" style="display:none;">
       <!-- crc系统二级组织过滤器 -->
@@ -614,6 +678,12 @@
             document.getElementById('systemTabs').classList.add('visible');
           }
           updateSystemTabs();
+          // 显示上传面板并初始化日期
+          document.getElementById('uploadPanel').style.display = 'block';
+          const today = new Date(); today.setDate(today.getDate() - 1);
+          const uploadDateStr = today.toISOString().slice(0, 10);
+          document.getElementById('uploadDate').value = uploadDateStr;
+          document.getElementById('uploadProgress').value = calcAutoProgress(uploadDateStr);
           await loadAdminSources(latestDate);
         } else if (currentRole === 'sub_admin') {
           const { data: mappings } = await supabaseClient
@@ -637,6 +707,112 @@
         document.getElementById('tab-bet').classList.toggle('active', currentSystem === 'bet');
         document.getElementById('tab-crc').classList.toggle('active', currentSystem === 'crc');
       }
+
+      // 上传面板逻辑（仅super_admin可见）
+      let parsedUAD = [];
+      let parsedST = [];
+
+      function calcAutoProgress(dateStr) {
+        const d = new Date(dateStr + 'T00:00:00');
+        const day = d.getDay(); // 0=Sun,1=Mon,2=Tue...
+        const map = { 1: '100%', 2: '14.29%', 3: '28.57%', 4: '42.86%', 5: '57.14%', 6: '71.43%', 0: '85.71%' };
+        return map[day] || '0%';
+      }
+
+      window.toggleUploadPanel = function() {
+        const body = document.getElementById('uploadBody');
+        const icon = document.getElementById('uploadToggleIcon');
+        const open = body.style.display !== 'none';
+        body.style.display = open ? 'none' : 'block';
+        icon.textContent = open ? '▼ 展开' : '▲ 收起';
+      };
+
+      function parseTabText(text, valueFieldNames) {
+        const lines = text.trim().split(/\r?\n/).filter(Boolean);
+        if (lines.length < 2) return [];
+        const headers = lines[0].split('\t').map(h => h.trim());
+        const idIdx = headers.findIndex(h => h.includes('主播ID'));
+        const valueIdx = headers.findIndex(h => valueFieldNames.some(k => h.includes(k)));
+        if (idIdx === -1 || valueIdx === -1) return [];
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split('\t');
+          if (!cols[idIdx]) continue;
+          rows.push({ anchor_id: String(cols[idIdx]).trim(), value: Number(cols[valueIdx]) || 0 });
+        }
+        return rows;
+      }
+
+      window.parseUAD = function() {
+        parsedUAD = parseTabText(document.getElementById('uadPasteArea').value, ['UA主动看播天数', '主动看播']);
+        document.getElementById('uadStatus').textContent = parsedUAD.length ? `已识别 ${parsedUAD.length} 条` : '未识别到有效数据';
+      };
+
+      window.parseST = function() {
+        parsedST = parseTabText(document.getElementById('stPasteArea').value, ['推流时长', '万分钟']);
+        document.getElementById('stStatus').textContent = parsedST.length ? `已识别 ${parsedST.length} 条` : '未识别到有效数据';
+      };
+
+      function readExcelFile(file, done) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const data = new Uint8Array(e.target.result);
+          const wb = XLSX.read(data, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(ws);
+          done(json || []);
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      window.readUADFile = function(input) {
+        const file = input.files[0];
+        if (!file) return;
+        readExcelFile(file, rows => {
+          parsedUAD = rows.map(r => ({ anchor_id: String(r['主播ID'] || '').trim(), value: Number(r['近1天UA主动看播天数'] || 0) })).filter(r => r.anchor_id);
+          document.getElementById('uadStatus').textContent = parsedUAD.length ? `已读取 ${parsedUAD.length} 条` : '文件无有效数据';
+        });
+      };
+
+      window.readSTFile = function(input) {
+        const file = input.files[0];
+        if (!file) return;
+        readExcelFile(file, rows => {
+          parsedST = rows.map(r => ({ anchor_id: String(r['主播ID'] || '').trim(), value: Math.round((Number(r['近1天推流时长_万分钟'] || 0)) * 10000) })).filter(r => r.anchor_id);
+          document.getElementById('stStatus').textContent = parsedST.length ? `已读取 ${parsedST.length} 条` : '文件无有效数据';
+        });
+      };
+
+      window.submitUpdate = async function() {
+        const date = document.getElementById('uploadDate').value;
+        const timeProgress = document.getElementById('uploadProgress').value;
+        if (!date || !parsedUAD.length || !parsedST.length) {
+          document.getElementById('uploadResult').textContent = '请先准备日期、UAD和推流数据';
+          document.getElementById('uploadResult').style.color = '#f56c6c';
+          return;
+        }
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = '更新中...';
+        document.getElementById('uploadResult').textContent = '';
+        try {
+          const resp = await fetch('/api/update-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uadData: parsedUAD, streamData: parsedST, date, timeProgress })
+          });
+          const result = await resp.json();
+          if (!resp.ok || result.error) throw new Error(result.error || '更新失败');
+          document.getElementById('uploadResult').textContent = `更新完成：bet ${result.bet} 条，crc ${result.crc} 条`;
+          document.getElementById('uploadResult').style.color = '#67c23a';
+        } catch (e) {
+          document.getElementById('uploadResult').textContent = e.message;
+          document.getElementById('uploadResult').style.color = '#f56c6c';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '🚀 确认更新';
+        }
+      };
 
       // 超管切换查看系统
       window.switchViewSystem = async function(targetSystem) {
