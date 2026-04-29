@@ -510,10 +510,12 @@
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:8px;">
           <div style="font-size:13px;color:#333;">
             📅 数据日期：<input type="date" id="uploadDate" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;" onchange="document.getElementById('uploadProgress').value=calcAutoProgress(this.value)">
+            <span style="font-size:11px;color:#999;margin-left:4px;">粘贴后自动填入</span>
           </div>
           <div style="font-size:13px;color:#333;">
-            ⏱ 时间进度：<input type="text" id="uploadProgress" placeholder="自动计算" readonly
-              style="width:80px;padding:5px 8px;border:1px solid #ddd;border-radius:4px;background:#f5f5f5;">
+            ⏱ 时间进度：<input type="text" id="uploadProgress" placeholder="自动计算"
+              style="width:80px;padding:5px 8px;border:1px solid #ddd;border-radius:4px;">
+            <span style="font-size:11px;color:#999;margin-left:4px;">可手动修改</span>
           </div>
           <button onclick="submitUpdate()" id="submitBtn"
             style="padding:8px 20px;background:#409eff;color:white;border:none;border-radius:5px;cursor:pointer;font-size:14px;font-weight:600;">
@@ -678,12 +680,8 @@
             document.getElementById('systemTabs').classList.add('visible');
           }
           updateSystemTabs();
-          // 显示上传面板并初始化日期
+          // 显示上传面板，日期留空等粘贴自动填入
           document.getElementById('uploadPanel').style.display = 'block';
-          const today = new Date(); today.setDate(today.getDate() - 1);
-          const uploadDateStr = today.toISOString().slice(0, 10);
-          document.getElementById('uploadDate').value = uploadDateStr;
-          document.getElementById('uploadProgress').value = calcAutoProgress(uploadDateStr);
           await loadAdminSources(latestDate);
         } else if (currentRole === 'sub_admin') {
           const { data: mappings } = await supabaseClient
@@ -713,10 +711,33 @@
       let parsedST = [];
 
       function calcAutoProgress(dateStr) {
+        // 数据日期是周几就代表完成了几天
+        // 周一(1)=第1天=14.29%, 周二(2)=第2天=28.57%, ...周日(0)=第7天=100%
         const d = new Date(dateStr + 'T00:00:00');
-        const day = d.getDay(); // 0=Sun,1=Mon,2=Tue...
-        const map = { 1: '100%', 2: '14.29%', 3: '28.57%', 4: '42.86%', 5: '57.14%', 6: '71.43%', 0: '85.71%' };
+        const day = d.getDay();
+        const map = { 1: '14.29%', 2: '28.57%', 3: '42.86%', 4: '57.14%', 5: '71.43%', 6: '85.71%', 0: '100%' };
         return map[day] || '0%';
+      }
+
+      // 从文本中提取日期（支持"2026-04-27 至 2026-05-03"或"2026/4/28"格式）
+      function extractDateFromText(text) {
+        const lines = text.trim().split(/\r?\n/);
+        for (const line of lines.slice(0, 5)) {
+          // 匹配 "YYYY-MM-DD 至" 格式取结束日期
+          const rangeEnd = line.match(/(\d{4}-\d{2}-\d{2})\s*至\s*(\d{4}-\d{2}-\d{2})/);
+          if (rangeEnd) return rangeEnd[2]; // 取结束日期（周日）
+          // 匹配 "2026/4/28" 或 "2026-04-28" 格式
+          const single = line.match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+          if (single) return `${single[1]}-${String(single[2]).padStart(2,'0')}-${String(single[3]).padStart(2,'0')}`;
+        }
+        return null;
+      }
+
+      function autoFillDateAndProgress(dateStr) {
+        if (!dateStr) return;
+        document.getElementById('uploadDate').value = dateStr;
+        const prog = calcAutoProgress(dateStr);
+        document.getElementById('uploadProgress').value = prog;
       }
 
       window.toggleUploadPanel = function() {
@@ -744,28 +765,35 @@
       }
 
       window.parseUAD = function() {
-        parsedUAD = parseTabText(document.getElementById('uadPasteArea').value, ['UA主动看播天数', '主动看播']);
+        const text = document.getElementById('uadPasteArea').value;
+        parsedUAD = parseTabText(text, ['UA主动看播天数', '主动看播']);
         const el = document.getElementById('uadStatus');
         if (parsedUAD.length) {
           el.style.color = '#67c23a';
           el.textContent = `✅ 已识别 ${parsedUAD.length} 条（首条ID: ${parsedUAD[0].anchor_id}, 值: ${parsedUAD[0].value}）`;
+          // 自动读取日期并填充（UAD数据通常是周汇总，取结束日期）
+          const d = extractDateFromText(text);
+          if (d) autoFillDateAndProgress(d);
         } else {
           el.style.color = '#f56c6c';
-          // 输出前两行帮助调试
-          const raw = document.getElementById('uadPasteArea').value.trim().split(/\r?\n/);
+          const raw = text.trim().split(/\r?\n/);
           el.textContent = `❌ 未识别（共${raw.length}行，首行: ${raw[0]?.slice(0,40)}）`;
         }
       };
 
       window.parseST = function() {
-        parsedST = parseTabText(document.getElementById('stPasteArea').value, ['推流时长', '万分钟']);
+        const text = document.getElementById('stPasteArea').value;
+        parsedST = parseTabText(text, ['推流时长', '万分钟']);
         const el = document.getElementById('stStatus');
         if (parsedST.length) {
           el.style.color = '#67c23a';
           el.textContent = `✅ 已识别 ${parsedST.length} 条（首条ID: ${parsedST[0].anchor_id}, 值: ${parsedST[0].value}）`;
+          // 推流数据是当天日期，优先用推流数据的日期
+          const d = extractDateFromText(text);
+          if (d) autoFillDateAndProgress(d);
         } else {
           el.style.color = '#f56c6c';
-          const raw = document.getElementById('stPasteArea').value.trim().split(/\r?\n/);
+          const raw = text.trim().split(/\r?\n/);
           el.textContent = `❌ 未识别（共${raw.length}行，首行: ${raw[0]?.slice(0,40)}）`;
         }
       };
