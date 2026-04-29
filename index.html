@@ -745,12 +745,29 @@
 
       window.parseUAD = function() {
         parsedUAD = parseTabText(document.getElementById('uadPasteArea').value, ['UA主动看播天数', '主动看播']);
-        document.getElementById('uadStatus').textContent = parsedUAD.length ? `已识别 ${parsedUAD.length} 条` : '未识别到有效数据';
+        const el = document.getElementById('uadStatus');
+        if (parsedUAD.length) {
+          el.style.color = '#67c23a';
+          el.textContent = `✅ 已识别 ${parsedUAD.length} 条（首条ID: ${parsedUAD[0].anchor_id}, 值: ${parsedUAD[0].value}）`;
+        } else {
+          el.style.color = '#f56c6c';
+          // 输出前两行帮助调试
+          const raw = document.getElementById('uadPasteArea').value.trim().split(/\r?\n/);
+          el.textContent = `❌ 未识别（共${raw.length}行，首行: ${raw[0]?.slice(0,40)}）`;
+        }
       };
 
       window.parseST = function() {
         parsedST = parseTabText(document.getElementById('stPasteArea').value, ['推流时长', '万分钟']);
-        document.getElementById('stStatus').textContent = parsedST.length ? `已识别 ${parsedST.length} 条` : '未识别到有效数据';
+        const el = document.getElementById('stStatus');
+        if (parsedST.length) {
+          el.style.color = '#67c23a';
+          el.textContent = `✅ 已识别 ${parsedST.length} 条（首条ID: ${parsedST[0].anchor_id}, 值: ${parsedST[0].value}）`;
+        } else {
+          el.style.color = '#f56c6c';
+          const raw = document.getElementById('stPasteArea').value.trim().split(/\r?\n/);
+          el.textContent = `❌ 未识别（共${raw.length}行，首行: ${raw[0]?.slice(0,40)}）`;
+        }
       };
 
       function readExcelFile(file, done) {
