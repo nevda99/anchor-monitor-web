@@ -52,6 +52,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   cursor:pointer; transition:all .2s; font-weight:600;
 }
 .logout-btn-top:hover { background:rgba(245,108,108,.3); }
+.switch-ui-btn {
+  padding:5px 14px; background:rgba(99,102,241,.15); color:#a5b4fc;
+  border:1px solid rgba(165,180,252,.3); border-radius:6px; font-size:12px;
+  cursor:pointer; transition:all .2s; font-weight:600; text-decoration:none; display:inline-flex; align-items:center;
+}
+.switch-ui-btn:hover { background:rgba(99,102,241,.3); }
 
 /* ===== 顶部5卡片 ===== */
 .stats-bar { display:grid; grid-template-columns:repeat(5,1fr); gap:0; background:white; border-bottom:2px solid #f0f0f0; flex-shrink:0; }
@@ -300,6 +306,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   </div>
   <div class="topbar-right">
     <span id="topbarInfo">管理员视图</span>
+    <a class="switch-ui-btn" href="/index-v1.html" title="切换到经典UI版本">🔄 经典版</a>
     <button class="logout-btn-top" onclick="logout()">退出登录</button>
   </div>
 </div>

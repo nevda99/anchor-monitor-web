@@ -28,34 +28,36 @@ export default async function handler(req, res) {
       if (row.anchor_id) stMap[String(row.anchor_id)] = Number(row.value) || 0;
     }
 
-    // 从 Supabase 获取两个系统的基期数据（所有主播）
+    // 计算本周一日期（作为基期来源）
+    const dateObj = new Date(date + 'T00:00:00');
+    const dow = dateObj.getDay(); // 0=周日
+    const diffToMon = dow === 0 ? -6 : 1 - dow;
+    const monObj = new Date(dateObj);
+    monObj.setDate(dateObj.getDate() + diffToMon);
+    const thisMonday = monObj.toISOString().slice(0, 10);
+
     const results = { bet: 0, crc: 0, errors: [] };
 
     for (const system of ['bet', 'crc']) {
       try {
-        // 分页读取该系统基期（用最早有记录的日期作为基期）
-        let baseRecords = [];
-        let from = 0;
-        while (true) {
-          const r = await fetch(
-            `${SUPABASE_URL}/rest/v1/anchor_data?system=eq.${system}&select=anchor_id,anchor_name,source,target&order=date.asc&limit=1000&offset=${from}`,
-            { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
-          );
-          const rows = await r.json();
-          if (!Array.isArray(rows) || rows.length === 0) break;
-          baseRecords = baseRecords.concat(rows);
-          if (rows.length < 1000) break;
-          from += 1000;
-        }
-
-        // 去重（同一个anchor_id保留第一条，用于获取最新基期目标）
-        // 改为：获取该系统基期数据（最新基期日期的数据）
-        const baseR = await fetch(
-          `${SUPABASE_URL}/rest/v1/anchor_data?system=eq.${system}&select=date&order=date.asc&limit=1`,
+        // 优先取本周一的基期数据，没有则取最近一条
+        const baseCheckR = await fetch(
+          `${SUPABASE_URL}/rest/v1/anchor_data?system=eq.${system}&date=eq.${thisMonday}&select=date&limit=1`,
           { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
         );
-        const baseDate = await baseR.json();
-        const bd = baseDate[0]?.date;
+        const baseCheck = await baseCheckR.json();
+        let bd;
+        if (Array.isArray(baseCheck) && baseCheck.length > 0) {
+          bd = thisMonday;
+        } else {
+          // 本周一无数据，退回取最近有数据的日期
+          const fallbackR = await fetch(
+            `${SUPABASE_URL}/rest/v1/anchor_data?system=eq.${system}&select=date&order=date.desc&limit=1`,
+            { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
+          );
+          const fallback = await fallbackR.json();
+          bd = fallback[0]?.date;
+        }
         if (!bd) { results.errors.push(`${system}: 无基期数据`); continue; }
 
         // 读该基期日期的所有主播（含 base_target）
@@ -74,7 +76,7 @@ export default async function handler(req, res) {
           frm += 1000;
         }
 
-        // 构建新记录（透传 base_target）
+        // 构建新记录（透传 target 和 base_target）
         const records = anchors.map(a => {
           const aid = String(a.anchor_id);
           const actual = uadMap[aid] || 0;
