@@ -58,12 +58,12 @@ export default async function handler(req, res) {
         const bd = baseDate[0]?.date;
         if (!bd) { results.errors.push(`${system}: 无基期数据`); continue; }
 
-        // 读该基期日期的所有主播
+        // 读该基期日期的所有主播（含 base_target）
         let anchors = [];
         let frm = 0;
         while (true) {
           const r2 = await fetch(
-            `${SUPABASE_URL}/rest/v1/anchor_data?system=eq.${system}&date=eq.${bd}&select=anchor_id,anchor_name,source,target`,
+            `${SUPABASE_URL}/rest/v1/anchor_data?system=eq.${system}&date=eq.${bd}&select=anchor_id,anchor_name,source,target,base_target`,
             { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`,
               'Range': `${frm}-${frm+999}` } }
           );
@@ -74,7 +74,7 @@ export default async function handler(req, res) {
           frm += 1000;
         }
 
-        // 构建新记录
+        // 构建新记录（透传 base_target）
         const records = anchors.map(a => {
           const aid = String(a.anchor_id);
           const actual = uadMap[aid] || 0;
@@ -82,7 +82,9 @@ export default async function handler(req, res) {
           const cr = a.target > 0 ? Math.round(actual / a.target * 10000) / 100 : 0;
           return {
             date, anchor_id: aid, anchor_name: a.anchor_name,
-            source: a.source, target: a.target, actual,
+            source: a.source, target: a.target,
+            base_target: a.base_target || 0,
+            actual,
             streaming_minutes: streaming, completion_rate: cr,
             time_progress: timeProgress, system
           };

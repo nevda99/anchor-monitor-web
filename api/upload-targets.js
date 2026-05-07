@@ -1,5 +1,25 @@
 export const config = { maxDuration: 60 };
 
+/**
+ * 涨幅公式：作用于 base_target（= Q1/90*7）
+ * - base_target = 0 → 任务目标 = 500
+ * - > 1,000,000 → × 1.1
+ * - > 700,000   → × 1.12
+ * - > 300,000   → × 1.15
+ * - > 50,000    → × 1.17
+ * - ≥ 15,000    → × 1.1
+ * - < 15,000    → 保底 15,000
+ */
+function calcTarget(baseTarget) {
+  if (!baseTarget || baseTarget === 0) return 500;
+  if (baseTarget > 1000000) return Math.round(baseTarget * 1.1);
+  if (baseTarget > 700000)  return Math.round(baseTarget * 1.12);
+  if (baseTarget > 300000)  return Math.round(baseTarget * 1.15);
+  if (baseTarget > 50000)   return Math.round(baseTarget * 1.17);
+  if (baseTarget >= 15000)  return Math.round(baseTarget * 1.1);
+  return 15000;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -31,19 +51,27 @@ export default async function handler(req, res) {
       }
     });
 
-    // 构建占位记录（actual=0, completion_rate=0）
-    const records = anchors.map(a => ({
-      date,
-      anchor_id:         String(a.anchor_id),
-      anchor_name:       String(a.anchor_name || ''),
-      source:            String(a.source || ''),
-      target:            Number(a.target) || 0,
-      actual:            0,
-      streaming_minutes: 0,
-      completion_rate:   0,
-      time_progress:     '0%',
-      system
-    }));
+    // 构建占位记录：从 Q1总数 自动计算两个口径
+    const records = anchors.map(a => {
+      const q1 = Number(a.q1_total) || 0;
+      // base_target = Q1/90*7（取整）
+      const base_target = Math.round(q1 / 90 * 7);
+      // target = 套涨幅公式
+      const target = calcTarget(base_target);
+      return {
+        date,
+        anchor_id:         String(a.anchor_id),
+        anchor_name:       String(a.anchor_name || ''),
+        source:            String(a.source || ''),
+        target,
+        base_target,
+        actual:            0,
+        streaming_minutes: 0,
+        completion_rate:   0,
+        time_progress:     '0%',
+        system
+      };
+    });
 
     // 分批 INSERT（每批200条）
     const BATCH = 200;

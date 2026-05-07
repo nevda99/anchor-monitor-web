@@ -551,6 +551,7 @@
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+          <button onclick="downloadTargetTemplate()" style="padding:8px 14px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:5px;cursor:pointer;font-size:13px;font-weight:600;">📄 下载填写模板</button>
           <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#16a34a;color:white;border-radius:5px;cursor:pointer;font-size:13px;">
             📂 选择基期Excel
             <input type="file" id="targetFile" accept=".xlsx,.xls" style="display:none;" onchange="readTargetFile(this)">
@@ -592,13 +593,13 @@
       <div id="summaryGrid" class="summary-grid"></div>
     </div>
 
-    <div class="stats">
+    <div class="stats" id="statsRow">
       <div class="stat-card">
         <div class="label">主播总数</div>
         <div class="value" id="totalAnchors">0</div>
       </div>
       <div class="stat-card">
-        <div class="label">总目标</div>
+        <div class="label">任务目标</div>
         <div class="value" id="totalTarget">0</div>
       </div>
       <div class="stat-card">
@@ -606,9 +607,15 @@
         <div class="value" id="totalActual">0</div>
       </div>
       <div class="stat-card">
-        <div class="label">完成度</div>
+        <div class="label">任务完成度</div>
         <div class="value" id="completionRate">0%</div>
         <div class="subtitle" id="completionSubtitle"></div>
+      </div>
+      <!-- 管理员专属：基期完成度卡片 -->
+      <div class="stat-card" id="baseCompletionCard" style="display:none;background:linear-gradient(135deg,#059669 0%,#10b981 100%)">
+        <div class="label">基期完成度</div>
+        <div class="value" id="baseCompletionRate">0%</div>
+        <div class="subtitle" id="baseCompletionSubtitle"></div>
       </div>
     </div>
 
@@ -940,25 +947,38 @@
           const keys = Object.keys(rows[0]);
           const idKey    = keys.find(k => k.includes('主播ID') || k.toLowerCase() === 'anchor_id');
           const nameKey  = keys.find(k => k.includes('主播名称') || k.toLowerCase() === 'anchor_name');
-          const targetKey = keys.find(k => k.includes('周总目标') || k.includes('目标'));
-          const sourceKey = keys.find(k => k.includes('主播来源') || k.includes('二级类目') || k.includes('source') || k.includes('机构'));
-          if (!idKey || !targetKey) {
-            statusEl.textContent = `❌ 未找到必要列（主播ID / 周总目标），实际列名：${keys.join('、')}`;
+          // Q1总数列：优先匹配"近1天UA主动看播天数"，其次匹配其他包含"Q1"或"总数"的列
+          const q1Key    = keys.find(k => k.includes('近1天UA主动看播天数') || k.includes('Q1总数') || k.includes('Q1') || k.includes('总数'));
+          const sourceKey = keys.find(k => k.includes('主播来源') || k.includes('二级类目') || k.includes('机构') || k.includes('source'));
+          if (!idKey || !q1Key) {
+            statusEl.textContent = `❌ 未找到必要列（主播ID / 近1天UA主动看播天数），实际列名：${keys.join('、')}`;
             statusEl.style.color = '#f56c6c';
             return;
           }
           parsedTargetRows = rows
-            .filter(r => r[idKey] && r[targetKey])
+            .filter(r => r[idKey] && r[q1Key])
             .map(r => ({
-              anchor_id:   String(Math.round(Number(r[idKey]))),
+              anchor_id:   String(Math.round(Number(String(r[idKey]).replace(/,/g, '')))),
               anchor_name: String(r[nameKey] || '').trim(),
-              target:      Math.round(Number(r[targetKey])),
+              q1_total:    Math.round(Number(String(r[q1Key]).replace(/,/g, ''))),
               source:      String(r[sourceKey] || '').trim()
             }))
-            .filter(r => r.anchor_id && r.anchor_id !== 'NaN' && r.target > 0);
+            .filter(r => r.anchor_id && r.anchor_id !== 'NaN' && r.q1_total >= 0);
           statusEl.style.color = '#16a34a';
-          statusEl.textContent = `✅ 已识别 ${parsedTargetRows.length} 条（列：${idKey} / ${nameKey} / ${targetKey} / ${sourceKey || '无机构列'}）`;
+          statusEl.textContent = `✅ 已识别 ${parsedTargetRows.length} 条（Q1列：${q1Key} / 机构列：${sourceKey || '无'}）`;
         });
+      };
+
+      // 模板下载（纯前端生成 Excel）
+      window.downloadTargetTemplate = function() {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([
+          ['主播ID', '主播最新名称', '近1天UA主动看播天数', '主播来源'],
+          ['示例：750832728', '示例主播', '2057577', '草根传媒一公司']
+        ]);
+        ws['!cols'] = [{ wch: 16 }, { wch: 20 }, { wch: 24 }, { wch: 16 }];
+        XLSX.utils.book_append_sheet(wb, ws, '基期目标模板');
+        XLSX.writeFile(wb, '基期目标上传模板.xlsx');
       };
 
       window.submitTargets = async function() {
@@ -1252,19 +1272,49 @@
           
           // 获取时间进度
           const timeProgress = parseFloat(data[0].time_progress);
+
+          // 辅助函数：生成双口径状态行
+          function dualBadge(actual, taskTarget, baseTarget, tp) {
+            const taskComp = taskTarget > 0 ? (actual / taskTarget * 100) : 0;
+            const baseComp = baseTarget > 0 ? (actual / baseTarget * 100) : 0;
+            const taskAhead = taskComp >= tp;
+            const baseAhead = baseComp >= tp;
+            const taskDiff = (taskComp - tp).toFixed(2);
+            const baseDiff = (baseComp - tp).toFixed(2);
+            const taskGap = Math.round(taskTarget * (tp / 100) - actual);
+            const baseGap = Math.round(baseTarget * (tp / 100) - actual);
+            const taskText = taskDiff > 0 ? `超前 ${taskDiff}%` : `落后 ${Math.abs(taskDiff)}%`;
+            const baseText = baseDiff > 0 ? `超前 ${baseDiff}%` : `落后 ${Math.abs(baseDiff)}%（${formatNumber(Math.abs(baseGap))}）`;
+            const hasBase = baseTarget > 0;
+            return `
+              <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:110px;">
+                  <div style="font-size:10px;color:#888;margin-bottom:2px;">任务口径</div>
+                  <div style="font-size:18px;font-weight:bold;color:${taskAhead ? '#f56c6c' : '#16a34a'}">${taskComp.toFixed(1)}%</div>
+                  <div style="font-size:11px;padding:3px 7px;border-radius:4px;display:inline-block;margin-top:3px;
+                    background:${taskAhead ? '#fef0f0' : '#f0fdf4'};color:${taskAhead ? '#f56c6c' : '#16a34a'};
+                    border:1px solid ${taskAhead ? '#fde2e2' : '#bbf7d0'};">${taskText}</div>
+                </div>
+                ${hasBase ? `
+                <div style="flex:1;min-width:110px;border-left:1px solid #f0f0f0;padding-left:8px;">
+                  <div style="font-size:10px;color:#888;margin-bottom:2px;">基期口径</div>
+                  <div style="font-size:18px;font-weight:bold;color:${baseAhead ? '#f56c6c' : '#059669'}">${baseComp.toFixed(1)}%</div>
+                  <div style="font-size:11px;padding:3px 7px;border-radius:4px;display:inline-block;margin-top:3px;
+                    background:${baseAhead ? '#fef0f0' : '#f0fdf4'};color:${baseAhead ? '#f56c6c' : '#059669'};
+                    border:1px solid ${baseAhead ? '#fde2e2' : '#bbf7d0'};">${baseText}</div>
+                </div>` : ''}
+              </div>`;
+          }
           
           // 按机构统计
           const summaryBySource = {};
           data.forEach(item => {
             if (!summaryBySource[item.source]) {
-              summaryBySource[item.source] = {
-                count: 0,
-                totalTarget: 0,
-                totalActual: 0
-              };
+              summaryBySource[item.source] = { count: 0, totalTarget: 0, totalBaseTarget: 0, totalActual: 0 };
             }
             summaryBySource[item.source].count++;
             summaryBySource[item.source].totalTarget += item.target;
+            summaryBySource[item.source].totalBaseTarget += (item.base_target || 0);
             summaryBySource[item.source].totalActual += item.actual;
           });
           
@@ -1280,37 +1330,23 @@
             : data;
           const groupLabel = activeGroupFilter || '全部';
 
-          // 添加总汇总卡片
+          // 总汇总卡片
           const totalStats = {
             count: summaryData.length,
-            totalTarget: summaryData.reduce((sum, item) => sum + item.target, 0),
-            totalActual: summaryData.reduce((sum, item) => sum + item.actual, 0)
+            totalTarget:     summaryData.reduce((s, i) => s + i.target, 0),
+            totalBaseTarget: summaryData.reduce((s, i) => s + (i.base_target || 0), 0),
+            totalActual:     summaryData.reduce((s, i) => s + i.actual, 0)
           };
-          const totalCompletion = totalStats.totalTarget > 0 ? (totalStats.totalActual / totalStats.totalTarget * 100) : 0;
-          const totalIsAhead = totalCompletion >= timeProgress;
-          const totalDiff = (totalCompletion - timeProgress).toFixed(2);
-          
-          // 计算绝对值差距
-          const totalAbsoluteGap = Math.round(totalStats.totalTarget * (timeProgress / 100) - totalStats.totalActual);
-          const totalStatusText = totalDiff > 0 
-            ? `当前进度超前 ${totalDiff}%` 
-            : `当前进度落后 ${Math.abs(totalDiff)}%，落后 ${formatNumber(Math.abs(totalAbsoluteGap))}`;
-          
-          // 判断是否为当前选中的机构
           const isAllSelected = currentSource === '__ALL__';
-          
           summaryHtml += `
-            <div class="summary-item" onclick="selectSource('__ALL__')" style="border: 2px solid ${isAllSelected ? '#409EFF' : 'transparent'};">
+            <div class="summary-item" onclick="selectSource('__ALL__')" style="border:2px solid ${isAllSelected ? '#409EFF' : 'transparent'};">
               <div class="summary-item-name">🔷 汇总（${groupLabel}）</div>
-              <div class="summary-item-stats">
-                主播数：${totalStats.count}人 | 完成：${formatNumber(totalStats.totalActual)} / ${formatNumber(totalStats.totalTarget)}
+              <div class="summary-item-stats" style="font-size:12px;color:#666;margin-top:4px;">
+                主播数：${totalStats.count}人 &nbsp;|&nbsp; 完成：${formatNumber(totalStats.totalActual)}
+                &nbsp;/&nbsp; 任务目标：${formatNumber(totalStats.totalTarget)}
+                ${totalStats.totalBaseTarget > 0 ? `&nbsp;/&nbsp; 基期目标：${formatNumber(totalStats.totalBaseTarget)}` : ''}
               </div>
-              <div class="summary-item-completion ${totalIsAhead ? 'ahead' : 'behind'}">
-                ${totalCompletion.toFixed(2)}%
-              </div>
-              <div class="summary-item-status ${totalIsAhead ? 'status-ahead' : 'status-behind'}">
-                ${totalStatusText}
-              </div>
+              ${dualBadge(totalStats.totalActual, totalStats.totalTarget, totalStats.totalBaseTarget, timeProgress)}
             </div>
           `;
           
@@ -1330,43 +1366,25 @@
             '润泽-火胖': '杨润泽个人', '润泽-非百万粉': '杨润泽个人',
           };
 
-          // 添加各机构卡片（crc系统按二级组织筛选）
+          // 各机构卡片
           const groupFilter = window._currentGroupFilter || '';
           const groupMapForFilter = window._SOURCE_GROUP_MAP || {};
           Object.keys(summaryBySource).sort().forEach(source => {
-            // 有组筛选时跳过不属于该组的机构
             if (groupFilter && (groupMapForFilter[source] || '其他') !== groupFilter) return;
             const stats = summaryBySource[source];
-            const completion = stats.totalTarget > 0 ? (stats.totalActual / stats.totalTarget * 100) : 0;
-            const isAhead = completion >= timeProgress;
-            const diff = (completion - timeProgress).toFixed(2);
-            
-            // 计算绝对值差距
-            const absoluteGap = Math.round(stats.totalTarget * (timeProgress / 100) - stats.totalActual);
-            const statusText = diff > 0 
-              ? `当前进度超前 ${diff}%` 
-              : `当前进度落后 ${Math.abs(diff)}%，落后 ${formatNumber(Math.abs(absoluteGap))}`;
-            
-            // 判断是否为当前选中的机构
             const isSelected = currentSource === source;
-            
-            // crc系统显示所属二级组织小标签
             const groupTag = (currentSystem === 'crc' && SOURCE_GROUP_MAP[source])
               ? `<span style="font-size:10px;background:#e8f4fd;color:#1a7abf;border-radius:3px;padding:1px 5px;margin-left:5px;font-weight:normal;">${SOURCE_GROUP_MAP[source]}</span>`
               : '';
-            
             summaryHtml += `
-              <div class="summary-item" onclick="selectSource('${source}')" style="border: 2px solid ${isSelected ? '#409EFF' : 'transparent'};">
+              <div class="summary-item" onclick="selectSource('${source}')" style="border:2px solid ${isSelected ? '#409EFF' : 'transparent'};">
                 <div class="summary-item-name">${source}${groupTag}</div>
-                <div class="summary-item-stats">
-                  主播数：${stats.count}人 | 完成：${formatNumber(stats.totalActual)} / ${formatNumber(stats.totalTarget)}
+                <div class="summary-item-stats" style="font-size:12px;color:#666;margin-top:4px;">
+                  主播数：${stats.count}人 &nbsp;|&nbsp; 完成：${formatNumber(stats.totalActual)}
+                  &nbsp;/&nbsp; 任务：${formatNumber(stats.totalTarget)}
+                  ${stats.totalBaseTarget > 0 ? `&nbsp;/&nbsp; 基期：${formatNumber(stats.totalBaseTarget)}` : ''}
                 </div>
-                <div class="summary-item-completion ${isAhead ? 'ahead' : 'behind'}">
-                  ${completion.toFixed(2)}%
-                </div>
-                <div class="summary-item-status ${isAhead ? 'status-ahead' : 'status-behind'}">
-                  ${statusText}
-                </div>
+                ${dualBadge(stats.totalActual, stats.totalTarget, stats.totalBaseTarget, timeProgress)}
               </div>
             `;
           });
@@ -1482,9 +1500,10 @@
           
           const totalTarget = data.reduce((sum, item) => sum + item.target, 0);
           const totalActual = data.reduce((sum, item) => sum + item.actual, 0);
+          const totalBaseTarget = data.reduce((sum, item) => sum + (item.base_target || 0), 0);
           const avgCompletion = totalTarget > 0 ? (totalActual / totalTarget * 100).toFixed(2) : 0;
           
-          updateStats(data.length, totalTarget, totalActual, avgCompletion, data[0].time_progress);
+          updateStats(data.length, totalTarget, totalActual, avgCompletion, data[0].time_progress, totalBaseTarget);
           renderTable(data);
           
           // 如果是管理员，更新汇总视图
@@ -1586,7 +1605,7 @@
         }
       };
 
-      function updateStats(count, target, actual, completion, timeProgress) {
+      function updateStats(count, target, actual, completion, timeProgress, baseTarget) {
         document.getElementById('totalAnchors').textContent = count;
         document.getElementById('totalTarget').textContent = formatNumber(target);
         document.getElementById('totalActual').textContent = formatNumber(actual);
@@ -1602,13 +1621,35 @@
           subtitle.textContent = `当前进度超前 ${diff.toFixed(2)}%`;
           subtitle.className = 'subtitle ahead';
         } else if (diff < 0) {
-          // 计算绝对值差距
           const absoluteGap = Math.round(target * (timeProgressNum / 100) - actual);
           subtitle.textContent = `当前进度落后 ${Math.abs(diff).toFixed(2)}%，落后 ${formatNumber(absoluteGap)}`;
           subtitle.className = 'subtitle behind';
         } else {
           subtitle.textContent = `与时间进度持平`;
           subtitle.className = 'subtitle';
+        }
+
+        // 管理员专属：基期完成度卡片
+        const baseCard = document.getElementById('baseCompletionCard');
+        if (isAdmin && baseTarget > 0) {
+          baseCard.style.display = 'block';
+          const baseComp = (actual / baseTarget * 100).toFixed(2);
+          const baseDiff = (parseFloat(baseComp) - timeProgressNum);
+          document.getElementById('baseCompletionRate').textContent = baseComp + '%';
+          const baseSub = document.getElementById('baseCompletionSubtitle');
+          if (baseDiff > 0) {
+            baseSub.textContent = `基期超前 ${baseDiff.toFixed(2)}%`;
+            baseSub.className = 'subtitle ahead';
+          } else if (baseDiff < 0) {
+            const baseGap = Math.round(baseTarget * (timeProgressNum / 100) - actual);
+            baseSub.textContent = `基期落后 ${Math.abs(baseDiff).toFixed(2)}%，落后 ${formatNumber(baseGap)}`;
+            baseSub.className = 'subtitle behind';
+          } else {
+            baseSub.textContent = '与基期进度持平';
+            baseSub.className = 'subtitle';
+          }
+        } else {
+          if (baseCard) baseCard.style.display = 'none';
         }
       }
 
@@ -1637,6 +1678,9 @@
           });
         }
         
+        // 管理员显示基期列（有 base_target 数据时）
+        const hasBaseTarget = isAdmin && sortedData.some(item => item.base_target > 0);
+        
         // 生成排序图标
         const getSortIcon = (column) => {
           if (sortConfig.column !== column) return '⇅';
@@ -1651,14 +1695,16 @@
                 <th>名称</th>
                 ${showSourceColumn ? '<th>来源</th>' : ''}
                 <th style="cursor:pointer;" onclick="sortTable('target')">
-                  目标 ${getSortIcon('target')}
+                  任务目标 ${getSortIcon('target')}
                 </th>
+                ${hasBaseTarget ? `<th style="cursor:pointer;" onclick="sortTable('base_target')">基期目标 ${getSortIcon('base_target')}</th>` : ''}
                 <th style="cursor:pointer;" onclick="sortTable('actual')">
                   完成 ${getSortIcon('actual')}
                 </th>
                 <th style="cursor:pointer;" onclick="sortTable('completion_rate')">
-                  完成度 ${getSortIcon('completion_rate')}
+                  任务完成度 ${getSortIcon('completion_rate')}
                 </th>
+                ${hasBaseTarget ? `<th>基期完成度</th>` : ''}
                 <th style="cursor:pointer;" onclick="sortTable('streaming_minutes')">
                   昨日开播(小时) ${getSortIcon('streaming_minutes')}
                 </th>
@@ -1668,18 +1714,26 @@
             <tbody>
               ${sortedData.map(item => {
                 const isAhead = item.completion_rate >= currentTimeProgress;
+                const baseComp = (hasBaseTarget && item.base_target > 0)
+                  ? (item.actual / item.base_target * 100)
+                  : null;
+                const baseIsAhead = baseComp !== null ? baseComp >= currentTimeProgress : false;
                 return `
                   <tr>
                     <td>${item.anchor_id}</td>
                     <td>${item.anchor_name}</td>
                     ${showSourceColumn ? `<td>${item.source}</td>` : ''}
                     <td>${formatNumber(item.target)}</td>
+                    ${hasBaseTarget ? `<td style="color:#059669;">${item.base_target > 0 ? formatNumber(item.base_target) : '-'}</td>` : ''}
                     <td>${formatNumber(item.actual)}</td>
                     <td>
                       <span class="completion-rate ${isAhead ? 'rate-ahead' : 'rate-behind'}">
                         ${item.completion_rate.toFixed(2)}%
                       </span>
                     </td>
+                    ${hasBaseTarget ? `<td>${baseComp !== null
+                      ? `<span class="completion-rate ${baseIsAhead ? 'rate-ahead' : 'rate-behind'}" style="${baseIsAhead ? '' : 'background:#f0fdf4;color:#059669;'}">${baseComp.toFixed(2)}%</span>`
+                      : '-'}</td>` : ''}
                     <td>${item.streaming_minutes ? (item.streaming_minutes / 60).toFixed(2) : '0.00'}</td>
                     <td>${item.time_progress}</td>
                   </tr>
