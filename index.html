@@ -526,6 +526,47 @@
       </div>
     </div>
 
+    <!-- 上传本周基期目标（仅super_admin可见，折叠） -->
+    <div id="targetPanel" style="display:none; margin-bottom:16px;">
+      <div id="targetToggle" onclick="toggleTargetPanel()"
+        style="background:#f0fff4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;">
+        <span style="font-weight:600;color:#16a34a;">📋 上传本周基期目标</span>
+        <span id="targetToggleIcon" style="color:#888;font-size:12px;">▼ 展开</span>
+      </div>
+      <div id="targetBody" style="display:none;background:#f6fff8;border:1px solid #bbf7d0;border-top:none;border-radius:0 0 8px 8px;padding:16px;">
+        <div style="color:#555;font-size:13px;margin-bottom:12px;">
+          每周开始时上传新一周的主播名单和目标，写入后当周 UAD 更新可正确计算完成度。<br>
+          <span style="color:#888;">支持格式：含「主播ID」「主播名称」「周总目标」及机构列（<b>bet</b>: 主播来源 / <b>crc</b>: 二级类目）</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
+          <div style="font-size:13px;color:#333;">
+            系统：
+            <select id="targetSystem" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;">
+              <option value="bet">bet（主动看播对赌）</option>
+              <option value="crc">crc（国艺核心主播）</option>
+            </select>
+          </div>
+          <div style="font-size:13px;color:#888;">
+            📅 基期日期：<b id="targetWeekMonday">自动取本周一</b>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+          <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#16a34a;color:white;border-radius:5px;cursor:pointer;font-size:13px;">
+            📂 选择基期Excel
+            <input type="file" id="targetFile" accept=".xlsx,.xls" style="display:none;" onchange="readTargetFile(this)">
+          </label>
+          <div id="targetFileStatus" style="font-size:12px;color:#666;"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <button onclick="submitTargets()" id="targetSubmitBtn"
+            style="padding:8px 20px;background:#16a34a;color:white;border:none;border-radius:5px;cursor:pointer;font-size:14px;font-weight:600;">
+            🚀 确认写入目标
+          </button>
+          <div id="targetResult" style="font-size:13px;"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- 管理员机构选择器 -->
     <div id="adminSelector" class="admin-selector" style="display:none;">
       <!-- crc系统二级组织过滤器 -->
@@ -682,6 +723,10 @@
           updateSystemTabs();
           // 显示上传面板，日期留空等粘贴自动填入
           document.getElementById('uploadPanel').style.display = 'block';
+          document.getElementById('targetPanel').style.display = 'block';
+          // 初始化基期目标面板：显示本周一日期，系统默认当前系统
+          document.getElementById('targetSystem').value = currentSystem;
+          document.getElementById('targetWeekMonday').textContent = getThisMonday();
           await loadAdminSources(latestDate);
         } else if (currentRole === 'sub_admin') {
           const { data: mappings } = await supabaseClient
@@ -854,6 +899,97 @@
         } finally {
           btn.disabled = false;
           btn.textContent = '🚀 确认更新';
+        }
+      };
+
+      // ===== 基期目标上传 =====
+      let parsedTargetRows = [];
+
+      // 计算本周一日期
+      function getThisMonday() {
+        const today = new Date();
+        const day = today.getDay(); // 0=周日,1=周一...
+        const diff = day === 0 ? -6 : 1 - day;
+        const mon = new Date(today);
+        mon.setDate(today.getDate() + diff);
+        return mon.toISOString().slice(0, 10);
+      }
+
+      window.toggleTargetPanel = function() {
+        const body = document.getElementById('targetBody');
+        const icon = document.getElementById('targetToggleIcon');
+        const open = body.style.display !== 'none';
+        body.style.display = open ? 'none' : 'block';
+        icon.textContent = open ? '▼ 展开' : '▲ 收起';
+      };
+
+      window.readTargetFile = function(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const statusEl = document.getElementById('targetFileStatus');
+        statusEl.textContent = '读取中...';
+        statusEl.style.color = '#888';
+        parsedTargetRows = [];
+        readExcelFile(file, rows => {
+          if (!rows || rows.length === 0) {
+            statusEl.textContent = '❌ 文件无有效数据';
+            statusEl.style.color = '#f56c6c';
+            return;
+          }
+          // 自动识别列名
+          const keys = Object.keys(rows[0]);
+          const idKey    = keys.find(k => k.includes('主播ID') || k.toLowerCase() === 'anchor_id');
+          const nameKey  = keys.find(k => k.includes('主播名称') || k.toLowerCase() === 'anchor_name');
+          const targetKey = keys.find(k => k.includes('周总目标') || k.includes('目标'));
+          const sourceKey = keys.find(k => k.includes('主播来源') || k.includes('二级类目') || k.includes('source') || k.includes('机构'));
+          if (!idKey || !targetKey) {
+            statusEl.textContent = `❌ 未找到必要列（主播ID / 周总目标），实际列名：${keys.join('、')}`;
+            statusEl.style.color = '#f56c6c';
+            return;
+          }
+          parsedTargetRows = rows
+            .filter(r => r[idKey] && r[targetKey])
+            .map(r => ({
+              anchor_id:   String(Math.round(Number(r[idKey]))),
+              anchor_name: String(r[nameKey] || '').trim(),
+              target:      Math.round(Number(r[targetKey])),
+              source:      String(r[sourceKey] || '').trim()
+            }))
+            .filter(r => r.anchor_id && r.anchor_id !== 'NaN' && r.target > 0);
+          statusEl.style.color = '#16a34a';
+          statusEl.textContent = `✅ 已识别 ${parsedTargetRows.length} 条（列：${idKey} / ${nameKey} / ${targetKey} / ${sourceKey || '无机构列'}）`;
+        });
+      };
+
+      window.submitTargets = async function() {
+        const system = document.getElementById('targetSystem').value;
+        const monday = getThisMonday();
+        const statusEl = document.getElementById('targetResult');
+        if (!parsedTargetRows.length) {
+          statusEl.textContent = '请先上传基期Excel文件';
+          statusEl.style.color = '#f56c6c';
+          return;
+        }
+        const btn = document.getElementById('targetSubmitBtn');
+        btn.disabled = true;
+        btn.textContent = '写入中...';
+        statusEl.textContent = '';
+        try {
+          const resp = await fetch('/api/upload-targets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ system, date: monday, anchors: parsedTargetRows })
+          });
+          const result = await resp.json();
+          if (!resp.ok || result.error) throw new Error(result.error || '写入失败');
+          statusEl.textContent = `✅ 写入完成：${system} 系统 ${result.count} 条（基期日期 ${monday}）`;
+          statusEl.style.color = '#16a34a';
+        } catch (e) {
+          statusEl.textContent = '❌ ' + e.message;
+          statusEl.style.color = '#f56c6c';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '🚀 确认写入目标';
         }
       };
 
