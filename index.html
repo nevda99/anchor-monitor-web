@@ -527,12 +527,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
                 <th style="width:36px">#</th>
                 <th style="width:100px">主播ID</th>
                 <th>主播名称</th>
+                <th class="r th-sort" onclick="thSort('streaming_minutes',this)">开播时长(h)<span class="th-arrow"></span></th>
                 <th class="r th-sort" onclick="thSort('actual',this)">实际完成<span class="th-arrow"></span></th>
                 <th class="r th-sort" onclick="thSort('target',this)">任务目标<span class="th-arrow"></span></th>
                 <th class="r th-sort desc" onclick="thSort('completion_rate',this)">任务完成度<span class="th-arrow"></span></th>
                 <th class="r th-sort" onclick="thSort('base_target',this)" id="th-base-target">基期目标<span class="th-arrow"></span></th>
                 <th class="r th-sort" onclick="thSort('base_completion',this)" id="th-base-comp">基期完成度<span class="th-arrow"></span></th>
-                <th class="r th-sort" onclick="thSort('streaming_minutes',this)">开播时长(h)<span class="th-arrow"></span></th>
               </tr>
             </thead>
             <tbody id="anchor-tbody">
@@ -1280,12 +1280,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         <td style="color:#ccc;font-size:11px">${i+1}</td>
         <td style="color:#aaa;font-size:12px;font-variant-numeric:tabular-nums">${a.anchor_id || ''}</td>
         <td class="name" title="${a.anchor_name||''}">${a.anchor_name||''}</td>
+        <td class="r num" style="color:#555">${a.streaming_minutes ? (a.streaming_minutes / 60).toFixed(1) : '0.0'}</td>
         <td class="r num" style="color:#2563eb">${fmtNum(a.actual)}</td>
         <td class="r num" style="color:#444">${fmtNum(a.target)}</td>
         <td class="r"><span class="chip ${tCls}">${taskPct.toFixed(1)}%</span></td>
         ${hasBase ? `<td class="r num" style="color:#444">${a.base_target > 0 ? fmtNum(a.base_target) : '—'}</td>` : '<td style="display:none"></td>'}
         ${hasBase ? `<td class="r">${a.base_target > 0 ? `<span class="chip ${bCls}">${basePct.toFixed(1)}%</span>` : '—'}</td>` : '<td style="display:none"></td>'}
-        <td class="r num" style="color:#555">${a.streaming_minutes ? (a.streaming_minutes / 60).toFixed(1) : '0.0'}</td>
       </tr>`;
     }).join('');
   }
