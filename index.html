@@ -1398,13 +1398,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
     // 基期口径
     const baseCard = document.getElementById('baseMetricCard');
+    const dualBlock  = document.getElementById('dualBlock');
     if (!hasBase) {
       baseCard.style.display = 'none';
-      document.getElementById('dualBlock').style.gridTemplateColumns = '1fr';
+      dualBlock.style.gridTemplateColumns = '1fr';
       return;
     }
     baseCard.style.display = '';
-    document.getElementById('dualBlock').style.gridTemplateColumns = '1fr 1fr';
+    // 移动端由 CSS media query 控制为单列，PC端才用双列
+    dualBlock.style.gridTemplateColumns = window.innerWidth <= 768 ? '' : '1fr 1fr';
 
     const bpc = document.getElementById('d-base-pct');
     bpc.textContent = basePct.toFixed(1) + '%';
