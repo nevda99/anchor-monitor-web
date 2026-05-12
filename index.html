@@ -493,8 +493,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   </div>
 </div>
 
-<!-- 上传面板（仅 super_admin） -->
-<div id="uploadPanelsWrap" class="upload-panels-wrap" style="display:none">
+<!-- 管理工具抽屉（仅 super_admin）-->
+<div class="admin-drawer-overlay" id="adminDrawerOverlay" onclick="closeAdminDrawer()"></div>
+<div class="admin-drawer" id="adminDrawer">
+  <div class="admin-drawer-head">
+    <h3>🛠 管理工具</h3>
+    <button class="admin-drawer-close" onclick="closeAdminDrawer()">✕</button>
+  </div>
+  <div class="admin-drawer-body" id="adminDrawerBody">
+
+<div id="uploadPanelsWrap" style="display:flex;flex-direction:column;gap:12px;">
 
   <!-- 数据更新入口 -->
   <div>
@@ -554,6 +562,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   </div>
 
 </div>
+
+  </div><!-- /admin-drawer-body -->
+</div><!-- /admin-drawer -->
 
 <!-- 主体 -->
 <div class="body-wrap" id="bodyWrap">
