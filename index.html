@@ -12,29 +12,66 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
 /* ===== 登录页 ===== */
 #loginPage {
-  position:fixed; inset:0; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  position:fixed; inset:0; background:#f0f2f5;
   display:flex; align-items:center; justify-content:center; z-index:9999;
 }
-.login-box {
-  background:white; padding:40px; border-radius:14px;
-  box-shadow:0 10px 40px rgba(0,0,0,.18); width:380px; max-width:95vw;
+.login-wrap {
+  display:flex; width:820px; max-width:96vw; min-height:520px;
+  border-radius:16px; overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,.18);
 }
-.login-box h1 { text-align:center; margin-bottom:28px; color:#333; font-size:20px; }
-.form-group { margin-bottom:18px; }
-.form-group label { display:block; margin-bottom:6px; color:#666; font-size:13px; }
-.form-group input, .form-group select {
-  width:100%; padding:11px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px; color:#333;
+/* 左侧品牌区 */
+.login-brand {
+  flex:0 0 42%; background:#1e1e2e;
+  display:flex; flex-direction:column; justify-content:center;
+  padding:48px 40px;
 }
-.form-group select { background:white; cursor:pointer; }
+.login-brand-bar { width:36px; height:4px; background:#6366f1; border-radius:2px; margin-bottom:22px; }
+.login-brand h2 { font-size:20px; font-weight:800; color:#fff; letter-spacing:.3px; margin-bottom:10px; line-height:1.3; }
+.login-brand-desc { font-size:12px; color:rgba(255,255,255,.4); line-height:1.9; margin-bottom:32px; }
+.login-brand-tags { display:flex; gap:8px; flex-wrap:wrap; }
+.login-brand-tag {
+  padding:5px 13px; border-radius:20px; font-size:11px; font-weight:600;
+}
+.login-brand-tag.bet { background:rgba(99,102,241,.18); color:#a5b4fc; border:1px solid rgba(165,180,252,.25); }
+.login-brand-tag.crc { background:rgba(124,58,237,.18); color:#c4b5fd; border:1px solid rgba(196,181,253,.25); }
+.login-brand-footer { margin-top:auto; font-size:11px; color:rgba(255,255,255,.18); }
+/* 右侧表单区 */
+.login-form-wrap {
+  flex:1; background:#fff;
+  display:flex; flex-direction:column; justify-content:center;
+  padding:48px 40px;
+}
+.login-form-title { font-size:18px; font-weight:700; color:#1a1a2e; margin-bottom:4px; }
+.login-form-sub { font-size:13px; color:#999; margin-bottom:28px; }
+/* 系统选择卡片 */
+.sys-cards { display:flex; gap:8px; margin-bottom:20px; }
+.sys-card {
+  flex:1; padding:10px 12px; border-radius:8px; cursor:pointer;
+  text-align:center; font-size:12px; font-weight:600;
+  border:2px solid #e5e7eb; background:#fafafa; color:#999;
+  transition:all .18s;
+}
+.sys-card.active { border-color:#6366f1; background:#f0f4ff; color:#4f46e5; }
+.sys-card:hover:not(.active) { border-color:#c7d2fe; background:#f5f5ff; color:#6366f1; }
+/* 表单通用 */
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; margin-bottom:6px; color:#555; font-size:12px; font-weight:600; }
+.form-group input {
+  width:100%; padding:11px 12px; border:1px solid #e5e7eb; border-radius:7px;
+  font-size:14px; color:#333; background:#fafafa; outline:none;
+  transition:border .18s;
+}
+.form-group input:focus { border-color:#6366f1; background:#fff; }
 .login-btn {
   width:100%; padding:12px; background:#6366f1; color:white; border:none;
-  border-radius:6px; font-size:15px; font-weight:600; cursor:pointer; transition:background .2s;
+  border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; transition:background .2s; letter-spacing:.5px;
 }
 .login-btn:hover { background:#4f46e5; }
 .login-btn:disabled { background:#ccc; cursor:not-allowed; }
-.remember-row { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+.remember-row { display:flex; align-items:center; gap:8px; margin-bottom:18px; }
 .remember-row input[type=checkbox] { width:auto; cursor:pointer; }
-.remember-row label { margin:0; cursor:pointer; font-size:13px; color:#666; }
+.remember-row label { margin:0; cursor:pointer; font-size:12px; color:#888; }
 .login-error { color:#f56c6c; font-size:13px; margin-top:10px; text-align:center; }
 
 /* ===== 顶部 bar ===== */
@@ -374,8 +411,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   .anchor-table tbody td.name { max-width:90px; font-size:12px; }
   .chip { font-size:11px; padding:2px 7px; }
 
-  /* --- 登录框 --- */
-  .login-box { padding:28px 20px; }
+  /* --- 登录框（移动端竖排） --- */
+  .login-wrap { flex-direction:column; min-height:auto; border-radius:14px; width:92vw; }
+  .login-brand { flex:none; padding:28px 24px 24px; }
+  .login-brand-desc { display:none; }
+  .login-brand-footer { display:none; }
+  .login-form-wrap { padding:28px 24px 32px; }
 
   /* 底部留出浮动按钮空间 */
   .detail-inner { padding-bottom:72px; }
@@ -396,32 +437,50 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
 <!-- ===== 登录页 ===== -->
 <div id="loginPage">
-  <div class="login-box">
-    <h1>🎯 主播数据监控系统</h1>
-    <form id="loginForm">
-      <div class="form-group">
-        <label>选择系统</label>
-        <select id="systemSelect" required>
-          <option value="">-- 请选择系统 --</option>
-          <option value="bet">主动看播对赌后台</option>
-          <option value="crc">国艺核心主播周任务查看</option>
-        </select>
+  <div class="login-wrap">
+    <!-- 左侧品牌区 -->
+    <div class="login-brand">
+      <div class="login-brand-bar"></div>
+      <h2>主播数据<br>监控系统</h2>
+      <div class="login-brand-desc">
+        双系统统一视图<br>
+        BET · CRC 完成度追踪<br>
+        实时进度对比
       </div>
-      <div class="form-group">
-        <label>账号</label>
-        <input type="text" id="loginUsername" required placeholder="请输入账号">
+      <div class="login-brand-tags">
+        <span class="login-brand-tag bet">BET 主动看播对赌</span>
+        <span class="login-brand-tag crc">CRC 核心主播任务</span>
       </div>
-      <div class="form-group">
-        <label>密码</label>
-        <input type="password" id="loginPassword" required placeholder="请输入密码">
-      </div>
-      <div class="remember-row">
-        <input type="checkbox" id="rememberMe">
-        <label for="rememberMe">记住账号密码</label>
-      </div>
-      <button type="submit" class="login-btn" id="loginBtn">登录</button>
-      <div id="loginError" class="login-error"></div>
-    </form>
+      <div class="login-brand-footer">www.michaeldata.top</div>
+    </div>
+    <!-- 右侧表单区 -->
+    <div class="login-form-wrap">
+      <div class="login-form-title">欢迎回来</div>
+      <div class="login-form-sub">请选择系统并登录</div>
+      <form id="loginForm">
+        <!-- 系统选择：卡片式按钮 -->
+        <input type="hidden" id="systemSelect" value="">
+        <div style="margin-bottom:6px"><label style="font-size:12px;font-weight:600;color:#555">选择系统</label></div>
+        <div class="sys-cards" style="margin-bottom:20px">
+          <div class="sys-card" id="sysCardBet" onclick="selectLoginSystem('bet')">主动看播对赌</div>
+          <div class="sys-card" id="sysCardCrc" onclick="selectLoginSystem('crc')">核心主播任务</div>
+        </div>
+        <div class="form-group">
+          <label>账号</label>
+          <input type="text" id="loginUsername" required placeholder="请输入账号">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="loginPassword" required placeholder="请输入密码">
+        </div>
+        <div class="remember-row">
+          <input type="checkbox" id="rememberMe">
+          <label for="rememberMe">记住账号密码</label>
+        </div>
+        <button type="submit" class="login-btn" id="loginBtn">登 录</button>
+        <div id="loginError" class="login-error"></div>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -812,10 +871,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     return all;
   }
 
+  /* ===== 登录系统选择（卡片按钮） ===== */
+  window.selectLoginSystem = function(sys) {
+    document.getElementById('systemSelect').value = sys;
+    document.getElementById('sysCardBet').classList.toggle('active', sys === 'bet');
+    document.getElementById('sysCardCrc').classList.toggle('active', sys === 'crc');
+  };
+
   /* ===== 登录 ===== */
   window.addEventListener('DOMContentLoaded', () => {
     const savedSys = localStorage.getItem('saved_system');
-    if (savedSys) document.getElementById('systemSelect').value = savedSys;
+    if (savedSys) selectLoginSystem(savedSys);
     const savedUser = localStorage.getItem('saved_username');
     const savedPwd  = localStorage.getItem('saved_password');
     const remember  = localStorage.getItem('remember_me') === 'true';
@@ -849,7 +915,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const remember = document.getElementById('rememberMe').checked;
     const btn      = document.getElementById('loginBtn');
     const errEl    = document.getElementById('loginError');
-    if (!sys) { errEl.textContent = '请先选择系统'; return; }
+    if (!sys) { errEl.textContent = '请先点击选择系统'; return; }
     btn.disabled = true; btn.textContent = '登录中...'; errEl.textContent = '';
     try {
       const { data, error } = await db.from('user_accounts').select('*')
