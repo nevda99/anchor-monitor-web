@@ -77,8 +77,36 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 .sc-sub.dn { color:#059669; }
 .sc-sub.gray { color:#999; }
 
-/* ===== 上传面板 ===== */
-.upload-panels-wrap { background:white; border-bottom:1px solid #e8e8e8; flex-shrink:0; padding:12px 20px; display:flex; flex-direction:column; gap:10px; }
+/* ===== 管理员工具抽屉 ===== */
+.admin-drawer-btn {
+  padding:5px 12px; background:rgba(99,102,241,.15); color:#a5b4fc;
+  border:1px solid rgba(165,180,252,.3); border-radius:6px; font-size:12px;
+  cursor:pointer; transition:all .2s; font-weight:600; border:none;
+  display:inline-flex; align-items:center; gap:5px;
+}
+.admin-drawer-btn:hover { background:rgba(99,102,241,.3); }
+.admin-drawer-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:2000;
+}
+.admin-drawer-overlay.open { display:block; }
+.admin-drawer {
+  position:fixed; top:0; right:0; bottom:0; width:520px; max-width:95vw;
+  background:white; z-index:2001; display:flex; flex-direction:column;
+  transform:translateX(100%); transition:transform .25s ease;
+  box-shadow:-4px 0 24px rgba(0,0,0,.15);
+}
+.admin-drawer.open { transform:translateX(0); }
+.admin-drawer-head {
+  padding:16px 20px; background:#1e1e2e; color:white;
+  display:flex; justify-content:space-between; align-items:center; flex-shrink:0;
+}
+.admin-drawer-head h3 { font-size:15px; font-weight:700; }
+.admin-drawer-close {
+  background:none; border:none; color:rgba(255,255,255,.6); font-size:20px;
+  cursor:pointer; padding:4px 8px; line-height:1;
+}
+.admin-drawer-close:hover { color:white; }
+.admin-drawer-body { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
 .upload-toggle-bar {
   border-radius:8px; padding:10px 16px; cursor:pointer;
   display:flex; justify-content:space-between; align-items:center; user-select:none;
@@ -409,6 +437,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   </div>
   <div class="topbar-right" id="topbarRight">
     <span id="topbarInfo"></span>
+    <button class="admin-drawer-btn" id="adminToolsBtn" onclick="openAdminDrawer()" style="display:none">🛠 管理工具</button>
     <a class="switch-ui-btn" href="/index-v1.html" title="切换到经典UI版本" id="switchUiBtn" style="display:none">🔄 经典版</a>
     <button class="logout-btn-top" onclick="logout()">退出登录</button>
   </div>
@@ -875,9 +904,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     document.getElementById('topbarInfo').textContent =
       `${userData.display_name || userData.username} · ${sysLabel} · ${roleLabel}`;
 
-    // 上传面板：仅 super_admin 可见（双重防护）
-    document.getElementById('uploadPanelsWrap').style.display =
-      state.role === 'super_admin' ? 'flex' : 'none';
+    // 上传面板 / 管理工具按钮：仅 super_admin 可见（双重防护）
+    const adminBtn = document.getElementById('adminToolsBtn');
+    if (adminBtn) adminBtn.style.display = state.role === 'super_admin' ? '' : 'none';
     // 经典版切换按钮：仅 super_admin 可见
     const switchBtn = document.getElementById('switchUiBtn');
     if (switchBtn) switchBtn.style.display = state.role === 'super_admin' ? '' : 'none';
@@ -887,7 +916,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
     if (state.role === 'super_admin') {
       // super_admin：显示侧边栏
-      document.getElementById('targetSystem').value = state.system;
       document.getElementById('targetWeekMonday').textContent = getThisMonday();
       // BET系统admin账号才可切换系统
       if (userData.username === 'admin' && userData.system === 'bet') {
@@ -997,8 +1025,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     document.getElementById('loginError').textContent = '';
     // 重置移动端导航按钮
     document.getElementById('mobileSidebarToggle').classList.add('hidden');
-    // 重置上传面板、切换按钮、系统Tab
-    document.getElementById('uploadPanelsWrap').style.display = 'none';
+    // 重置管理工具按钮、切换按钮、系统Tab
+    const adminBtn = document.getElementById('adminToolsBtn');
+    if (adminBtn) adminBtn.style.display = 'none';
     const switchBtn = document.getElementById('switchUiBtn');
     if (switchBtn) switchBtn.style.display = 'none';
     document.getElementById('sysToggleBar').style.display = 'none';
@@ -1507,6 +1536,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     }
   };
 
+  /* ===== 管理工具抽屉 ===== */
+  window.openAdminDrawer = function() {
+    document.getElementById('adminDrawer').classList.add('open');
+    document.getElementById('adminDrawerOverlay').classList.add('open');
+  };
+  window.closeAdminDrawer = function() {
+    document.getElementById('adminDrawer').classList.remove('open');
+    document.getElementById('adminDrawerOverlay').classList.remove('open');
+  };
+
   /* ===== 上传面板 ===== */
   window.togglePanel = function(bodyId, iconId) {
     const body = document.getElementById(bodyId);
@@ -1630,10 +1669,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   window.downloadTargetTemplate = function() {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([
-      ['主播ID','主播最新名称','近1天UA主动看播天数','主播来源'],
-      ['示例：750832728','示例主播','2057577','草根传媒一公司']
+      ['主播ID','主播最新名称','近1天UA主动看播心智','主播一级来源','主播二级来源（没有可空着）','系统'],
+      ['示例：750832728','示例主播','2057577','个播大类','不可控个播','crc'],
+      ['示例：262661189','示例主排bet','879827','','bet来源机构名','bet']
     ]);
-    ws['!cols'] = [{wch:16},{wch:20},{wch:24},{wch:16}];
+    ws['!cols'] = [{wch:16},{wch:20},{wch:24},{wch:16},{wch:24},{wch:8}];
     XLSX.utils.book_append_sheet(wb, ws, '基期目标模板');
     XLSX.writeFile(wb, '基期目标上传模板.xlsx');
   };
