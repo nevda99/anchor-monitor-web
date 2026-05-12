@@ -76,6 +76,10 @@ export default async function handler(req, res) {
           frm += 1000;
         }
 
+        // DEBUG
+        const sampleAnchors = anchors.slice(0,3).map(a=>({id:a.anchor_id,target:a.target,base_target:a.base_target}));
+        console.log(`[DEBUG ${system}] bd=${bd} anchors=${anchors.length} sample=`, JSON.stringify(sampleAnchors));
+
         // 构建新记录（透传 target 和 base_target）
         const records = anchors.map(a => {
           const aid = String(a.anchor_id);

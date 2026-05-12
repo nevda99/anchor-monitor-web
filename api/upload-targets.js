@@ -24,7 +24,8 @@ async function writeSystem(supabaseUrl, serviceKey, system, date, anchors) {
 
   // 构建占位记录
   const records = anchors.map(a => {
-    const q1 = Number(a.q1_total) || 0;
+    const rawQ1 = String(a.q1_total ?? '').replace(/,/g, '');
+    const q1 = isNaN(Number(rawQ1)) ? 0 : (Number(rawQ1) || 0);
     const base_target = Math.round(q1 / 90 * 7);
     const target = calcTarget(base_target);
     return {

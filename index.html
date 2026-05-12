@@ -1653,12 +1653,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     }
     const btn = document.getElementById('submitBtn');
     btn.disabled = true; btn.textContent = '更新中...'; resEl.textContent = '';
+    // DEBUG
+    console.log('[DEBUG update-data] date='+date+' timeProgress='+timeProgress+' uad='+parsedUAD.length+' st='+parsedST.length);
     try {
       const resp = await fetch('/api/update-data', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ uadData: parsedUAD, streamData: parsedST, date, timeProgress })
       });
       const result = await resp.json();
+      console.log('[DEBUG update-data] response=', JSON.stringify(result));
       if (!resp.ok || result.error) throw new Error(result.error || '更新失败');
       resEl.style.color = '#16a34a';
       resEl.textContent = `✅ 更新完成：bet ${result.bet} 条，crc ${result.crc} 条`;
@@ -1732,12 +1735,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     }
     const btn = document.getElementById('targetSubmitBtn');
     btn.disabled = true; btn.textContent = '写入中...'; statusEl.textContent = '';
+    // DEBUG
+    const sample = parsedTargetRows.slice(0,3).map(r=>({id:r.anchor_id,q1:r.q1_total,sys:r.system}));
+    console.log('[DEBUG upload-targets] date='+monday+' total='+parsedTargetRows.length+' sample=', JSON.stringify(sample));
     try {
       const resp = await fetch('/api/upload-targets', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ date: monday, anchors: parsedTargetRows })
       });
       const result = await resp.json();
+      console.log('[DEBUG upload-targets] response=', JSON.stringify(result));
       if (!resp.ok || result.error) throw new Error(result.error || '写入失败');
       statusEl.style.color = '#16a34a';
       statusEl.textContent = `✅ 写入完成：bet ${result.bet||0} 条，crc ${result.crc||0} 条（基期日期 ${monday}）`;
