@@ -511,21 +511,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       <span class="tog-icon" id="uploadIcon">▼ 展开</span>
     </div>
     <div class="upload-body purple" id="uploadBody" style="display:none">
-      <div class="upload-desc">上传或粘贴 <b>UAD 数据</b> 和 <b>开播时长数据</b>，系统自动更新 bet + crc 两个系统。</div>
-      <div style="font-weight:600;margin-bottom:6px;color:#333;font-size:13px;">① UAD 数据（近1天UA直播主动心智UA对数）</div>
+      <div class="upload-desc">粘贴或上传看板数据（含 <b>UAD</b> 和 <b>开播时长</b>），系统自动更新 bet + crc 两个系统。</div>
+      <div style="font-weight:600;margin-bottom:6px;color:#333;font-size:13px;">看板数据（主播ID / 主播名称 / 近1天UA直播主动心智UA对数 / 近1天推流时长_万分钟）</div>
       <div class="upload-row">
-        <textarea id="uadPasteArea" placeholder="从BI看板复制后粘贴到这里（含标题行）&#10;格式：主播ID  主播名称  近1天UA直播主动心智UA对数" oninput="parseUAD()"></textarea>
+        <textarea id="uadPasteArea" placeholder="从BI看板复制后粘贴到这里（含标题行）&#10;格式：主播ID  主播名称  近1天UA直播主动心智UA对数  近1天推流时长_万分钟" oninput="parseData()"></textarea>
         <div style="display:flex;flex-direction:column;gap:6px;">
-          <label class="upload-file-btn">📂 上传文件<input type="file" id="uadFile" accept=".xlsx,.csv,.xls" style="display:none" onchange="readUADFile(this)"></label>
+          <label class="upload-file-btn">📂 上传文件<input type="file" id="uadFile" accept=".xlsx,.csv,.xls" style="display:none" onchange="readDataFile(this)"></label>
           <div id="uadStatus" class="upload-status"></div>
-        </div>
-      </div>
-      <div style="font-weight:600;margin-bottom:6px;color:#333;font-size:13px;">② 开播时长数据</div>
-      <div class="upload-row">
-        <textarea id="stPasteArea" placeholder="从BI看板复制后粘贴到这里（含标题行）&#10;格式：主播ID  主播名称  近1天推流时长_万分钟" oninput="parseST()"></textarea>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label class="upload-file-btn">📂 上传文件<input type="file" id="stFile" accept=".xlsx,.csv,.xls" style="display:none" onchange="readSTFile(this)"></label>
-          <div id="stStatus" class="upload-status"></div>
         </div>
       </div>
       <div class="upload-footer">
@@ -1566,46 +1558,45 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
   let parsedUAD = [], parsedST = [];
 
-  function parseTabText(text, valueFields) {
+  // 合并解析：从一个数据源同时提取 UAD 和开播时长
+  function parseDataText(text) {
     const lines = text.trim().split(/\r?\n/).filter(Boolean);
-    if (lines.length < 2) return [];
+    if (lines.length < 2) return { uad: [], st: [], date: null };
     const headers = lines[0].split('\t').map(h => h.trim());
     const idIdx  = headers.findIndex(h => h.includes('主播ID'));
-    const valIdx = headers.findIndex(h => valueFields.some(k => h.includes(k)));
-    if (idIdx === -1 || valIdx === -1) return [];
-    const rows = [];
+    const uadIdx = headers.findIndex(h => h.includes('UA直播主动心智UA对数') || h.includes('UA主动看播天数') || h.includes('主动看播'));
+    const stIdx  = headers.findIndex(h => h.includes('推流时长') || h.includes('万分钟'));
+    if (idIdx === -1 || (uadIdx === -1 && stIdx === -1)) return { uad: [], st: [], date: null };
+    const uad = [], st = [];
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].split('\t');
       if (!cols[idIdx]) continue;
-      rows.push({ anchor_id: String(cols[idIdx]).trim(), value: Number(String(cols[valIdx]||'').replace(/,/g,'').trim()) || 0 });
+      const aid = String(cols[idIdx]).trim();
+      if (uadIdx !== -1) uad.push({ anchor_id: aid, value: Number(String(cols[uadIdx]||'').replace(/,/g,'').trim()) || 0 });
+      if (stIdx  !== -1) st.push({ anchor_id: aid, value: Math.round((Number(String(cols[stIdx]||'').replace(/,/g,'').trim()) || 0) * 10000) });
     }
-    return rows;
+    // 日期从数据里提取（找单天日期格式，非范围）
+    let date = null;
+    for (const line of lines.slice(0,5)) {
+      const r = line.match(/(\d{4}-\d{2}-\d{2})\s*至\s*(\d{4}-\d{2}-\d{2})/);
+      if (r) { date = r[2]; break; }
+      const s = line.match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+      if (s) { date = `${s[1]}-${String(s[2]).padStart(2,'0')}-${String(s[3]).padStart(2,'0')}`; break; }
+    }
+    return { uad, st, date };
   }
 
-  window.parseUAD = function() {
+  window.parseData = function() {
     const text = document.getElementById('uadPasteArea').value;
-    parsedUAD = parseTabText(text, ['UA直播主动心智UA对数','UA主动看播天数','主动看播']);
-    const el  = document.getElementById('uadStatus');
-    if (parsedUAD.length) {
+    const { uad, st, date } = parseDataText(text);
+    parsedUAD = uad; parsedST = st;
+    const el = document.getElementById('uadStatus');
+    if (uad.length || st.length) {
       el.style.color = '#16a34a';
-      el.textContent = `✅ 已识别 ${parsedUAD.length} 条（首条ID: ${parsedUAD[0].anchor_id}，值: ${parsedUAD[0].value}）`;
-    } else {
-      el.style.color = '#f56c6c';
-      el.textContent = `❌ 未识别（共${text.trim().split(/\r?\n/).length}行）`;
-    }
-  };
-
-  window.parseST = function() {
-    const text = document.getElementById('stPasteArea').value;
-    parsedST = parseTabText(text, ['推流时长','万分钟']);
-    const el  = document.getElementById('stStatus');
-    if (parsedST.length) {
-      el.style.color = '#16a34a';
-      el.textContent = `✅ 已识别 ${parsedST.length} 条（首条ID: ${parsedST[0].anchor_id}，值: ${parsedST[0].value}）`;
-      const d = extractDateFromText(text);
-      if (d) {
-        document.getElementById('uploadDate').value = d;
-        document.getElementById('uploadProgress').value = calcAutoProgress(d);
+      el.textContent = `✅ 已识别 UAD: ${uad.length} 条，开播时长: ${st.length} 条`;
+      if (date) {
+        document.getElementById('uploadDate').value = date;
+        document.getElementById('uploadProgress').value = calcAutoProgress(date);
       }
     } else {
       el.style.color = '#f56c6c';
@@ -1624,21 +1615,22 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     reader.readAsArrayBuffer(file);
   }
 
-  window.readUADFile = function(input) {
+  window.readDataFile = function(input) {
     const file = input.files[0]; if (!file) return;
     readExcelFile(file, rows => {
-      parsedUAD = rows.map(r => ({ anchor_id: String(r['主播ID']||'').trim(), value: Number(r['近1天UA直播主动心智UA对数'] ?? r['近1天UA主动看播天数'] ?? 0) })).filter(r => r.anchor_id);
-      document.getElementById('uadStatus').textContent = parsedUAD.length ? `已读取 ${parsedUAD.length} 条` : '文件无有效数据';
-      document.getElementById('uadStatus').style.color = parsedUAD.length ? '#16a34a' : '#f56c6c';
-    });
-  };
-
-  window.readSTFile = function(input) {
-    const file = input.files[0]; if (!file) return;
-    readExcelFile(file, rows => {
-      parsedST = rows.map(r => ({ anchor_id: String(r['主播ID']||'').trim(), value: Math.round((Number(r['近1天推流时长_万分钟']||0)) * 10000) })).filter(r => r.anchor_id);
-      document.getElementById('stStatus').textContent = parsedST.length ? `已读取 ${parsedST.length} 条` : '文件无有效数据';
-      document.getElementById('stStatus').style.color = parsedST.length ? '#16a34a' : '#f56c6c';
+      parsedUAD = rows.map(r => ({
+        anchor_id: String(r['主播ID']||'').trim(),
+        value: Number(r['近1天UA直播主动心智UA对数'] ?? r['近1天UA主动看播天数'] ?? 0)
+      })).filter(r => r.anchor_id);
+      parsedST = rows.map(r => ({
+        anchor_id: String(r['主播ID']||'').trim(),
+        value: Math.round((Number(r['近1天推流时长_万分钟']||0)) * 10000)
+      })).filter(r => r.anchor_id);
+      const el = document.getElementById('uadStatus');
+      el.textContent = (parsedUAD.length || parsedST.length)
+        ? `已读取 UAD: ${parsedUAD.length} 条，开播时长: ${parsedST.length} 条`
+        : '文件无有效数据';
+      el.style.color = (parsedUAD.length || parsedST.length) ? '#16a34a' : '#f56c6c';
     });
   };
 
@@ -1646,9 +1638,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const date = document.getElementById('uploadDate').value;
     const timeProgress = document.getElementById('uploadProgress').value;
     const resEl = document.getElementById('uploadResult');
-    if (!date || !parsedUAD.length || !parsedST.length) {
+    if (!date || !parsedUAD.length) {
       resEl.style.color = '#f56c6c';
-      resEl.textContent = '请先准备日期、UAD和推流数据';
+      resEl.textContent = '请先准备日期和数据';
       return;
     }
     const btn = document.getElementById('submitBtn');

@@ -14,7 +14,7 @@ export default async function handler(req, res) {
 
   try {
     const { uadData, streamData, date, timeProgress } = req.body;
-    if (!uadData || !streamData || !date || uadData.length === 0 || streamData.length === 0) {
+    if (!uadData || !date || uadData.length === 0) {
       return res.status(400).json({ error: '缺少必要参数或数据为空，拒绝执行' });
     }
 
