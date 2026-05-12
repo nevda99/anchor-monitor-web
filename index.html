@@ -346,16 +346,37 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 /* ===== 响应式：768px 及以下（手机） ===== */
 @media (max-width: 768px) {
   /* --- 顶栏 --- */
-  .topbar { padding:0 12px; height:auto; flex-wrap:wrap; min-height:48px; gap:0; }
-  .topbar-title { font-size:14px; flex:1; min-width:0; }
-  .topbar-hamburger { display:block; }
-  .topbar-sys { display:none; width:100%; padding:6px 0 8px; gap:6px; flex-wrap:wrap; }
+  .topbar {
+    padding:0 12px; height:auto; flex-wrap:wrap; min-height:48px; gap:0;
+    align-items:center;
+  }
+  /* 第一行：标题 + 汉堡按钮各占两端，撑满宽度 */
+  .topbar-title {
+    font-size:14px; flex:1; min-width:0;
+    height:48px; display:flex; align-items:center;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .topbar-hamburger { display:flex; align-items:center; height:48px; flex-shrink:0; }
+  /* 展开后：系统切换行 */
+  .topbar-sys {
+    display:none; width:100%; padding:6px 0 6px; gap:6px; flex-wrap:wrap;
+    border-top:1px solid rgba(255,255,255,.08);
+  }
   .topbar-sys.open { display:flex; }
-  .topbar-right { display:none; width:100%; padding-bottom:8px; gap:8px; flex-wrap:wrap; font-size:11px; }
+  /* 展开后：操作按钮行 */
+  .topbar-right {
+    display:none; width:100%; padding:6px 0 10px;
+    gap:8px; flex-wrap:wrap; align-items:center; font-size:11px;
+    border-top:1px solid rgba(255,255,255,.08);
+  }
   .topbar-right.open { display:flex; }
-  .topbar-right #topbarInfo { font-size:11px; flex:1; }
-  .switch-ui-btn { font-size:11px; padding:4px 10px; }
-  .logout-btn-top { font-size:11px; padding:4px 10px; }
+  .topbar-right #topbarInfo {
+    font-size:11px; color:rgba(255,255,255,.5);
+    width:100%; /* 用户信息独占一行 */
+    padding-bottom:4px;
+  }
+  .switch-ui-btn { font-size:11px; padding:5px 12px; }
+  .logout-btn-top { font-size:11px; padding:5px 12px; }
 
   /* --- 统计卡片 --- */
   .stats-bar { grid-template-columns: repeat(2, 1fr) !important; overflow-x:auto; }
