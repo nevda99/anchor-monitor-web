@@ -259,6 +259,109 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
 /* 加载/空状态 */
 .loading-tip { padding:40px; text-align:center; color:#aaa; font-size:14px; }
+
+/* ===== 移动端汉堡菜单按钮 ===== */
+.topbar-hamburger {
+  display:none; background:none; border:none; color:white; font-size:22px;
+  cursor:pointer; padding:4px 8px; line-height:1;
+}
+/* 移动端侧边栏切换按钮（浮动） */
+.mobile-sidebar-toggle {
+  display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  z-index:1200; background:#6366f1; color:white; border:none;
+  padding:12px 28px; border-radius:28px; font-size:14px; font-weight:700;
+  box-shadow:0 4px 16px rgba(99,102,241,.45); cursor:pointer; white-space:nowrap;
+}
+/* 移动端侧边栏遮罩 */
+.mobile-sidebar-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1100;
+}
+.mobile-sidebar-overlay.open { display:block; }
+
+/* ===== 响应式：768px 及以下（手机） ===== */
+@media (max-width: 768px) {
+  /* --- 顶栏 --- */
+  .topbar { padding:0 12px; height:auto; flex-wrap:wrap; min-height:48px; gap:0; }
+  .topbar-title { font-size:14px; flex:1; min-width:0; }
+  .topbar-hamburger { display:block; }
+  .topbar-sys { display:none; width:100%; padding:6px 0 8px; gap:6px; flex-wrap:wrap; }
+  .topbar-sys.open { display:flex; }
+  .topbar-right { display:none; width:100%; padding-bottom:8px; gap:8px; flex-wrap:wrap; font-size:11px; }
+  .topbar-right.open { display:flex; }
+  .topbar-right #topbarInfo { font-size:11px; flex:1; }
+  .switch-ui-btn { font-size:11px; padding:4px 10px; }
+  .logout-btn-top { font-size:11px; padding:4px 10px; }
+
+  /* --- 统计卡片 --- */
+  .stats-bar { grid-template-columns: repeat(2, 1fr) !important; overflow-x:auto; }
+  .stats-bar.source-mode { grid-template-columns: repeat(3, 1fr) !important; }
+  .sc { padding:12px 14px; border-right:1px solid #f0f0f0; border-bottom:1px solid #f0f0f0; min-width:0; }
+  .sc-val { font-size:20px; }
+  .sc-val2 { font-size:15px; }
+  .sc-row .sc-val { font-size:18px; }
+  .sc-label { font-size:10px; margin-bottom:5px; }
+  .sc-sub { font-size:11px; }
+
+  /* --- 上传面板 --- */
+  .upload-panels-wrap { padding:8px 12px; }
+  .upload-row textarea { min-width:0; width:100%; }
+  .upload-row { flex-direction:column; }
+  .upload-footer { flex-direction:column; align-items:flex-start; gap:8px; }
+
+  /* --- 主体布局：单列，侧边栏改为覆盖抽屉 --- */
+  .body-wrap { grid-template-columns:1fr !important; }
+  .sidebar {
+    position:fixed; top:0; left:0; bottom:0; z-index:1200;
+    width:280px; max-width:88vw;
+    transform:translateX(-100%); transition:transform .25s ease;
+    box-shadow:4px 0 20px rgba(0,0,0,.15);
+  }
+  .sidebar.mobile-open { transform:translateX(0); }
+  .mobile-sidebar-toggle { display:flex; align-items:center; gap:6px; }
+  .mobile-sidebar-toggle.hidden { display:none; }
+
+  /* --- 详情区 --- */
+  .detail { overflow-y:auto; }
+  .detail-inner { padding:10px 12px; gap:10px; }
+  .d-head { flex-direction:column; align-items:flex-start; gap:8px; padding:12px 14px; }
+  .d-org-name { font-size:18px; }
+  .d-head-right { width:100%; justify-content:space-between; flex-wrap:wrap; gap:6px; }
+  .d-time-badge { font-size:12px; padding:5px 12px; }
+  .date-picker-wrap { font-size:12px; }
+  .date-picker-wrap input[type=date] { font-size:12px; padding:4px 8px; }
+
+  /* --- 双口径卡片单列 --- */
+  .dual-block { grid-template-columns:1fr !important; gap:10px; }
+  .metric-card { padding:14px 14px; }
+  .mc-pct { font-size:40px; }
+  .dg-val { font-size:20px; }
+
+  /* --- 主播明细表：横向滚动，固定主播名列 --- */
+  .anchor-card { overflow:hidden; }
+  .anchor-card-head { flex-wrap:wrap; gap:8px; padding:10px 14px; }
+  .anchor-card > div { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .anchor-table { min-width:600px; }
+  .anchor-table thead th { font-size:11px; padding:8px 10px; }
+  .anchor-table tbody td { font-size:12px; padding:8px 10px; }
+  .anchor-table tbody td.name { max-width:90px; font-size:12px; }
+  .chip { font-size:11px; padding:2px 7px; }
+
+  /* --- 登录框 --- */
+  .login-box { padding:28px 20px; }
+
+  /* 底部留出浮动按钮空间 */
+  .detail-inner { padding-bottom:72px; }
+}
+
+/* ===== 响应式：480px 以下（小屏手机） ===== */
+@media (max-width: 480px) {
+  .stats-bar { grid-template-columns: repeat(2, 1fr) !important; }
+  .sc-val { font-size:18px; }
+  .sc-row .sc-val { font-size:15px; }
+  .d-org-name { font-size:16px; }
+  .mc-pct { font-size:34px; }
+  .topbar-title { font-size:13px; }
+}
 </style>
 </head>
 <body>
@@ -304,11 +407,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     <span class="sys-badge active" id="badge-bet" onclick="handleSysSwitch('bet')">BET 系统</span>
     <span class="sys-badge inactive" id="badge-crc" onclick="handleSysSwitch('crc')">CRC 系统</span>
   </div>
-  <div class="topbar-right">
+  <div class="topbar-right" id="topbarRight">
     <span id="topbarInfo">管理员视图</span>
     <a class="switch-ui-btn" href="/index-v1.html" title="切换到经典UI版本">🔄 经典版</a>
     <button class="logout-btn-top" onclick="logout()">退出登录</button>
   </div>
+  <button class="topbar-hamburger" id="hamburgerBtn" onclick="toggleTopbarMenu()" aria-label="菜单">☰</button>
 </div>
 
 <!-- 顶部统计卡片 -->
@@ -547,11 +651,51 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
 </div><!-- /body-wrap -->
 
+<!-- 移动端：侧边栏遮罩 -->
+<div class="mobile-sidebar-overlay" id="mobileSidebarOverlay" onclick="closeMobileSidebar()"></div>
+<!-- 移动端：侧边栏切换浮动按钮（仅管理员/二级管理员） -->
+<button class="mobile-sidebar-toggle hidden" id="mobileSidebarToggle" onclick="toggleMobileSidebar()">
+  📋 机构导航
+</button>
+
 </div><!-- /mainApp -->
 
 <script>
 (function() {
   'use strict';
+
+  /* ===== 移动端交互 ===== */
+  window.toggleTopbarMenu = function() {
+    const sys   = document.getElementById('sysToggleBar');
+    const right = document.getElementById('topbarRight');
+    const isOpen = sys.classList.contains('open');
+    sys.classList.toggle('open', !isOpen);
+    right.classList.toggle('open', !isOpen);
+  };
+
+  window.toggleMobileSidebar = function() {
+    const sidebar  = document.getElementById('sidebar');
+    const overlay  = document.getElementById('mobileSidebarOverlay');
+    const btn      = document.getElementById('mobileSidebarToggle');
+    const isOpen   = sidebar.classList.contains('mobile-open');
+    sidebar.classList.toggle('mobile-open', !isOpen);
+    overlay.classList.toggle('open', !isOpen);
+    btn.textContent = isOpen ? '📋 机构导航' : '✕ 关闭导航';
+  };
+
+  window.closeMobileSidebar = function() {
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('mobileSidebarOverlay').classList.remove('open');
+    const btn = document.getElementById('mobileSidebarToggle');
+    if (btn) btn.textContent = '📋 机构导航';
+  };
+
+  // 点击侧边栏条目后在移动端自动关闭
+  function autoCloseSidebarOnMobile() {
+    if (window.innerWidth <= 768) {
+      closeMobileSidebar();
+    }
+  }
 
   /* ===== 常量 ===== */
   const SUPABASE_URL = 'https://yoywhdfqhymduaxhalhq.supabase.co';
@@ -746,6 +890,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       }
       document.getElementById('bodyWrap').classList.remove('no-sidebar');
       document.getElementById('sidebar').style.display = 'flex';
+      document.getElementById('mobileSidebarToggle').classList.remove('hidden');
       showAdminStatsCards();
       await loadSidebarAndData();
 
@@ -757,6 +902,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       document.getElementById('badge-crc').classList.add('disabled');
       document.getElementById('bodyWrap').classList.remove('no-sidebar');
       document.getElementById('sidebar').style.display = 'flex';
+      document.getElementById('mobileSidebarToggle').classList.remove('hidden');
       showAdminStatsCards();
       await loadSidebarAndData();
 
@@ -1021,6 +1167,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         el.classList.add('active');
       }
     });
+    autoCloseSidebarOnMobile();
     await selectOrg(src, null, null, state.allOrgData);
   };
 
