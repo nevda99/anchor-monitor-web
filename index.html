@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>主播数据监控系统</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif; background:#f0f2f5; min-height:100vh; display:flex; flex-direction:column; }
+
+/* ===== 登录页 ===== */
+#loginPage {
+  position:fixed; inset:0; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  display:flex; align-items:center; justify-content:center; z-index:9999;
+}
+.login-box {
+  background:white; padding:40px; border-radius:14px;
+  box-shadow:0 10px 40px rgba(0,0,0,.18); width:380px; max-width:95vw;
+}
+.login-box h1 { text-align:center; margin-bottom:28px; color:#333; font-size:20px; }
+.form-group { margin-bottom:18px; }
+.form-group label { display:block; margin-bottom:6px; color:#666; font-size:13px; }
+.form-group input, .form-group select {
+  width:100%; padding:11px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px; color:#333;
+}
+.form-group select { background:white; cursor:pointer; }
+.login-btn {
+  width:100%; padding:12px; background:#6366f1; color:white; border:none;
+  border-radius:6px; font-size:15px; font-weight:600; cursor:pointer; transition:background .2s;
+}
+.login-btn:hover { background:#4f46e5; }
+.login-btn:disabled { background:#ccc; cursor:not-allowed; }
+.remember-row { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+.remember-row input[type=checkbox] { width:auto; cursor:pointer; }
+.remember-row label { margin:0; cursor:pointer; font-size:13px; color:#666; }
+.login-error { color:#f56c6c; font-size:13px; margin-top:10px; text-align:center; }
+
+/* ===== 顶部 bar ===== */
+.topbar { background:#1e1e2e; color:white; padding:0 24px; height:52px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.topbar-title { font-size:15px; font-weight:700; letter-spacing:.5px; }
+.topbar-sys { display:flex; gap:8px; }
+.sys-badge { font-size:12px; padding:5px 16px; border-radius:20px; cursor:pointer; font-weight:600; transition:all .2s; }
+.sys-badge.active { background:#6366f1; color:white; }
+.sys-badge.inactive { background:rgba(255,255,255,.1); color:rgba(255,255,255,.5); }
+.sys-badge.disabled { cursor:default; pointer-events:none; }
+.topbar-right { font-size:12px; color:rgba(255,255,255,.4); display:flex; align-items:center; gap:12px; }
+.logout-btn-top {
+  padding:5px 14px; background:rgba(245,108,108,.15); color:#f87171;
+  border:1px solid rgba(248,113,113,.3); border-radius:6px; font-size:12px;
+  cursor:pointer; transition:all .2s; font-weight:600;
+}
+.logout-btn-top:hover { background:rgba(245,108,108,.3); }
+.switch-ui-btn {
+  padding:5px 14px; background:rgba(99,102,241,.15); color:#a5b4fc;
+  border:1px solid rgba(165,180,252,.3); border-radius:6px; font-size:12px;
+  cursor:pointer; transition:all .2s; font-weight:600; text-decoration:none; display:inline-flex; align-items:center;
+}
+.switch-ui-btn:hover { background:rgba(99,102,241,.3); }
+
+/* ===== 顶部5卡片 ===== */
+.stats-bar { display:grid; grid-template-columns:repeat(5,1fr); gap:0; background:white; border-bottom:2px solid #f0f0f0; flex-shrink:0; }
+.stats-bar.source-mode { grid-template-columns:repeat(3,1fr); }
+.sc { padding:16px 22px; border-right:1px solid #f0f0f0; }
+.sc:last-child { border-right:none; }
+.sc-label { font-size:11px; color:#999; font-weight:700; letter-spacing:.5px; text-transform:uppercase; margin-bottom:8px; }
+.sc-val { font-size:26px; font-weight:900; line-height:1; }
+.sc-val.c-blue { color:#2563eb; }
+.sc-val.c-red  { color:#ef4444; }
+.sc-val.c-green{ color:#059669; }
+.sc-val.c-dark { color:#111; }
+.sc-row { display:flex; align-items:baseline; gap:8px; }
+.sc-row .sc-val2 { font-size:18px; font-weight:700; color:#059669; }
+.sc-sub { font-size:12px; margin-top:6px; font-weight:600; }
+.sc-sub.up { color:#ef4444; }
+.sc-sub.dn { color:#059669; }
+.sc-sub.gray { color:#999; }
+
+/* ===== 管理员工具抽屉 ===== */
+.admin-drawer-btn {
+  padding:5px 12px; background:rgba(99,102,241,.15); color:#a5b4fc;
+  border:1px solid rgba(165,180,252,.3); border-radius:6px; font-size:12px;
+  cursor:pointer; transition:all .2s; font-weight:600; border:none;
+  display:inline-flex; align-items:center; gap:5px;
+}
+.admin-drawer-btn:hover { background:rgba(99,102,241,.3); }
+.admin-drawer-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:2000;
+}
+.admin-drawer-overlay.open { display:block; }
+.admin-drawer {
+  position:fixed; top:0; right:0; bottom:0; width:520px; max-width:95vw;
+  background:white; z-index:2001; display:flex; flex-direction:column;
+  transform:translateX(100%); transition:transform .25s ease;
+  box-shadow:-4px 0 24px rgba(0,0,0,.15);
+}
+.admin-drawer.open { transform:translateX(0); }
+.admin-drawer-head {
+  padding:16px 20px; background:#1e1e2e; color:white;
+  display:flex; justify-content:space-between; align-items:center; flex-shrink:0;
+}
+.admin-drawer-head h3 { font-size:15px; font-weight:700; }
+.admin-drawer-close {
+  background:none; border:none; color:rgba(255,255,255,.6); font-size:20px;
+  cursor:pointer; padding:4px 8px; line-height:1;
+}
+.admin-drawer-close:hover { color:white; }
+.admin-drawer-body { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+.upload-toggle-bar {
+  border-radius:8px; padding:10px 16px; cursor:pointer;
+  display:flex; justify-content:space-between; align-items:center; user-select:none;
+}
+.upload-toggle-bar.purple { background:#f0f4ff; border:1px solid #c7d2fe; }
+.upload-toggle-bar.green  { background:#f0fff4; border:1px solid #bbf7d0; }
+.upload-toggle-bar .tog-title { font-weight:600; }
+.upload-toggle-bar.purple .tog-title { color:#4f46e5; }
+.upload-toggle-bar.green  .tog-title { color:#16a34a; }
+.upload-toggle-bar .tog-icon { color:#888; font-size:12px; }
+.upload-body {
+  border-radius:0 0 8px 8px; padding:16px;
+  border-top:none;
+}
+.upload-body.purple { background:#fafbff; border:1px solid #c7d2fe; }
+.upload-body.green  { background:#f6fff8; border:1px solid #bbf7d0; }
+.upload-desc { color:#555; font-size:13px; margin-bottom:12px; }
+.upload-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+.upload-row textarea {
+  flex:1; min-width:280px; height:90px; padding:8px;
+  border:1px solid #ddd; border-radius:5px; font-size:12px; resize:vertical;
+}
+.upload-file-btn {
+  display:flex; align-items:center; gap:6px; padding:8px 12px;
+  background:#667eea; color:white; border-radius:5px; cursor:pointer; font-size:13px;
+}
+.upload-status { font-size:12px; color:#666; padding:4px; }
+.upload-footer { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:8px; }
+.upload-footer label { font-size:13px; color:#333; }
+.upload-footer input[type=date], .upload-footer input[type=text] {
+  padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:13px;
+}
+.upload-footer input[type=text] { width:90px; }
+.confirm-btn {
+  padding:8px 20px; color:white; border:none; border-radius:5px;
+  cursor:pointer; font-size:14px; font-weight:600;
+}
+.confirm-btn.blue { background:#409eff; }
+.confirm-btn.blue:hover { background:#2080d0; }
+.confirm-btn.green { background:#16a34a; }
+.confirm-btn.green:hover { background:#15803d; }
+.confirm-btn:disabled { background:#ccc; cursor:not-allowed; }
+.target-meta { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:12px; font-size:13px; color:#333; }
+.target-meta select { padding:5px 8px; border:1px solid #ddd; border-radius:4px; }
+.template-btn {
+  padding:8px 14px; background:#f0fdf4; color:#16a34a;
+  border:1px solid #bbf7d0; border-radius:5px; cursor:pointer; font-size:13px; font-weight:600;
+}
+.target-file-btn {
+  display:flex; align-items:center; gap:6px; padding:8px 14px;
+  background:#16a34a; color:white; border-radius:5px; cursor:pointer; font-size:13px;
+}
+.result-text { font-size:13px; }
+
+/* ===== 主体布局 ===== */
+.body-wrap { display:grid; grid-template-columns:260px 1fr; gap:0; flex:1; min-height:0; overflow:hidden; }
+.body-wrap.no-sidebar { grid-template-columns:1fr; }
+
+/* ===== 左侧侧边栏 ===== */
+.sidebar { background:#fff; border-right:1px solid #e8e8e8; display:flex; flex-direction:column; overflow:hidden; }
+.sidebar-head { padding:14px 16px; background:linear-gradient(135deg,#4f46e5,#7c3aed); color:white; flex-shrink:0; }
+.sidebar-head h3 { font-size:14px; font-weight:700; }
+.sidebar-head .sh-sub { font-size:11px; opacity:.75; margin-top:3px; }
+.sidebar-scroll { flex:1; overflow-y:auto; }
+.sidebar-scroll::-webkit-scrollbar { width:3px; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background:#e0e0e0; border-radius:2px; }
+
+/* crc 二级组织过滤 */
+.group-filter-bar { padding:8px 12px; background:#fafbff; border-bottom:1px solid #e8e8e8; flex-shrink:0; }
+.group-filter-bar select { width:100%; padding:6px 8px; border:1px solid #c7d2fe; border-radius:5px; font-size:12px; background:white; }
+
+.group-label { padding:8px 16px 5px; font-size:10px; font-weight:700; color:#b0b0b0; letter-spacing:1px; background:#fafafa; border-bottom:1px solid #f0f0f0; border-top:1px solid #f0f0f0; text-transform:uppercase; }
+
+.nav-item { padding:11px 16px; cursor:pointer; border-bottom:1px solid #f5f5f5; display:flex; justify-content:space-between; align-items:center; transition:background .12s; }
+.nav-item:hover { background:#f8faff; }
+.nav-item.active { background:#eef2ff; border-left:3px solid #6366f1; padding-left:13px; }
+.nav-total { background:#f5f3ff; }
+.nav-total.active { background:#eef2ff; }
+.ni-left .ni-name { font-size:13px; font-weight:600; color:#1a1a2e; }
+.ni-left .ni-name.tot { color:#6366f1; }
+.ni-left .ni-count { font-size:11px; color:#b0b0b0; margin-top:2px; }
+.ni-right { text-align:right; }
+.ni-task { font-size:13px; font-weight:800; }
+.ni-task.r { color:#ef4444; }
+.ni-task.g { color:#059669; }
+.ni-base { font-size:10px; margin-top:2px; }
+.ni-base.r { color:#fca5a5; }
+.ni-base.g { color:#6ee7b7; }
+
+/* ===== 右侧详情 ===== */
+.detail { background:#f0f2f5; overflow-y:auto; }
+.detail::-webkit-scrollbar { width:5px; }
+.detail::-webkit-scrollbar-thumb { background:#d0d0d0; border-radius:2px; }
+.detail-inner { padding:16px 20px; display:flex; flex-direction:column; gap:14px; }
+
+/* 详情头 */
+.d-head { background:white; border-radius:12px; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 4px rgba(0,0,0,.06); flex-wrap:wrap; gap:10px; }
+.d-org-name { font-size:22px; font-weight:900; color:#111; }
+.d-org-sub { font-size:12px; color:#aaa; margin-top:5px; }
+.d-head-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.d-time-badge { background:#fff7ed; color:#ea580c; border:1px solid #fcd34d; padding:7px 16px; border-radius:8px; font-size:13px; font-weight:700; white-space:nowrap; }
+.date-picker-wrap { display:flex; align-items:center; gap:6px; font-size:13px; color:#888; }
+.date-picker-wrap input[type=date] { padding:6px 10px; border:1px solid #e0e0e0; border-radius:7px; font-size:13px; color:#333; }
+
+/* 双口径大块 */
+.dual-block { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.metric-card { background:white; border-radius:12px; padding:20px 22px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.mc-tag { display:inline-block; font-size:12px; font-weight:700; letter-spacing:.4px; padding:4px 12px; border-radius:6px; margin-bottom:12px; }
+.tag-task { background:#ede9fe; color:#7c3aed; }
+.tag-base { background:#d1fae5; color:#065f46; }
+
+/* 完成度大数字 */
+.mc-pct { font-size:56px; font-weight:900; line-height:1; margin-bottom:6px; }
+.mc-pct.red  { color:#ef4444; }
+.mc-pct.green{ color:#059669; }
+
+/* 超前/落后徽章 */
+.mc-badge { display:inline-flex; align-items:center; gap:4px; font-size:13px; font-weight:700; padding:5px 14px; border-radius:8px; margin-bottom:14px; }
+.mb-red  { background:#fef2f2; color:#ef4444; }
+.mb-green{ background:#f0fdf4; color:#059669; }
+
+/* 进度条 */
+.prog-wrap { margin-bottom:14px; }
+.prog-label-row { display:flex; justify-content:space-between; font-size:12px; color:#aaa; margin-bottom:5px; font-weight:500; }
+.prog-track { background:#f0f0f0; height:10px; border-radius:5px; position:relative; overflow:hidden; }
+.prog-fill { height:10px; border-radius:5px; transition:width .4s ease; }
+.fill-t { background:linear-gradient(90deg,#6d28d9,#a78bfa); }
+.fill-b { background:linear-gradient(90deg,#047857,#34d399); }
+.prog-tick { position:absolute; top:0; height:100%; width:2px; background:#f59e0b; z-index:1; }
+.prog-tick-label { font-size:10px; color:#f59e0b; font-weight:700; margin-top:3px; }
+
+/* 2×2 数据方块 */
+.data-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; border-top:1px solid #f0f0f0; padding-top:14px; }
+.dg-cell { background:#f8f9fc; border-radius:10px; padding:12px 14px; }
+.dg-label { font-size:12px; color:#888; font-weight:600; margin-bottom:5px; }
+.dg-val { font-size:24px; font-weight:900; line-height:1.1; color:#111; }
+.dg-val.c-blue  { color:#2563eb; }
+.dg-val.c-dark  { color:#1a1a2e; }
+.dg-val.c-gray  { color:#94a3b8; }
+.dg-val.c-red   { color:#ef4444; }
+.dg-val.c-green { color:#059669; }
+
+/* 主播明细 */
+.anchor-card { background:white; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.06); overflow:hidden; }
+.anchor-card-head { padding:13px 18px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.anchor-card-head h4 { font-size:14px; font-weight:700; color:#222; }
+.anchor-count { font-size:12px; color:#aaa; }
+.download-excel-btn {
+  padding:6px 14px; background:#ecfdf5; color:#059669;
+  border:1px solid #bbf7d0; border-radius:6px; font-size:12px;
+  font-weight:600; cursor:pointer; transition:all .2s;
+}
+.download-excel-btn:hover { background:#d1fae5; }
+
+/* 列头排序箭头 */
+.th-sort { cursor:pointer; user-select:none; white-space:nowrap; }
+.th-sort:hover { color:#6366f1; background:#f5f3ff !important; }
+.th-arrow { display:inline-block; margin-left:4px; font-size:10px; color:#ccc; transition:color .15s; }
+.th-sort.asc .th-arrow::after { content:'↑'; color:#6366f1; }
+.th-sort.desc .th-arrow::after { content:'↓'; color:#6366f1; }
+.th-sort:not(.asc):not(.desc) .th-arrow::after { content:'↕'; color:#ccc; }
+
+/* 表格 */
+.anchor-table { width:100%; border-collapse:collapse; }
+.anchor-table thead th { font-size:12px; color:#999; font-weight:700; padding:10px 14px; border-bottom:1px solid #f0f0f0; text-align:left; white-space:nowrap; background:#fafafa; }
+.anchor-table thead th.r { text-align:right; }
+.anchor-table tbody tr:hover { background:#f8faff; }
+.anchor-table tbody td { font-size:13px; color:#333; padding:10px 14px; border-bottom:1px solid #f8f8f8; }
+.anchor-table tbody td.r { text-align:right; }
+.anchor-table tbody td.name { font-weight:700; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#1a1a2e; }
+.anchor-table tbody td.num { font-weight:700; font-variant-numeric:tabular-nums; }
+
+/* 完成度 chip */
+.chip { display:inline-block; padding:3px 9px; border-radius:5px; font-size:12px; font-weight:700; }
+.chip-red   { background:#fef2f2; color:#ef4444; }
+.chip-green { background:#f0fdf4; color:#059669; }
+.chip-over  { background:#fef2f2; color:#ef4444; }
+
+/* 加载/空状态 */
+.loading-tip { padding:40px; text-align:center; color:#aaa; font-size:14px; }
+
+/* ===== 移动端汉堡菜单按钮 ===== */
+.topbar-hamburger {
+  display:none; background:none; border:none; color:white; font-size:22px;
+  cursor:pointer; padding:4px 8px; line-height:1;
+}
+/* 移动端侧边栏切换按钮（浮动） */
+.mobile-sidebar-toggle {
+  display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  z-index:1200; background:#6366f1; color:white; border:none;
+  padding:12px 28px; border-radius:28px; font-size:14px; font-weight:700;
+  box-shadow:0 4px 16px rgba(99,102,241,.45); cursor:pointer; white-space:nowrap;
+}
+/* 移动端侧边栏遮罩 */
+.mobile-sidebar-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1100;
+}
+.mobile-sidebar-overlay.open { display:block; }
+
+/* ===== 响应式：768px 及以下（手机） ===== */
+@media (max-width: 768px) {
+  /* --- 顶栏 --- */
+  .topbar { padding:0 12px; height:auto; flex-wrap:wrap; min-height:48px; gap:0; }
+  .topbar-title { font-size:14px; flex:1; min-width:0; }
+  .topbar-hamburger { display:block; }
+  .topbar-sys { display:none; width:100%; padding:6px 0 8px; gap:6px; flex-wrap:wrap; }
+  .topbar-sys.open { display:flex; }
+  .topbar-right { display:none; width:100%; padding-bottom:8px; gap:8px; flex-wrap:wrap; font-size:11px; }
+  .topbar-right.open { display:flex; }
+  .topbar-right #topbarInfo { font-size:11px; flex:1; }
+  .switch-ui-btn { font-size:11px; padding:4px 10px; }
+  .logout-btn-top { font-size:11px; padding:4px 10px; }
+
+  /* --- 统计卡片 --- */
+  .stats-bar { grid-template-columns: repeat(2, 1fr) !important; overflow-x:auto; }
+  .stats-bar.source-mode { grid-template-columns: repeat(3, 1fr) !important; }
+  .sc { padding:12px 14px; border-right:1px solid #f0f0f0; border-bottom:1px solid #f0f0f0; min-width:0; }
+  .sc-val { font-size:20px; }
+  .sc-val2 { font-size:15px; }
+  .sc-row .sc-val { font-size:18px; }
+  .sc-label { font-size:10px; margin-bottom:5px; }
+  .sc-sub { font-size:11px; }
+
+  /* --- 上传面板 --- */
+  .upload-panels-wrap { padding:8px 12px; }
+  .upload-row textarea { min-width:0; width:100%; }
+  .upload-row { flex-direction:column; }
+  .upload-footer { flex-direction:column; align-items:flex-start; gap:8px; }
+
+  /* --- 主体布局：单列，侧边栏改为覆盖抽屉 --- */
+  .body-wrap { grid-template-columns:1fr !important; }
+  .sidebar {
+    position:fixed; top:0; left:0; bottom:0; z-index:1200;
+    width:280px; max-width:88vw;
+    transform:translateX(-100%); transition:transform .25s ease;
+    box-shadow:4px 0 20px rgba(0,0,0,.15);
+  }
+  .sidebar.mobile-open { transform:translateX(0); }
+  .mobile-sidebar-toggle { display:flex; align-items:center; gap:6px; }
+  .mobile-sidebar-toggle.hidden { display:none; }
+
+  /* --- 详情区 --- */
+  .detail { overflow-y:auto; }
+  .detail-inner { padding:10px 12px; gap:10px; }
+  .d-head { flex-direction:column; align-items:flex-start; gap:8px; padding:12px 14px; }
+  .d-org-name { font-size:18px; }
+  .d-head-right { width:100%; justify-content:space-between; flex-wrap:wrap; gap:6px; }
+  .d-time-badge { font-size:12px; padding:5px 12px; }
+  .date-picker-wrap { font-size:12px; }
+  .date-picker-wrap input[type=date] { font-size:12px; padding:4px 8px; }
+
+  /* --- 双口径卡片单列 --- */
+  .dual-block { grid-template-columns:1fr !important; gap:10px; }
+  .metric-card { padding:14px 14px; }
+  .mc-pct { font-size:40px; }
+  .dg-val { font-size:20px; }
+
+  /* --- 主播明细表：横向滚动，固定主播名列 --- */
+  .anchor-card { overflow:hidden; }
+  .anchor-card-head { flex-wrap:wrap; gap:8px; padding:10px 14px; }
+  .anchor-card > div { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .anchor-table { min-width:600px; }
+  .anchor-table thead th { font-size:11px; padding:8px 10px; }
+  .anchor-table tbody td { font-size:12px; padding:8px 10px; }
+  .anchor-table tbody td.name { max-width:90px; font-size:12px; }
+  .chip { font-size:11px; padding:2px 7px; }
+
+  /* --- 登录框 --- */
+  .login-box { padding:28px 20px; }
+
+  /* 底部留出浮动按钮空间 */
+  .detail-inner { padding-bottom:72px; }
+}
+
+/* ===== 响应式：480px 以下（小屏手机） ===== */
+@media (max-width: 480px) {
+  .stats-bar { grid-template-columns: repeat(2, 1fr) !important; }
+  .sc-val { font-size:18px; }
+  .sc-row .sc-val { font-size:15px; }
+  .d-org-name { font-size:16px; }
+  .mc-pct { font-size:34px; }
+  .topbar-title { font-size:13px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 登录页 ===== -->
+<div id="loginPage">
+  <div class="login-box">
+    <h1>🎯 主播数据监控系统</h1>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>选择系统</label>
+        <select id="systemSelect" required>
+          <option value="">-- 请选择系统 --</option>
+          <option value="bet">主动看播对赌后台</option>
+          <option value="crc">国艺核心主播周任务查看</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>账号</label>
+        <input type="text" id="loginUsername" required placeholder="请输入账号">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="loginPassword" required placeholder="请输入密码">
+      </div>
+      <div class="remember-row">
+        <input type="checkbox" id="rememberMe">
+        <label for="rememberMe">记住账号密码</label>
+      </div>
+      <button type="submit" class="login-btn" id="loginBtn">登录</button>
+      <div id="loginError" class="login-error"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== 主界面（登录后可见） ===== -->
+<div id="mainApp" style="display:none; flex-direction:column; flex:1; min-height:0;">
+
+<!-- 顶栏 -->
+<div class="topbar">
+  <div class="topbar-title">🎯 主播数据监控系统</div>
+  <div class="topbar-sys" id="sysToggleBar" style="display:none">
+    <span class="sys-badge active" id="badge-bet" onclick="handleSysSwitch('bet')">BET 系统</span>
+    <span class="sys-badge inactive" id="badge-crc" onclick="handleSysSwitch('crc')">CRC 系统</span>
+  </div>
+  <div class="topbar-right" id="topbarRight">
+    <span id="topbarInfo"></span>
+    <button class="admin-drawer-btn" id="adminToolsBtn" onclick="openAdminDrawer()" style="display:none">🛠 管理工具</button>
+    <a class="switch-ui-btn" href="/index-v1.html" title="切换到经典UI版本" id="switchUiBtn" style="display:none">🔄 经典版</a>
+    <button class="logout-btn-top" onclick="logout()">退出登录</button>
+  </div>
+  <button class="topbar-hamburger" id="hamburgerBtn" onclick="toggleTopbarMenu()" aria-label="菜单">☰</button>
+</div>
+
+<!-- 顶部统计卡片 -->
+<div class="stats-bar" id="statsBar">
+  <!-- 管理员5卡片 -->
+  <div class="sc" id="sc-total">
+    <div class="sc-label">主播总数</div>
+    <div class="sc-val c-dark" id="sc-total-val">—</div>
+    <div class="sc-sub gray">有效在播人数</div>
+  </div>
+  <div class="sc" id="sc-actual">
+    <div class="sc-label">实际完成</div>
+    <div class="sc-val c-blue" id="sc-actual-val">—</div>
+    <div class="sc-sub gray">本周累计 UAD</div>
+  </div>
+  <div class="sc" id="sc-targets">
+    <div class="sc-label">任务目标 / 基期目标</div>
+    <div class="sc-row">
+      <div class="sc-val c-dark" style="font-size:20px" id="sc-task-target-val">—</div>
+      <div class="sc-val2" id="sc-base-target-val">/ —</div>
+    </div>
+    <div class="sc-sub gray">含涨幅 / 不含涨幅</div>
+  </div>
+  <div class="sc" id="sc-task-comp">
+    <div class="sc-label">任务完成度</div>
+    <div class="sc-val" id="sc-task-comp-val">—</div>
+    <div class="sc-sub" id="sc-task-comp-sub"></div>
+  </div>
+  <div class="sc" id="sc-base-comp">
+    <div class="sc-label">基期完成度</div>
+    <div class="sc-val" id="sc-base-comp-val">—</div>
+    <div class="sc-sub" id="sc-base-comp-sub"></div>
+  </div>
+  <!-- source账号3卡片（默认隐藏） -->
+  <div class="sc" id="sc-s-total" style="display:none">
+    <div class="sc-label">主播总数</div>
+    <div class="sc-val c-dark" id="sc-s-total-val">—</div>
+    <div class="sc-sub gray">本机构在播人数</div>
+  </div>
+  <div class="sc" id="sc-s-task" style="display:none">
+    <div class="sc-label">任务完成度</div>
+    <div class="sc-val" id="sc-s-task-val">—</div>
+    <div class="sc-sub" id="sc-s-task-sub"></div>
+  </div>
+  <div class="sc" id="sc-s-base" style="display:none">
+    <div class="sc-label">基期完成度</div>
+    <div class="sc-val" id="sc-s-base-val">—</div>
+    <div class="sc-sub" id="sc-s-base-sub"></div>
+  </div>
+</div>
+
+<!-- 管理工具抽屉（仅 super_admin）-->
+<div class="admin-drawer-overlay" id="adminDrawerOverlay" onclick="closeAdminDrawer()"></div>
+<div class="admin-drawer" id="adminDrawer">
+  <div class="admin-drawer-head">
+    <h3>🛠 管理工具</h3>
+    <button class="admin-drawer-close" onclick="closeAdminDrawer()">✕</button>
+  </div>
+  <div class="admin-drawer-body" id="adminDrawerBody">
+
+<div id="uploadPanelsWrap" style="display:flex;flex-direction:column;gap:12px;">
+
+  <!-- 数据更新入口 -->
+  <div>
+    <div class="upload-toggle-bar purple" onclick="togglePanel('uploadBody','uploadIcon')">
+      <span class="tog-title">📥 数据更新入口</span>
+      <span class="tog-icon" id="uploadIcon">▼ 展开</span>
+    </div>
+    <div class="upload-body purple" id="uploadBody" style="display:none">
+      <div class="upload-desc">上传或粘贴 <b>UAD 数据</b> 和 <b>开播时长数据</b>，系统自动更新 bet + crc 两个系统。</div>
+      <div style="font-weight:600;margin-bottom:6px;color:#333;font-size:13px;">① UAD 数据（主动看播天数）</div>
+      <div class="upload-row">
+        <textarea id="uadPasteArea" placeholder="从BI看板复制后粘贴到这里（含标题行）&#10;格式：主播ID  主播名称  近1天UA主动看播天数" oninput="parseUAD()"></textarea>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label class="upload-file-btn">📂 上传文件<input type="file" id="uadFile" accept=".xlsx,.csv,.xls" style="display:none" onchange="readUADFile(this)"></label>
+          <div id="uadStatus" class="upload-status"></div>
+        </div>
+      </div>
+      <div style="font-weight:600;margin-bottom:6px;color:#333;font-size:13px;">② 开播时长数据</div>
+      <div class="upload-row">
+        <textarea id="stPasteArea" placeholder="从BI看板复制后粘贴到这里（含标题行）&#10;格式：主播ID  主播名称  近1天推流时长_万分钟" oninput="parseST()"></textarea>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label class="upload-file-btn">📂 上传文件<input type="file" id="stFile" accept=".xlsx,.csv,.xls" style="display:none" onchange="readSTFile(this)"></label>
+          <div id="stStatus" class="upload-status"></div>
+        </div>
+      </div>
+      <div class="upload-footer">
+        <label>📅 数据日期：<input type="date" id="uploadDate" onchange="document.getElementById('uploadProgress').value=calcAutoProgress(this.value)"> <span style="font-size:11px;color:#999">粘贴后自动填入</span></label>
+        <label>⏱ 时间进度：<input type="text" id="uploadProgress" placeholder="自动计算"> <span style="font-size:11px;color:#999">可手动修改</span></label>
+        <button class="confirm-btn blue" onclick="submitUpdate()" id="submitBtn">🚀 确认更新</button>
+        <span id="uploadResult" class="result-text"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 上传基期目标 -->
+  <div>
+    <div class="upload-toggle-bar green" onclick="togglePanel('targetBody','targetIcon')">
+      <span class="tog-title">📋 上传本周基期目标</span>
+      <span class="tog-icon" id="targetIcon">▼ 展开</span>
+    </div>
+    <div class="upload-body green" id="targetBody" style="display:none">
+      <div class="upload-desc">每周开始时上传新一周的主播名单和目标，写入后当周 UAD 更新可正确计算完成度。表格里的「系统」列区分 bet / crc，一次可同时上传两个系统。</div>
+      <div style="margin-bottom:10px;font-size:13px;color:#555;">📅 基期日期：自动取本周一 <b id="targetWeekMonday"></b></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+        <button class="template-btn" onclick="downloadTargetTemplate()">📄 下载填写模板</button>
+        <label class="target-file-btn">📂 选择基期Excel<input type="file" id="targetFile" accept=".xlsx,.xls" style="display:none" onchange="readTargetFile(this)"></label>
+        <span id="targetFileStatus" class="upload-status"></span>
+      </div>
+      <div class="upload-footer">
+        <button class="confirm-btn green" onclick="submitTargets()" id="targetSubmitBtn">🚀 确认写入目标</button>
+        <span id="targetResult" class="result-text"></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+  </div><!-- /admin-drawer-body -->
+</div><!-- /admin-drawer -->
+
+<!-- 主体 -->
+<div class="body-wrap" id="bodyWrap">
+
+  <!-- 左侧导航 -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <h3>📋 机构导航</h3>
+      <div class="sh-sub" id="sidebarSub">加载中...</div>
+    </div>
+    <!-- crc 二级组织过滤 -->
+    <div class="group-filter-bar" id="groupFilterBar" style="display:none">
+      <select id="groupSelector" onchange="onGroupChange()">
+        <option value="">— 全部 —</option>
+      </select>
+    </div>
+    <div class="sidebar-scroll" id="sidebarList">
+      <div class="loading-tip">加载中...</div>
+    </div>
+  </div>
+
+  <!-- 右侧详情 -->
+  <div class="detail" id="detailPanel">
+    <div class="detail-inner">
+
+      <!-- 机构标题行 -->
+      <div class="d-head">
+        <div>
+          <div class="d-org-name" id="d-orgname">—</div>
+          <div class="d-org-sub" id="d-orgsub"></div>
+        </div>
+        <div class="d-head-right">
+          <div class="date-picker-wrap">
+            📅<input type="date" id="dateFilter" onchange="onDateChange()">
+          </div>
+          <div class="d-time-badge" id="d-time-badge">⏱ 时间进度 —</div>
+        </div>
+      </div>
+
+      <!-- 双口径大块 -->
+      <div class="dual-block" id="dualBlock">
+
+        <!-- 任务口径 -->
+        <div class="metric-card">
+          <span class="mc-tag tag-task">🎯 任务口径（含涨幅）</span>
+          <div class="mc-pct red" id="d-task-pct">—</div>
+          <div class="mc-badge mb-red" id="d-task-badge">—</div>
+          <div class="prog-wrap">
+            <div class="prog-label-row">
+              <span>完成进度</span>
+              <span id="d-task-prog-label">—</span>
+            </div>
+            <div class="prog-track">
+              <div class="prog-fill fill-t" id="d-task-bar" style="width:0%"></div>
+              <div class="prog-tick" id="d-task-tick" style="left:0%"></div>
+            </div>
+            <div class="prog-tick-label">▲ 时间线</div>
+          </div>
+          <div class="data-grid">
+            <div class="dg-cell"><div class="dg-label">实际完成</div><div class="dg-val c-blue" id="d-task-actual">—</div></div>
+            <div class="dg-cell"><div class="dg-label">任务目标</div><div class="dg-val c-dark" id="d-task-target">—</div></div>
+            <div class="dg-cell"><div class="dg-label">当前应完成</div><div class="dg-val c-gray" id="d-task-should">—</div></div>
+            <div class="dg-cell" id="d-task-diff-cell"><div class="dg-label" id="d-task-diff-label">—</div><div class="dg-val c-red" id="d-task-diff">—</div></div>
+          </div>
+        </div>
+
+        <!-- 基期口径 -->
+        <div class="metric-card" id="baseMetricCard">
+          <span class="mc-tag tag-base">📐 基期口径（不含涨幅）</span>
+          <div class="mc-pct green" id="d-base-pct">—</div>
+          <div class="mc-badge mb-green" id="d-base-badge">—</div>
+          <div class="prog-wrap">
+            <div class="prog-label-row">
+              <span>完成进度</span>
+              <span id="d-base-prog-label">—</span>
+            </div>
+            <div class="prog-track">
+              <div class="prog-fill fill-b" id="d-base-bar" style="width:0%"></div>
+              <div class="prog-tick" id="d-base-tick" style="left:0%"></div>
+            </div>
+            <div class="prog-tick-label">▲ 时间线</div>
+          </div>
+          <div class="data-grid">
+            <div class="dg-cell"><div class="dg-label">实际完成</div><div class="dg-val c-blue" id="d-base-actual">—</div></div>
+            <div class="dg-cell"><div class="dg-label">基期目标</div><div class="dg-val c-dark" id="d-base-target">—</div></div>
+            <div class="dg-cell"><div class="dg-label">当前应完成</div><div class="dg-val c-gray" id="d-base-should">—</div></div>
+            <div class="dg-cell" id="d-base-diff-cell"><div class="dg-label" id="d-base-diff-label">—</div><div class="dg-val c-green" id="d-base-diff">—</div></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 主播明细表 -->
+      <div class="anchor-card">
+        <div class="anchor-card-head">
+          <h4>📋 主播明细</h4>
+          <span class="anchor-count" id="d-anchor-count"></span>
+          <button class="download-excel-btn" onclick="downloadExcel()">📥 下载Excel</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="anchor-table">
+            <thead>
+              <tr>
+                <th style="width:36px">#</th>
+                <th style="width:100px">主播ID</th>
+                <th>主播名称</th>
+                <th class="r th-sort" onclick="thSort('streaming_minutes',this)">开播时长(h)<span class="th-arrow"></span></th>
+                <th class="r th-sort" onclick="thSort('actual',this)">实际完成<span class="th-arrow"></span></th>
+                <th class="r th-sort" onclick="thSort('target',this)">任务目标<span class="th-arrow"></span></th>
+                <th class="r th-sort desc" onclick="thSort('completion_rate',this)">任务完成度<span class="th-arrow"></span></th>
+                <th class="r th-sort" onclick="thSort('base_target',this)" id="th-base-target">基期目标<span class="th-arrow"></span></th>
+                <th class="r th-sort" onclick="thSort('base_completion',this)" id="th-base-comp">基期完成度<span class="th-arrow"></span></th>
+              </tr>
+            </thead>
+            <tbody id="anchor-tbody">
+              <tr><td colspan="9" class="loading-tip">请先选择机构</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /body-wrap -->
+
+<!-- 移动端：侧边栏遮罩 -->
+<div class="mobile-sidebar-overlay" id="mobileSidebarOverlay" onclick="closeMobileSidebar()"></div>
+<!-- 移动端：侧边栏切换浮动按钮（仅管理员/二级管理员） -->
+<button class="mobile-sidebar-toggle hidden" id="mobileSidebarToggle" onclick="toggleMobileSidebar()">
+  📋 机构导航
+</button>
+
+</div><!-- /mainApp -->
+
+<script>
+(function() {
+  'use strict';
+
+  /* ===== 移动端交互 ===== */
+  window.toggleTopbarMenu = function() {
+    const sys   = document.getElementById('sysToggleBar');
+    const right = document.getElementById('topbarRight');
+    const isOpen = sys.classList.contains('open');
+    sys.classList.toggle('open', !isOpen);
+    right.classList.toggle('open', !isOpen);
+  };
+
+  window.toggleMobileSidebar = function() {
+    const sidebar  = document.getElementById('sidebar');
+    const overlay  = document.getElementById('mobileSidebarOverlay');
+    const btn      = document.getElementById('mobileSidebarToggle');
+    const isOpen   = sidebar.classList.contains('mobile-open');
+    sidebar.classList.toggle('mobile-open', !isOpen);
+    overlay.classList.toggle('open', !isOpen);
+    btn.textContent = isOpen ? '📋 机构导航' : '✕ 关闭导航';
+  };
+
+  window.closeMobileSidebar = function() {
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('mobileSidebarOverlay').classList.remove('open');
+    const btn = document.getElementById('mobileSidebarToggle');
+    if (btn) btn.textContent = '📋 机构导航';
+  };
+
+  // 点击侧边栏条目后在移动端自动关闭
+  function autoCloseSidebarOnMobile() {
+    if (window.innerWidth <= 768) {
+      closeMobileSidebar();
+    }
+  }
+
+  /* ===== 常量 ===== */
+  const SUPABASE_URL = 'https://yoywhdfqhymduaxhalhq.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlveXdoZGZxaHltZHVheGhhbGhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNjI0NDcsImV4cCI6MjA5MTczODQ0N30.sWYLzZM3olMfaC2IcRaBkHqFT2UPEzUsFWAxqstkHcA';
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const SOURCE_GROUP_MAP = {
+    '不可控个播':'个播大类','可控个播':'个播大类','个播（需建联）':'个播大类',
+    '二后生家':'电商家族','马美如团队':'电商家族',
+    '艺术垂类':'艺术垂类','艺术垂类-妍妍家族':'艺术垂类',
+    '大勇':'机构-魏家班','魏三':'机构-魏家班',
+    '李广':'机构-李广','臻医堂':'机构-臻医堂',
+    '星恒-百万粉':'机构-星恒','星恒-非百万粉':'机构-星恒',
+    '南徒':'机构-星恒','宝哥':'机构-星恒','小张帝':'机构-星恒','李小帅':'机构-星恒','火胖':'机构-星恒',
+    '徐小二':'机构-徐小二','李小帅':'机构-徐小二','南徒':'机构-徐小二','小张帝':'机构-徐小二',
+    '杨泽-百万粉':'杨润泽个人','润泽-宝哥':'杨润泽个人',
+    '润泽-火胖':'杨润泽个人','润泽-非百万粉':'杨润泽个人',
+  };
+
+  /* ===== 应用状态 ===== */
+  let state = {
+    user: null,           // 登录用户数据
+    role: 'source',       // super_admin / sub_admin / source
+    system: 'bet',        // 当前系统
+    source: null,         // 当前机构（source账号专用）
+    currentSource: null,  // 右侧详情当前机构（__ALL__=汇总）
+    currentDate: '',
+    timeProgress: 0,
+    allSources: [],
+    subAdminSources: [],
+    currentGroupFilter: '',
+    currentData: [],      // 右侧表格当前数据
+    allOrgData: [],       // 全量数据（管理员视图）
+    sortKey: 'completion_rate',
+    sortDir: 'desc',
+  };
+
+  /* ===== 工具函数 ===== */
+  function fmtNum(n) {
+    if (n == null || isNaN(n)) return '—';
+    return Math.round(n).toLocaleString('zh-CN');
+  }
+
+  function calcAutoProgress(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T00:00:00');
+    const map = {1:'14.29',2:'28.57',3:'42.86',4:'57.14',5:'71.43',6:'85.71',0:'100.00'};
+    return map[d.getDay()] + '%';
+  }
+
+  function getThisMonday() {
+    const today = new Date();
+    const day = today.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const mon = new Date(today);
+    mon.setDate(today.getDate() + diff);
+    return mon.toISOString().slice(0,10);
+  }
+
+  function extractDateFromText(text) {
+    const lines = text.trim().split(/\r?\n/);
+    for (const line of lines.slice(0,5)) {
+      const r = line.match(/(\d{4}-\d{2}-\d{2})\s*至\s*(\d{4}-\d{2}-\d{2})/);
+      if (r) return r[2];
+      const s = line.match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+      if (s) return `${s[1]}-${String(s[2]).padStart(2,'0')}-${String(s[3]).padStart(2,'0')}`;
+    }
+    return null;
+  }
+
+  /* 分页拉取 Supabase（防超1000条） */
+  async function fetchAllPages(buildQuery) {
+    let all = [], from = 0;
+    while (true) {
+      const { data, error } = await buildQuery(from, from + 999);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < 1000) break;
+      from += 1000;
+    }
+    return all;
+  }
+
+  /* ===== 登录 ===== */
+  window.addEventListener('DOMContentLoaded', () => {
+    const savedSys = localStorage.getItem('saved_system');
+    if (savedSys) document.getElementById('systemSelect').value = savedSys;
+    const savedUser = localStorage.getItem('saved_username');
+    const savedPwd  = localStorage.getItem('saved_password');
+    const remember  = localStorage.getItem('remember_me') === 'true';
+    if (savedUser && savedPwd && remember && savedSys) {
+      document.getElementById('loginUsername').value = savedUser;
+      document.getElementById('loginPassword').value = savedPwd;
+      document.getElementById('rememberMe').checked = true;
+      autoLogin(savedUser, savedPwd, savedSys);
+    }
+  });
+
+  async function autoLogin(username, password, system) {
+    try {
+      const { data, error } = await db.from('user_accounts').select('*')
+        .eq('username', username).eq('password', password).eq('system', system).single();
+      if (error || !data) {
+        localStorage.removeItem('saved_username');
+        localStorage.removeItem('saved_password');
+        localStorage.removeItem('remember_me');
+        return;
+      }
+      await performLogin(data);
+    } catch(e) { console.warn('自动登录失败', e); }
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const sys      = document.getElementById('systemSelect').value;
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+    const remember = document.getElementById('rememberMe').checked;
+    const btn      = document.getElementById('loginBtn');
+    const errEl    = document.getElementById('loginError');
+    if (!sys) { errEl.textContent = '请先选择系统'; return; }
+    btn.disabled = true; btn.textContent = '登录中...'; errEl.textContent = '';
+    try {
+      const { data, error } = await db.from('user_accounts').select('*')
+        .eq('username', username).eq('password', password).eq('system', sys).single();
+      if (error || !data) throw new Error('账号或密码错误，或所选系统不匹配');
+      localStorage.setItem('saved_system', sys);
+      if (remember) {
+        localStorage.setItem('saved_username', username);
+        localStorage.setItem('saved_password', password);
+        localStorage.setItem('remember_me', 'true');
+      } else {
+        localStorage.removeItem('saved_username');
+        localStorage.removeItem('saved_password');
+        localStorage.removeItem('remember_me');
+      }
+      await performLogin(data);
+    } catch(err) {
+      errEl.textContent = err.message;
+    } finally {
+      btn.disabled = false; btn.textContent = '登录';
+    }
+  });
+
+  async function performLogin(userData) {
+    state.user   = userData;
+    state.role   = userData.role || 'source';
+    state.system = userData.system || 'bet';
+    state.source = userData.source;
+    state.subAdminSources = [];
+    state.currentGroupFilter = '';
+
+    logAccess(userData.username, userData.source);
+
+    // 取最新日期
+    const { data: latestRow } = await db.from('anchor_data').select('date')
+      .eq('system', state.system).order('date', {ascending:false}).limit(1);
+    state.currentDate = (latestRow && latestRow.length > 0)
+      ? latestRow[0].date
+      : new Date().toISOString().slice(0,10);
+    document.getElementById('dateFilter').value = state.currentDate;
+
+    // 隐藏登录页，显示主界面
+    document.getElementById('loginPage').style.display = 'none';
+    const app = document.getElementById('mainApp');
+    app.style.display = 'flex';
+
+    // 更新顶栏系统徽章
+    updateSysBadges();
+
+    // 更新顶栏右侧信息
+    const sysLabel = state.system === 'crc' ? '国艺核心主播' : '主动看播对赌';
+    const roleLabel = state.role === 'super_admin' ? '管理员视图'
+                    : state.role === 'sub_admin'   ? '二级管理视图'
+                    : '机构视图';
+    document.getElementById('topbarInfo').textContent =
+      `${userData.display_name || userData.username} · ${sysLabel} · ${roleLabel}`;
+
+    // 上传面板 / 管理工具按钮：仅 super_admin 可见（双重防护）
+    const adminBtn = document.getElementById('adminToolsBtn');
+    if (adminBtn) adminBtn.style.display = state.role === 'super_admin' ? '' : 'none';
+    // 经典版切换按钮：仅 super_admin 可见
+    const switchBtn = document.getElementById('switchUiBtn');
+    if (switchBtn) switchBtn.style.display = state.role === 'super_admin' ? '' : 'none';
+    // 系统切换 Tab：仅 super_admin 可见
+    document.getElementById('sysToggleBar').style.display =
+      state.role === 'super_admin' ? '' : 'none';
+
+    if (state.role === 'super_admin') {
+      // super_admin：显示侧边栏
+      document.getElementById('targetWeekMonday').textContent = getThisMonday();
+      // BET系统admin账号才可切换系统
+      if (userData.username === 'admin' && userData.system === 'bet') {
+        document.getElementById('badge-bet').classList.remove('disabled');
+        document.getElementById('badge-crc').classList.remove('disabled');
+      } else {
+        document.getElementById('badge-bet').classList.add('disabled');
+        document.getElementById('badge-crc').classList.add('disabled');
+      }
+      document.getElementById('bodyWrap').classList.remove('no-sidebar');
+      document.getElementById('sidebar').style.display = 'flex';
+      document.getElementById('mobileSidebarToggle').classList.remove('hidden');
+      showAdminStatsCards();
+      await loadSidebarAndData();
+
+    } else if (state.role === 'sub_admin') {
+      const { data: mappings } = await db.from('sub_admin_sources')
+        .select('source_name').eq('username', userData.username).eq('system', state.system);
+      state.subAdminSources = (mappings || []).map(m => m.source_name);
+      document.getElementById('badge-bet').classList.add('disabled');
+      document.getElementById('badge-crc').classList.add('disabled');
+      document.getElementById('bodyWrap').classList.remove('no-sidebar');
+      document.getElementById('sidebar').style.display = 'flex';
+      document.getElementById('mobileSidebarToggle').classList.remove('hidden');
+      showAdminStatsCards();
+      await loadSidebarAndData();
+
+    } else {
+      // source账号：隐藏侧边栏，直接加载本机构数据
+      document.getElementById('badge-bet').classList.add('disabled');
+      document.getElementById('badge-crc').classList.add('disabled');
+      document.getElementById('bodyWrap').classList.add('no-sidebar');
+      document.getElementById('sidebar').style.display = 'none';
+      document.getElementById('mobileSidebarToggle').classList.add('hidden');
+      showSourceStatsCards();
+      state.currentSource = state.source;
+      await loadDetailData(state.source);
+    }
+  }
+
+  function showAdminStatsCards() {
+    ['sc-total','sc-actual','sc-targets','sc-task-comp','sc-base-comp'].forEach(id => {
+      document.getElementById(id).style.display = '';
+    });
+    ['sc-s-total','sc-s-task','sc-s-base'].forEach(id => {
+      document.getElementById(id).style.display = 'none';
+    });
+    document.getElementById('statsBar').classList.remove('source-mode');
+  }
+
+  function showSourceStatsCards() {
+    ['sc-total','sc-actual','sc-targets','sc-task-comp','sc-base-comp'].forEach(id => {
+      document.getElementById(id).style.display = 'none';
+    });
+    ['sc-s-total','sc-s-task','sc-s-base'].forEach(id => {
+      document.getElementById(id).style.display = '';
+    });
+    document.getElementById('statsBar').classList.add('source-mode');
+  }
+
+  function updateSysBadges() {
+    const betBadge = document.getElementById('badge-bet');
+    const crcBadge = document.getElementById('badge-crc');
+    if (state.system === 'bet') {
+      betBadge.className = 'sys-badge active';
+      crcBadge.className = 'sys-badge inactive';
+    } else {
+      betBadge.className = 'sys-badge inactive';
+      crcBadge.className = 'sys-badge active';
+    }
+    if (state.role === 'super_admin' && state.user && state.user.username === 'admin') {
+      // 保持可点击
+    } else {
+      betBadge.classList.add('disabled');
+      crcBadge.classList.add('disabled');
+    }
+  }
+
+  window.handleSysSwitch = async function(sys) {
+    if (state.role !== 'super_admin') return;
+    if (state.system === sys) return;
+    state.system = sys;
+    state.currentSource = null;
+    state.currentGroupFilter = '';
+    updateSysBadges();
+    const sysLabel = sys === 'crc' ? '国艺核心主播' : '主动看播对赌';
+    document.getElementById('topbarInfo').textContent =
+      `${state.user.display_name || state.user.username} · ${sysLabel} · 管理员视图`;
+    // 取新系统最新日期
+    const { data: latestRow } = await db.from('anchor_data').select('date')
+      .eq('system', sys).order('date', {ascending:false}).limit(1);
+    if (latestRow && latestRow.length > 0) {
+      state.currentDate = latestRow[0].date;
+      document.getElementById('dateFilter').value = state.currentDate;
+    }
+    await loadSidebarAndData();
+  };
+
+  window.logout = function() {
+    state = { user:null, role:'source', system:'bet', source:null, currentSource:null,
+      currentDate:'', timeProgress:0, allSources:[], subAdminSources:[],
+      currentGroupFilter:'', currentData:[], allOrgData:[], sortKey:'completion_rate', sortDir:'desc' };
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('loginForm').reset();
+    document.getElementById('loginError').textContent = '';
+    // 重置移动端导航按钮
+    document.getElementById('mobileSidebarToggle').classList.add('hidden');
+    // 重置管理工具按钮、切换按钮、系统Tab
+    const adminBtn = document.getElementById('adminToolsBtn');
+    if (adminBtn) adminBtn.style.display = 'none';
+    const switchBtn = document.getElementById('switchUiBtn');
+    if (switchBtn) switchBtn.style.display = 'none';
+    document.getElementById('sysToggleBar').style.display = 'none';
+    const savedSys = localStorage.getItem('saved_system');
+    if (savedSys) document.getElementById('systemSelect').value = savedSys;
+    const remember = localStorage.getItem('remember_me') === 'true';
+    if (remember) {
+      const u = localStorage.getItem('saved_username');
+      const p = localStorage.getItem('saved_password');
+      if (u && p) {
+        document.getElementById('loginUsername').value = u;
+        document.getElementById('loginPassword').value = p;
+        document.getElementById('rememberMe').checked = true;
+      }
+    }
+  };
+
+  async function logAccess(username, source) {
+    try {
+      await db.from('access_logs').insert([{
+        username, source, action:'login', user_agent: navigator.userAgent
+      }]);
+    } catch(e) { console.warn('访问日志失败', e); }
+  }
+
+  /* ===== 日期切换 ===== */
+  window.onDateChange = async function() {
+    state.currentDate = document.getElementById('dateFilter').value;
+    if (state.role === 'source') {
+      await loadDetailData(state.source);
+    } else {
+      await loadSidebarAndData();
+    }
+  };
+
+  /* ===== 管理员：加载侧边栏 + 全量数据 ===== */
+  async function loadSidebarAndData() {
+    document.getElementById('sidebarList').innerHTML = '<div class="loading-tip">加载中...</div>';
+    document.getElementById('anchor-tbody').innerHTML = '<tr><td colspan="8" class="loading-tip">加载中...</td></tr>';
+
+    const date = state.currentDate;
+    if (!date) return;
+
+    try {
+      // 分页拉取全量数据
+      const data = await fetchAllPages((from, to) => {
+        let q = db.from('anchor_data').select('*').eq('date', date).eq('system', state.system);
+        if (state.role === 'sub_admin' && state.subAdminSources.length > 0) {
+          q = q.in('source', state.subAdminSources);
+        }
+        return q.range(from, to);
+      });
+
+      state.allOrgData = data;
+
+      if (!data || data.length === 0) {
+        document.getElementById('sidebarList').innerHTML = '<div class="loading-tip">暂无数据</div>';
+        return;
+      }
+
+      state.timeProgress = parseFloat(data[0].time_progress);
+      const tp = state.timeProgress;
+
+      // 更新sidebar头部
+      document.getElementById('sidebarSub').textContent =
+        `时间进度 ${tp.toFixed(2)}% · 数据日期 ${date}`;
+
+      // 按 source 聚合
+      const orgMap = {};
+      data.forEach(item => {
+        if (!orgMap[item.source]) orgMap[item.source] = { count:0, actual:0, target:0, base_target:0 };
+        orgMap[item.source].count++;
+        orgMap[item.source].actual     += item.actual;
+        orgMap[item.source].target     += item.target;
+        orgMap[item.source].base_target += (item.base_target || 0);
+      });
+
+      state.allSources = Object.keys(orgMap).sort();
+
+      // crc 显示二级组织过滤
+      if (state.system === 'crc') {
+        const groups = [...new Set(state.allSources.map(s => SOURCE_GROUP_MAP[s] || '其他'))].sort();
+        const gSel = document.getElementById('groupSelector');
+        gSel.innerHTML = '<option value="">— 全部 —</option>';
+        groups.forEach(g => {
+          const o = document.createElement('option'); o.value = g; o.textContent = g;
+          gSel.appendChild(o);
+        });
+        gSel.value = state.currentGroupFilter;
+        document.getElementById('groupFilterBar').style.display = '';
+      } else {
+        document.getElementById('groupFilterBar').style.display = 'none';
+        state.currentGroupFilter = '';
+      }
+
+      // 汇总数据
+      const filtered = state.currentGroupFilter
+        ? data.filter(d => (SOURCE_GROUP_MAP[d.source] || '其他') === state.currentGroupFilter)
+        : data;
+      const totalActual     = filtered.reduce((s,i) => s + i.actual, 0);
+      const totalTarget     = filtered.reduce((s,i) => s + i.target, 0);
+      const totalBase       = filtered.reduce((s,i) => s + (i.base_target||0), 0);
+      const totalTaskPct    = totalTarget > 0 ? totalActual / totalTarget * 100 : 0;
+      const totalBasePct    = totalBase   > 0 ? totalActual / totalBase   * 100 : 0;
+
+      // 更新顶部5卡片
+      updateTopStats(filtered.length, totalActual, totalTarget, totalBase, totalTaskPct, totalBasePct, tp);
+
+      // 渲染侧边栏
+      renderSidebar(orgMap, totalActual, totalTarget, totalBase, totalTaskPct, totalBasePct, tp, date);
+
+      // 默认选中汇总
+      if (!state.currentSource) {
+        state.currentSource = '__ALL__';
+      }
+      await selectOrg(state.currentSource, orgMap, filtered, data);
+
+    } catch(err) {
+      console.error('loadSidebarAndData 失败', err);
+      document.getElementById('sidebarList').innerHTML = `<div class="loading-tip">加载失败: ${err.message}</div>`;
+    }
+  }
+
+  function renderSidebar(orgMap, totalActual, totalTarget, totalBase, totalTaskPct, totalBasePct, tp, date) {
+    const filteredSources = state.currentGroupFilter
+      ? state.allSources.filter(s => (SOURCE_GROUP_MAP[s] || '其他') === state.currentGroupFilter)
+      : state.allSources;
+
+    const taskAhead = totalTaskPct >= tp;
+    const baseAhead = totalBasePct >= tp;
+
+    let html = `
+      <div class="nav-item nav-total ${state.currentSource==='__ALL__' ? 'active' : ''}"
+           onclick="onSidebarClick('__ALL__')">
+        <div class="ni-left">
+          <div class="ni-name tot">🔷 全部汇总</div>
+          <div class="ni-count">共 ${fmtNum(state.allOrgData.filter(d => !state.currentGroupFilter || (SOURCE_GROUP_MAP[d.source]||'其他')===state.currentGroupFilter).length)} 名主播</div>
+        </div>
+        <div class="ni-right">
+          <div class="ni-task ${taskAhead ? 'r' : 'g'}">${totalTaskPct.toFixed(1)}%</div>
+          <div class="ni-base ${baseAhead ? 'r' : 'g'}">基期 ${totalBasePct.toFixed(1)}%</div>
+        </div>
+      </div>
+    `;
+
+    const sysLabel = state.system.toUpperCase();
+    html += `<div class="group-label">${sysLabel} 系统 · ${filteredSources.length} 机构</div>`;
+
+    filteredSources.forEach(src => {
+      const o = orgMap[src];
+      if (!o) return;
+      const tPct = o.target > 0 ? o.actual / o.target * 100 : 0;
+      const bPct = o.base_target > 0 ? o.actual / o.base_target * 100 : 0;
+      const ta   = tPct >= tp;
+      const ba   = bPct >= tp;
+      const isActive = state.currentSource === src;
+      html += `
+        <div class="nav-item ${isActive ? 'active' : ''}" onclick="onSidebarClick('${src.replace(/'/g,"\\'")}')">
+          <div class="ni-left">
+            <div class="ni-name">${src}</div>
+            <div class="ni-count">${o.count}人</div>
+          </div>
+          <div class="ni-right">
+            <div class="ni-task ${ta ? 'r' : 'g'}">${tPct.toFixed(1)}%</div>
+            <div class="ni-base ${ba ? 'r' : 'g'}">基期 ${bPct.toFixed(1)}%</div>
+          </div>
+        </div>
+      `;
+    });
+
+    document.getElementById('sidebarList').innerHTML = html;
+  }
+
+  window.onSidebarClick = async function(src) {
+    state.currentSource = src;
+    // 刷新侧边栏高亮
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    // 找到对应元素高亮
+    const allItems = document.querySelectorAll('.nav-item');
+    allItems.forEach(el => {
+      const onclick = el.getAttribute('onclick') || '';
+      if (onclick.includes(`'${src}'`) || onclick.includes(`"${src}"`)) {
+        el.classList.add('active');
+      }
+    });
+    autoCloseSidebarOnMobile();
+    await selectOrg(src, null, null, state.allOrgData);
+  };
+
+  window.onGroupChange = async function() {
+    state.currentGroupFilter = document.getElementById('groupSelector').value;
+    state.currentSource = '__ALL__';
+    await loadSidebarAndData();
+  };
+
+  async function selectOrg(src, orgMap, filteredTotal, allData) {
+    const date = state.currentDate;
+    let rows;
+    if (src === '__ALL__') {
+      // 汇总：取当前组过滤后数据
+      rows = state.currentGroupFilter
+        ? allData.filter(d => (SOURCE_GROUP_MAP[d.source]||'其他') === state.currentGroupFilter)
+        : allData;
+      document.getElementById('d-orgname').textContent = '🔷 全部汇总';
+    } else {
+      rows = allData.filter(d => d.source === src);
+      document.getElementById('d-orgname').textContent = src;
+    }
+
+    if (!rows || rows.length === 0) {
+      document.getElementById('d-orgsub').textContent = '暂无数据';
+      document.getElementById('anchor-tbody').innerHTML = '<tr><td colspan="9" class="loading-tip">暂无数据</td></tr>';
+      return;
+    }
+
+    const tp         = parseFloat(rows[0].time_progress);
+    const totalActual = rows.reduce((s,i) => s + i.actual, 0);
+    const totalTarget = rows.reduce((s,i) => s + i.target, 0);
+    const totalBase   = rows.reduce((s,i) => s + (i.base_target||0), 0);
+    const taskPct     = totalTarget > 0 ? totalActual / totalTarget * 100 : 0;
+    const basePct     = totalBase   > 0 ? totalActual / totalBase   * 100 : 0;
+    const hasBase     = totalBase > 0;
+
+    document.getElementById('d-orgsub').textContent = `共 ${rows.length} 名主播 · 数据日期 ${date}`;
+    document.getElementById('d-anchor-count').textContent = `共 ${rows.length} 名主播`;
+
+    // 时间进度徽章
+    const tpStr = tp.toFixed(2);
+    const tpDay = tp <= 14.30 ? 1 : tp <= 28.58 ? 2 : tp <= 42.87 ? 3 : tp <= 57.15 ? 4 : tp <= 71.44 ? 5 : tp <= 85.72 ? 6 : 7;
+    document.getElementById('d-time-badge').textContent = `⏱ 时间进度 ${tpStr}%（第 ${tpDay} 天 / 7 天）`;
+
+    // 双口径卡片
+    renderDualBlock(taskPct, basePct, totalActual, totalTarget, totalBase, tp, hasBase);
+
+    // 主播明细表
+    state.currentData = rows;
+    state.sortKey = 'completion_rate';
+    state.sortDir = 'desc';
+    // 重置表头排序样式
+    document.querySelectorAll('.th-sort').forEach(t => t.classList.remove('asc','desc'));
+    const thComp = document.querySelector('.th-sort[onclick*="completion_rate"]');
+    if (thComp) thComp.classList.add('desc');
+    renderAnchorTable(rows, tp, hasBase);
+  }
+
+  function renderDualBlock(taskPct, basePct, actualN, targetN, baseN, tp, hasBase) {
+    const taskAhead = taskPct >= tp;
+    const baseAhead = basePct >= tp;
+    const taskDiff  = (taskPct - tp);
+    const baseDiff  = (basePct - tp);
+    const tpStr     = tp.toFixed(2);
+
+    // 任务口径
+    const tpc = document.getElementById('d-task-pct');
+    tpc.textContent = taskPct.toFixed(1) + '%';
+    tpc.className   = 'mc-pct ' + (taskAhead ? 'red' : 'green');
+
+    const tb = document.getElementById('d-task-badge');
+    tb.textContent = (taskAhead ? '↑ 超前' : '↓ 落后') + '时间进度 ' + (taskAhead ? '+' : '') + taskDiff.toFixed(1) + '%';
+    tb.className   = 'mc-badge ' + (taskAhead ? 'mb-red' : 'mb-green');
+
+    document.getElementById('d-task-bar').style.width = Math.min(taskPct, 100) + '%';
+    document.getElementById('d-task-tick').style.left = Math.min(tp, 100) + '%';
+    document.getElementById('d-task-prog-label').textContent = taskPct.toFixed(1) + '% ｜ 时间基准 ' + tpStr + '%';
+    document.getElementById('d-task-actual').textContent = fmtNum(actualN);
+    document.getElementById('d-task-target').textContent = fmtNum(targetN);
+
+    const taskShould = targetN * tp / 100;
+    const taskDiffN  = actualN - taskShould;
+    document.getElementById('d-task-should').textContent = fmtNum(taskShould);
+    const tdEl  = document.getElementById('d-task-diff');
+    const tdLbl = document.getElementById('d-task-diff-label');
+    tdEl.textContent = (taskDiffN >= 0 ? '+' : '') + fmtNum(taskDiffN);
+    tdEl.className   = 'dg-val ' + (taskDiffN >= 0 ? 'c-red' : 'c-green');
+    tdLbl.textContent = taskDiffN >= 0 ? '超出绝对值' : '缺口绝对值';
+    document.getElementById('d-task-diff-cell').style.background = taskDiffN >= 0 ? '#fef2f2' : '#f0fdf4';
+
+    // 基期口径
+    const baseCard = document.getElementById('baseMetricCard');
+    if (!hasBase) {
+      baseCard.style.display = 'none';
+      document.getElementById('dualBlock').style.gridTemplateColumns = '1fr';
+      return;
+    }
+    baseCard.style.display = '';
+    document.getElementById('dualBlock').style.gridTemplateColumns = '1fr 1fr';
+
+    const bpc = document.getElementById('d-base-pct');
+    bpc.textContent = basePct.toFixed(1) + '%';
+    bpc.className   = 'mc-pct ' + (baseAhead ? 'red' : 'green');
+
+    const bb = document.getElementById('d-base-badge');
+    bb.textContent = (baseAhead ? '↑ 超前' : '↓ 落后') + '时间进度 ' + (baseAhead ? '+' : '') + baseDiff.toFixed(1) + '%';
+    bb.className   = 'mc-badge ' + (baseAhead ? 'mb-red' : 'mb-green');
+
+    document.getElementById('d-base-bar').style.width = Math.min(basePct, 100) + '%';
+    document.getElementById('d-base-tick').style.left = Math.min(tp, 100) + '%';
+    document.getElementById('d-base-prog-label').textContent = basePct.toFixed(1) + '% ｜ 时间基准 ' + tpStr + '%';
+    document.getElementById('d-base-actual').textContent = fmtNum(actualN);
+    document.getElementById('d-base-target').textContent = fmtNum(baseN);
+
+    const baseShould = baseN * tp / 100;
+    const baseDiffN  = actualN - baseShould;
+    document.getElementById('d-base-should').textContent = fmtNum(baseShould);
+    const bdEl  = document.getElementById('d-base-diff');
+    const bdLbl = document.getElementById('d-base-diff-label');
+    bdEl.textContent = (baseDiffN >= 0 ? '+' : '') + fmtNum(baseDiffN);
+    bdEl.className   = 'dg-val ' + (baseDiffN >= 0 ? 'c-red' : 'c-green');
+    bdLbl.textContent = baseDiffN >= 0 ? '超出绝对值' : '缺口绝对值';
+    document.getElementById('d-base-diff-cell').style.background = baseDiffN >= 0 ? '#fef2f2' : '#f0fdf4';
+  }
+
+  /* ===== Source账号：直接加载本机构 ===== */
+  async function loadDetailData(source) {
+    document.getElementById('anchor-tbody').innerHTML = '<tr><td colspan="8" class="loading-tip">加载中...</td></tr>';
+    const date = state.currentDate;
+    try {
+      const rows = await fetchAllPages((from, to) =>
+        db.from('anchor_data').select('*').eq('date', date).eq('system', state.system).eq('source', source).range(from, to)
+      );
+      if (!rows || rows.length === 0) {
+        document.getElementById('anchor-tbody').innerHTML = '<tr><td colspan="8" class="loading-tip">暂无数据</td></tr>';
+        updateSourceStats(0, 0, 0, 0, 0);
+        return;
+      }
+      const tp = parseFloat(rows[0].time_progress);
+      state.timeProgress = tp;
+      state.currentData = rows;
+
+      const totalActual = rows.reduce((s,i) => s + i.actual, 0);
+      const totalTarget = rows.reduce((s,i) => s + i.target, 0);
+      const totalBase   = rows.reduce((s,i) => s + (i.base_target||0), 0);
+      const taskPct     = totalTarget > 0 ? totalActual / totalTarget * 100 : 0;
+      const basePct     = totalBase   > 0 ? totalActual / totalBase   * 100 : 0;
+      const hasBase     = totalBase > 0;
+
+      updateSourceStats(rows.length, taskPct, basePct, tp, totalBase);
+
+      document.getElementById('d-orgname').textContent = source;
+      document.getElementById('d-orgsub').textContent = `共 ${rows.length} 名主播 · 数据日期 ${date}`;
+      document.getElementById('d-anchor-count').textContent = `共 ${rows.length} 名主播`;
+
+      const tpDay = tp <= 14.30 ? 1 : tp <= 28.58 ? 2 : tp <= 42.87 ? 3 : tp <= 57.15 ? 4 : tp <= 71.44 ? 5 : tp <= 85.72 ? 6 : 7;
+      document.getElementById('d-time-badge').textContent = `⏱ 时间进度 ${tp.toFixed(2)}%（第 ${tpDay} 天 / 7 天）`;
+
+      renderDualBlock(taskPct, basePct, totalActual, totalTarget, totalBase, tp, hasBase);
+      renderAnchorTable(rows, tp, hasBase);
+    } catch(err) {
+      document.getElementById('anchor-tbody').innerHTML = `<tr><td colspan="9" class="loading-tip">加载失败: ${err.message}</td></tr>`;
+    }
+  }
+
+  function updateSourceStats(count, taskPct, basePct, tp, totalBase) {
+    const sTotalEl = document.getElementById('sc-s-total-val');
+    const sTaskEl  = document.getElementById('sc-s-task-val');
+    const sTaskSub = document.getElementById('sc-s-task-sub');
+    const sBaseEl  = document.getElementById('sc-s-base-val');
+    const sBaseSub = document.getElementById('sc-s-base-sub');
+
+    if (sTotalEl) sTotalEl.textContent = count;
+
+    const taskAhead = taskPct >= tp;
+    const baseAhead = basePct >= tp;
+    const taskDiff  = (taskPct - tp).toFixed(1);
+    const baseDiff  = (basePct - tp).toFixed(1);
+
+    if (sTaskEl) {
+      sTaskEl.textContent = taskPct.toFixed(1) + '%';
+      sTaskEl.className   = 'sc-val ' + (taskAhead ? 'c-red' : 'c-green');
+    }
+    if (sTaskSub) {
+      sTaskSub.textContent = (taskAhead ? '↑ 超前时间进度 +' : '↓ 落后时间进度 ') + Math.abs(taskDiff) + '%';
+      sTaskSub.className   = 'sc-sub ' + (taskAhead ? 'up' : 'dn');
+    }
+    if (sBaseEl && totalBase > 0) {
+      sBaseEl.textContent = basePct.toFixed(1) + '%';
+      sBaseEl.className   = 'sc-val ' + (baseAhead ? 'c-red' : 'c-green');
+    }
+    if (sBaseSub && totalBase > 0) {
+      sBaseSub.textContent = (baseAhead ? '↑ 超前时间进度 +' : '↓ 落后时间进度 ') + Math.abs(baseDiff) + '%';
+      sBaseSub.className   = 'sc-sub ' + (baseAhead ? 'up' : 'dn');
+    }
+  }
+
+  function updateTopStats(count, actualN, targetN, baseN, taskPct, basePct, tp) {
+    document.getElementById('sc-total-val').textContent = fmtNum(count);
+    document.getElementById('sc-actual-val').textContent = fmtNum(actualN);
+    document.getElementById('sc-task-target-val').textContent = fmtNum(targetN);
+    document.getElementById('sc-base-target-val').textContent = baseN > 0 ? '/ ' + fmtNum(baseN) : '/ —';
+
+    const tEl  = document.getElementById('sc-task-comp-val');
+    const tSub = document.getElementById('sc-task-comp-sub');
+    const taskAhead = taskPct >= tp;
+    tEl.textContent = taskPct.toFixed(1) + '%';
+    tEl.className   = 'sc-val ' + (taskAhead ? 'c-red' : 'c-green');
+    tSub.textContent = (taskAhead ? '↑ 超前时间进度 +' : '↓ 落后时间进度 ') + Math.abs(taskPct - tp).toFixed(1) + '%';
+    tSub.className   = 'sc-sub ' + (taskAhead ? 'up' : 'dn');
+
+    const bEl  = document.getElementById('sc-base-comp-val');
+    const bSub = document.getElementById('sc-base-comp-sub');
+    if (baseN > 0) {
+      const baseAhead = basePct >= tp;
+      bEl.textContent = basePct.toFixed(1) + '%';
+      bEl.className   = 'sc-val ' + (baseAhead ? 'c-red' : 'c-green');
+      bSub.textContent = (baseAhead ? '↑ 超前时间进度 +' : '↓ 落后时间进度 ') + Math.abs(basePct - tp).toFixed(1) + '%';
+      bSub.className   = 'sc-sub ' + (baseAhead ? 'up' : 'dn');
+    } else {
+      bEl.textContent = '—'; bEl.className = 'sc-val c-dark';
+      bSub.textContent = ''; bSub.className = 'sc-sub gray';
+    }
+  }
+
+  /* ===== 主播明细表渲染 ===== */
+  function getPctChipClass(pct, tp) {
+    if (pct >= 100) return 'chip-over';
+    if (pct >= tp)  return 'chip-red';
+    return 'chip-green';
+  }
+
+  function renderAnchorTable(rows, tp, hasBase) {
+    const thBase     = document.getElementById('th-base-target');
+    const thBaseComp = document.getElementById('th-base-comp');
+    if (thBase)     thBase.style.display     = hasBase ? '' : 'none';
+    if (thBaseComp) thBaseComp.style.display = hasBase ? '' : 'none';
+
+    const sorted = [...rows].sort((a,b) => {
+      let av = a[state.sortKey], bv = b[state.sortKey];
+      if (state.sortKey === 'base_completion') {
+        av = a.base_target > 0 ? a.actual / a.base_target * 100 : 0;
+        bv = b.base_target > 0 ? b.actual / b.base_target * 100 : 0;
+      }
+      av = av || 0; bv = bv || 0;
+      return state.sortDir === 'desc' ? bv - av : av - bv;
+    });
+
+    const tbody = document.getElementById('anchor-tbody');
+    tbody.innerHTML = sorted.map((a, i) => {
+      const taskPct = a.completion_rate != null ? a.completion_rate : (a.target > 0 ? a.actual / a.target * 100 : 0);
+      const basePct = a.base_target > 0 ? a.actual / a.base_target * 100 : 0;
+      const tCls    = getPctChipClass(taskPct, tp);
+      const bCls    = getPctChipClass(basePct, tp);
+      return `<tr>
+        <td style="color:#ccc;font-size:11px">${i+1}</td>
+        <td style="color:#aaa;font-size:12px;font-variant-numeric:tabular-nums">${a.anchor_id || ''}</td>
+        <td class="name" title="${a.anchor_name||''}">${a.anchor_name||''}</td>
+        <td class="r num" style="color:#555">${a.streaming_minutes ? (a.streaming_minutes / 60).toFixed(1) : '0.0'}</td>
+        <td class="r num" style="color:#2563eb">${fmtNum(a.actual)}</td>
+        <td class="r num" style="color:#444">${fmtNum(a.target)}</td>
+        <td class="r"><span class="chip ${tCls}">${taskPct.toFixed(1)}%</span></td>
+        ${hasBase ? `<td class="r num" style="color:#444">${a.base_target > 0 ? fmtNum(a.base_target) : '—'}</td>` : '<td style="display:none"></td>'}
+        ${hasBase ? `<td class="r">${a.base_target > 0 ? `<span class="chip ${bCls}">${basePct.toFixed(1)}%</span>` : '—'}</td>` : '<td style="display:none"></td>'}
+      </tr>`;
+    }).join('');
+  }
+
+  window.thSort = function(key, th) {
+    if (state.sortKey === key) {
+      state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
+    } else {
+      state.sortKey = key;
+      state.sortDir = 'desc';
+    }
+    document.querySelectorAll('.th-sort').forEach(t => t.classList.remove('asc','desc'));
+    th.classList.add(state.sortDir);
+    const hasBase = state.currentData.some(d => d.base_target > 0);
+    renderAnchorTable(state.currentData, state.timeProgress, hasBase);
+  };
+
+  /* ===== 下载Excel ===== */
+  window.downloadExcel = function() {
+    if (!state.currentData || state.currentData.length === 0) { alert('暂无数据可下载'); return; }
+    const btn = document.querySelector('.download-excel-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '生成中...'; }
+    try {
+      const tp = state.timeProgress;
+      const excelData = state.currentData.map((item, idx) => {
+        const taskPct  = item.completion_rate != null ? item.completion_rate : (item.target > 0 ? item.actual / item.target * 100 : 0);
+        const basePct  = item.base_target > 0 ? item.actual / item.base_target * 100 : 0;
+        const isAhead  = taskPct >= tp;
+        const diff     = (taskPct - tp).toFixed(2);
+        return {
+          '序号': idx + 1,
+          '主播ID': item.anchor_id,
+          '主播名称': item.anchor_name,
+          '主播来源': item.source,
+          '任务目标': item.target,
+          '基期目标': item.base_target || 0,
+          '实际完成': item.actual,
+          '任务完成度': taskPct.toFixed(2) + '%',
+          '基期完成度': item.base_target > 0 ? basePct.toFixed(2) + '%' : '',
+          '时间进度': item.time_progress,
+          '进度差异': (diff > 0 ? '+' : '') + diff + '%',
+          '状态': isAhead ? '超前' : '落后',
+          '昨日开播(小时)': item.streaming_minutes ? (item.streaming_minutes / 60).toFixed(2) : '0.00',
+        };
+      });
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelData);
+      ws['!cols'] = [{wch:6},{wch:14},{wch:22},{wch:16},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:10},{wch:10},{wch:6},{wch:14}];
+      XLSX.utils.book_append_sheet(wb, ws, '主播数据');
+      const orgName = (state.currentSource === '__ALL__' ? '全部汇总' : (state.currentSource || '数据')).replace(/[\/\\?%*:|"<>]/g,'_');
+      XLSX.writeFile(wb, `${orgName}_${state.currentDate}.xlsx`);
+    } catch(err) { alert('下载失败: ' + err.message); }
+    finally {
+      if (btn) { btn.disabled = false; btn.textContent = '📥 下载Excel'; }
+    }
+  };
+
+  /* ===== 管理工具抽屉 ===== */
+  window.openAdminDrawer = function() {
+    document.getElementById('adminDrawer').classList.add('open');
+    document.getElementById('adminDrawerOverlay').classList.add('open');
+  };
+  window.closeAdminDrawer = function() {
+    document.getElementById('adminDrawer').classList.remove('open');
+    document.getElementById('adminDrawerOverlay').classList.remove('open');
+  };
+
+  /* ===== 上传面板 ===== */
+  window.togglePanel = function(bodyId, iconId) {
+    const body = document.getElementById(bodyId);
+    const icon = document.getElementById(iconId);
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    icon.textContent   = open ? '▼ 展开' : '▲ 收起';
+  };
+
+  window.calcAutoProgress = calcAutoProgress;
+
+  let parsedUAD = [], parsedST = [];
+
+  function parseTabText(text, valueFields) {
+    const lines = text.trim().split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) return [];
+    const headers = lines[0].split('\t').map(h => h.trim());
+    const idIdx  = headers.findIndex(h => h.includes('主播ID'));
+    const valIdx = headers.findIndex(h => valueFields.some(k => h.includes(k)));
+    if (idIdx === -1 || valIdx === -1) return [];
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split('\t');
+      if (!cols[idIdx]) continue;
+      rows.push({ anchor_id: String(cols[idIdx]).trim(), value: Number(String(cols[valIdx]||'').replace(/,/g,'').trim()) || 0 });
+    }
+    return rows;
+  }
+
+  window.parseUAD = function() {
+    const text = document.getElementById('uadPasteArea').value;
+    parsedUAD = parseTabText(text, ['UA主动看播天数','主动看播']);
+    const el  = document.getElementById('uadStatus');
+    if (parsedUAD.length) {
+      el.style.color = '#16a34a';
+      el.textContent = `✅ 已识别 ${parsedUAD.length} 条（首条ID: ${parsedUAD[0].anchor_id}，值: ${parsedUAD[0].value}）`;
+    } else {
+      el.style.color = '#f56c6c';
+      el.textContent = `❌ 未识别（共${text.trim().split(/\r?\n/).length}行）`;
+    }
+  };
+
+  window.parseST = function() {
+    const text = document.getElementById('stPasteArea').value;
+    parsedST = parseTabText(text, ['推流时长','万分钟']);
+    const el  = document.getElementById('stStatus');
+    if (parsedST.length) {
+      el.style.color = '#16a34a';
+      el.textContent = `✅ 已识别 ${parsedST.length} 条（首条ID: ${parsedST[0].anchor_id}，值: ${parsedST[0].value}）`;
+      const d = extractDateFromText(text);
+      if (d) {
+        document.getElementById('uploadDate').value = d;
+        document.getElementById('uploadProgress').value = calcAutoProgress(d);
+      }
+    } else {
+      el.style.color = '#f56c6c';
+      el.textContent = `❌ 未识别（共${text.trim().split(/\r?\n/).length}行）`;
+    }
+  };
+
+  function readExcelFile(file, done) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type:'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      done(XLSX.utils.sheet_to_json(ws) || []);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  window.readUADFile = function(input) {
+    const file = input.files[0]; if (!file) return;
+    readExcelFile(file, rows => {
+      parsedUAD = rows.map(r => ({ anchor_id: String(r['主播ID']||'').trim(), value: Number(r['近1天UA主动看播天数']||0) })).filter(r => r.anchor_id);
+      document.getElementById('uadStatus').textContent = parsedUAD.length ? `已读取 ${parsedUAD.length} 条` : '文件无有效数据';
+      document.getElementById('uadStatus').style.color = parsedUAD.length ? '#16a34a' : '#f56c6c';
+    });
+  };
+
+  window.readSTFile = function(input) {
+    const file = input.files[0]; if (!file) return;
+    readExcelFile(file, rows => {
+      parsedST = rows.map(r => ({ anchor_id: String(r['主播ID']||'').trim(), value: Math.round((Number(r['近1天推流时长_万分钟']||0)) * 10000) })).filter(r => r.anchor_id);
+      document.getElementById('stStatus').textContent = parsedST.length ? `已读取 ${parsedST.length} 条` : '文件无有效数据';
+      document.getElementById('stStatus').style.color = parsedST.length ? '#16a34a' : '#f56c6c';
+    });
+  };
+
+  window.submitUpdate = async function() {
+    const date = document.getElementById('uploadDate').value;
+    const timeProgress = document.getElementById('uploadProgress').value;
+    const resEl = document.getElementById('uploadResult');
+    if (!date || !parsedUAD.length || !parsedST.length) {
+      resEl.style.color = '#f56c6c';
+      resEl.textContent = '请先准备日期、UAD和推流数据';
+      return;
+    }
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = '更新中...'; resEl.textContent = '';
+    try {
+      const resp = await fetch('/api/update-data', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ uadData: parsedUAD, streamData: parsedST, date, timeProgress })
+      });
+      const result = await resp.json();
+      if (!resp.ok || result.error) throw new Error(result.error || '更新失败');
+      resEl.style.color = '#16a34a';
+      resEl.textContent = `✅ 更新完成：bet ${result.bet} 条，crc ${result.crc} 条`;
+    } catch(e) {
+      resEl.style.color = '#f56c6c';
+      resEl.textContent = '❌ ' + e.message;
+    } finally {
+      btn.disabled = false; btn.textContent = '🚀 确认更新';
+    }
+  };
+
+  /* ===== 基期目标上传 ===== */
+  let parsedTargetRows = [];
+
+  window.downloadTargetTemplate = function() {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['主播ID','主播最新名称','近1天UA主动看播心智','主播一级来源','主播二级来源（没有可空着）','系统'],
+      ['示例：750832728','示例主播','2057577','个播大类','不可控个播','crc'],
+      ['示例：262661189','示例主排bet','879827','','bet来源机构名','bet']
+    ]);
+    ws['!cols'] = [{wch:16},{wch:20},{wch:24},{wch:16},{wch:24},{wch:8}];
+    XLSX.utils.book_append_sheet(wb, ws, '基期目标模板');
+    XLSX.writeFile(wb, '基期目标上传模板.xlsx');
+  };
+
+  window.readTargetFile = function(input) {
+    const file = input.files[0]; if (!file) return;
+    const statusEl = document.getElementById('targetFileStatus');
+    statusEl.textContent = '读取中...'; statusEl.style.color = '#888';
+    parsedTargetRows = [];
+    readExcelFile(file, rows => {
+      if (!rows || rows.length === 0) { statusEl.textContent = '❌ 文件无有效数据'; statusEl.style.color = '#f56c6c'; return; }
+      const keys      = Object.keys(rows[0]);
+      const idKey     = keys.find(k => k.includes('主播ID') || k.toLowerCase() === 'anchor_id');
+      const nameKey   = keys.find(k => k.includes('主播名称') || k.includes('主播最新名称') || k.toLowerCase() === 'anchor_name');
+      const q1Key     = keys.find(k => k.includes('近1天UA主动看播心智') || k.includes('近1天UA直播主动心智UA对数') || k.includes('近1天UA主动看播天数') || k.includes('Q1总数') || k.includes('Q1'));
+      const src1Key   = keys.find(k => k.includes('一级来源'));
+      const src2Key   = keys.find(k => k.includes('二级来源') || k.includes('主播来源') || k.includes('机构') || k.toLowerCase() === 'source');
+      const sysKey    = keys.find(k => k.includes('系统') || k.toLowerCase() === 'system');
+      if (!idKey || !q1Key) {
+        statusEl.textContent = `❌ 未找到必要列（主播ID / 近1天UA主动看播心智），实际列名：${keys.join('、')}`;
+        statusEl.style.color = '#f56c6c'; return;
+      }
+      parsedTargetRows = rows.filter(r => r[idKey] && r[q1Key] != null).map(r => ({
+        anchor_id:    String(Math.round(Number(String(r[idKey]).replace(/,/g,'')))),
+        anchor_name:  String(r[nameKey]||'').trim(),
+        q1_total:     Math.round(Number(String(r[q1Key]).replace(/,/g,''))),
+        source:       String(r[src2Key]||'').trim(),
+        source_group: String(r[src1Key]||'').trim(),
+        system:       String(r[sysKey]||'').trim().toLowerCase()
+      })).filter(r => r.anchor_id && r.anchor_id !== 'NaN' && r.q1_total >= 0);
+      const betCount = parsedTargetRows.filter(r => r.system === 'bet').length;
+      const crcCount = parsedTargetRows.filter(r => r.system === 'crc').length;
+      const noSys    = parsedTargetRows.filter(r => !r.system).length;
+      statusEl.style.color = noSys > 0 ? '#f59e0b' : '#16a34a';
+      statusEl.textContent = `✅ 共识别 ${parsedTargetRows.length} 条（bet: ${betCount} | crc: ${crcCount}${noSys ? ` | 未指定系统: ${noSys}⚠️` : ''}）`;
+    });
+  };
+
+  window.submitTargets = async function() {
+    const monday  = getThisMonday();
+    const statusEl = document.getElementById('targetResult');
+    if (!parsedTargetRows.length) {
+      statusEl.textContent = '请先上传基期Excel文件'; statusEl.style.color = '#f56c6c'; return;
+    }
+    const betCount = parsedTargetRows.filter(r => r.system === 'bet').length;
+    const crcCount = parsedTargetRows.filter(r => r.system === 'crc').length;
+    if (betCount === 0 && crcCount === 0) {
+      statusEl.textContent = '❌ 所有行的「系统」列为空，请检查文件'; statusEl.style.color = '#f56c6c'; return;
+    }
+    const btn = document.getElementById('targetSubmitBtn');
+    btn.disabled = true; btn.textContent = '写入中...'; statusEl.textContent = '';
+    try {
+      const resp = await fetch('/api/upload-targets', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ date: monday, anchors: parsedTargetRows })
+      });
+      const result = await resp.json();
+      if (!resp.ok || result.error) throw new Error(result.error || '写入失败');
+      statusEl.style.color = '#16a34a';
+      statusEl.textContent = `✅ 写入完成：bet ${result.bet||0} 条，crc ${result.crc||0} 条（基期日期 ${monday}）`;
+    } catch(e) {
+      statusEl.style.color = '#f56c6c';
+      statusEl.textContent = '❌ ' + e.message;
+    } finally {
+      btn.disabled = false; btn.textContent = '🚀 确认写入目标';
+    }
+  };
+
+})();
+</script>
+</body>
+</html>
