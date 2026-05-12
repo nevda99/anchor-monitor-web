@@ -411,12 +411,35 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   .anchor-table tbody td.name { max-width:90px; font-size:12px; }
   .chip { font-size:11px; padding:2px 7px; }
 
-  /* --- 登录框（移动端竖排） --- */
-  .login-wrap { flex-direction:column; min-height:auto; border-radius:14px; width:92vw; }
-  .login-brand { flex:none; padding:28px 24px 24px; }
-  .login-brand-desc { display:none; }
+  /* --- 登录框：移动端方案一（品牌头图 + 底部浮卡片） --- */
+  #loginPage { align-items:flex-end; background:#1e1e2e; }
+  .login-wrap {
+    flex-direction:column; width:100%; max-width:100%;
+    border-radius:0; box-shadow:none;
+    min-height:100dvh; min-height:100vh;
+  }
+  /* 上半：品牌区 — 撑满剩余高度 */
+  .login-brand {
+    flex:1; padding:0 28px; border-radius:0;
+    display:flex; flex-direction:column; justify-content:center; align-items:center;
+    text-align:center; gap:10px;
+  }
+  .login-brand h2 { font-size:22px; text-align:center; }
+  .login-brand-bar { width:36px; }
+  .login-brand-desc { display:block; text-align:center; }
   .login-brand-footer { display:none; }
-  .login-form-wrap { padding:28px 24px 32px; }
+  /* 下半：表单区 — 圆角浮起卡片 */
+  .login-form-wrap {
+    flex:none; padding:22px 24px 36px;
+    border-radius:22px 22px 0 0;
+    box-shadow:0 -4px 32px rgba(0,0,0,.22);
+  }
+  /* 拖拽指示条 */
+  .login-form-wrap::before {
+    content:''; display:block; width:36px; height:4px;
+    background:#e5e7eb; border-radius:2px;
+    margin:0 auto 16px;
+  }
 
   /* 底部留出浮动按钮空间 */
   .detail-inner { padding-bottom:72px; }
