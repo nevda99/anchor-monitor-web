@@ -921,6 +921,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       document.getElementById('badge-crc').classList.add('disabled');
       document.getElementById('bodyWrap').classList.add('no-sidebar');
       document.getElementById('sidebar').style.display = 'none';
+      document.getElementById('mobileSidebarToggle').classList.add('hidden');
       showSourceStatsCards();
       state.currentSource = state.source;
       await loadDetailData(state.source);
@@ -994,6 +995,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     document.getElementById('loginPage').style.display = 'flex';
     document.getElementById('loginForm').reset();
     document.getElementById('loginError').textContent = '';
+    // 重置移动端导航按钮
+    document.getElementById('mobileSidebarToggle').classList.add('hidden');
+    // 重置上传面板、切换按钮、系统Tab
+    document.getElementById('uploadPanelsWrap').style.display = 'none';
+    const switchBtn = document.getElementById('switchUiBtn');
+    if (switchBtn) switchBtn.style.display = 'none';
+    document.getElementById('sysToggleBar').style.display = 'none';
     const savedSys = localStorage.getItem('saved_system');
     if (savedSys) document.getElementById('systemSelect').value = savedSys;
     const remember = localStorage.getItem('remember_me') === 'true';
