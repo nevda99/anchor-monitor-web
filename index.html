@@ -512,9 +512,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     </div>
     <div class="upload-body purple" id="uploadBody" style="display:none">
       <div class="upload-desc">上传或粘贴 <b>UAD 数据</b> 和 <b>开播时长数据</b>，系统自动更新 bet + crc 两个系统。</div>
-      <div style="font-weight:600;margin-bottom:6px;color:#333;font-size:13px;">① UAD 数据（主动看播天数）</div>
+      <div style="font-weight:600;margin-bottom:6px;color:#333;font-size:13px;">① UAD 数据（近1天UA直播主动心智UA对数）</div>
       <div class="upload-row">
-        <textarea id="uadPasteArea" placeholder="从BI看板复制后粘贴到这里（含标题行）&#10;格式：主播ID  主播名称  近1天UA主动看播天数" oninput="parseUAD()"></textarea>
+        <textarea id="uadPasteArea" placeholder="从BI看板复制后粘贴到这里（含标题行）&#10;格式：主播ID  主播名称  近1天UA直播主动心智UA对数" oninput="parseUAD()"></textarea>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label class="upload-file-btn">📂 上传文件<input type="file" id="uadFile" accept=".xlsx,.csv,.xls" style="display:none" onchange="readUADFile(this)"></label>
           <div id="uadStatus" class="upload-status"></div>
@@ -1584,7 +1584,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
   window.parseUAD = function() {
     const text = document.getElementById('uadPasteArea').value;
-    parsedUAD = parseTabText(text, ['UA主动看播天数','主动看播']);
+    parsedUAD = parseTabText(text, ['UA直播主动心智UA对数','UA主动看播天数','主动看播']);
     const el  = document.getElementById('uadStatus');
     if (parsedUAD.length) {
       el.style.color = '#16a34a';
@@ -1627,7 +1627,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   window.readUADFile = function(input) {
     const file = input.files[0]; if (!file) return;
     readExcelFile(file, rows => {
-      parsedUAD = rows.map(r => ({ anchor_id: String(r['主播ID']||'').trim(), value: Number(r['近1天UA主动看播天数']||0) })).filter(r => r.anchor_id);
+      parsedUAD = rows.map(r => ({ anchor_id: String(r['主播ID']||'').trim(), value: Number(r['近1天UA直播主动心智UA对数'] ?? r['近1天UA主动看播天数'] ?? 0) })).filter(r => r.anchor_id);
       document.getElementById('uadStatus').textContent = parsedUAD.length ? `已读取 ${parsedUAD.length} 条` : '文件无有效数据';
       document.getElementById('uadStatus').style.color = parsedUAD.length ? '#16a34a' : '#f56c6c';
     });
