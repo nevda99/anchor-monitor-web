@@ -403,13 +403,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 <!-- 顶栏 -->
 <div class="topbar">
   <div class="topbar-title">🎯 主播数据监控系统</div>
-  <div class="topbar-sys" id="sysToggleBar">
+  <div class="topbar-sys" id="sysToggleBar" style="display:none">
     <span class="sys-badge active" id="badge-bet" onclick="handleSysSwitch('bet')">BET 系统</span>
     <span class="sys-badge inactive" id="badge-crc" onclick="handleSysSwitch('crc')">CRC 系统</span>
   </div>
   <div class="topbar-right" id="topbarRight">
-    <span id="topbarInfo">管理员视图</span>
-    <a class="switch-ui-btn" href="/index-v1.html" title="切换到经典UI版本">🔄 经典版</a>
+    <span id="topbarInfo"></span>
+    <a class="switch-ui-btn" href="/index-v1.html" title="切换到经典UI版本" id="switchUiBtn" style="display:none">🔄 经典版</a>
     <button class="logout-btn-top" onclick="logout()">退出登录</button>
   </div>
   <button class="topbar-hamburger" id="hamburgerBtn" onclick="toggleTopbarMenu()" aria-label="菜单">☰</button>
@@ -875,9 +875,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     document.getElementById('topbarInfo').textContent =
       `${userData.display_name || userData.username} · ${sysLabel} · ${roleLabel}`;
 
+    // 上传面板：仅 super_admin 可见（双重防护）
+    document.getElementById('uploadPanelsWrap').style.display =
+      state.role === 'super_admin' ? 'flex' : 'none';
+    // 经典版切换按钮：仅 super_admin 可见
+    const switchBtn = document.getElementById('switchUiBtn');
+    if (switchBtn) switchBtn.style.display = state.role === 'super_admin' ? '' : 'none';
+    // 系统切换 Tab：仅 super_admin 可见
+    document.getElementById('sysToggleBar').style.display =
+      state.role === 'super_admin' ? '' : 'none';
+
     if (state.role === 'super_admin') {
-      // super_admin：显示上传面板，显示侧边栏
-      document.getElementById('uploadPanelsWrap').style.display = 'flex';
+      // super_admin：显示侧边栏
       document.getElementById('targetSystem').value = state.system;
       document.getElementById('targetWeekMonday').textContent = getThisMonday();
       // BET系统admin账号才可切换系统
