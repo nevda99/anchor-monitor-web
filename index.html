@@ -346,7 +346,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   }
   .sidebar.mobile-open { transform:translateX(0); }
   .mobile-sidebar-toggle { display:flex; align-items:center; gap:6px; }
-  .mobile-sidebar-toggle.hidden { display:none; }
+  .mobile-sidebar-toggle.hidden { display:none !important; }
 
   /* --- 详情区 --- */
   .detail { overflow-y:auto; }
@@ -695,11 +695,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
   /* ===== 移动端交互 ===== */
   window.toggleTopbarMenu = function() {
-    const sys   = document.getElementById('sysToggleBar');
     const right = document.getElementById('topbarRight');
-    const isOpen = sys.classList.contains('open');
-    sys.classList.toggle('open', !isOpen);
+    const isOpen = right.classList.contains('open');
     right.classList.toggle('open', !isOpen);
+    // sysToggleBar 仅 super_admin 可见，由角色逻辑控制，不在汉堡菜单里 toggle
+    const sys = document.getElementById('sysToggleBar');
+    if (sys.style.display !== 'none') {
+      sys.classList.toggle('open', !isOpen);
+    }
   };
 
   window.toggleMobileSidebar = function() {
