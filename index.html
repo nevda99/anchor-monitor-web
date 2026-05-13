@@ -463,45 +463,89 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   }
 
   /* --- 积分商店 --- */
-  .points-wallet { grid-template-columns:1fr 1fr; }
-  .shop-grid { grid-template-columns:1fr 1fr; }
+  .shop-rewards-grid { grid-template-columns:1fr 1fr; }
 
   /* 底部留出浮动按钮空间 */
   .detail-inner { padding-bottom:72px; }
 }
 
-/* ===== 积分商店 ===== */
+/* ===== 积分商店（版本A 折叠式） ===== */
 .points-section { background:white; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.06); overflow:hidden; }
-.points-header { padding:14px 20px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
-.points-header h4 { font-size:14px; font-weight:700; color:#222; }
-.points-wallet { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:16px 20px 8px; }
-.wallet-card { border-radius:10px; padding:14px 16px; }
-.wallet-card.balance { background:linear-gradient(135deg,#f0f4ff,#e0e7ff); border:1px solid #c7d2fe; }
-.wallet-card.pending { background:linear-gradient(135deg,#f0fdf4,#dcfce7); border:1px solid #bbf7d0; }
-.wallet-card.pending.negative { background:linear-gradient(135deg,#fef2f2,#fce4e4); border:1px solid #fca5a5; }
-.wc-label { font-size:11px; font-weight:700; color:#888; letter-spacing:.5px; margin-bottom:6px; }
-.wc-val { font-size:26px; font-weight:900; line-height:1.1; }
-.wc-val.c-purple { color:#6366f1; }
-.wc-val.c-green  { color:#059669; }
-.wc-val.c-red    { color:#ef4444; }
-.wc-sub { font-size:11px; color:#aaa; margin-top:4px; }
-.shop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; padding:12px 20px 20px; }
-.shop-item { border:2px solid #e5e7eb; border-radius:10px; padding:14px; transition:all .2s; cursor:default; }
-.shop-item.affordable { border-color:#c7d2fe; cursor:pointer; }
-.shop-item.affordable:hover { border-color:#6366f1; background:#f5f3ff; box-shadow:0 2px 8px rgba(99,102,241,.15); }
-.si-icon { font-size:28px; margin-bottom:8px; }
-.si-name { font-size:14px; font-weight:700; color:#222; margin-bottom:2px; }
-.si-unit { font-size:12px; color:#888; margin-bottom:8px; }
-.si-price { font-size:18px; font-weight:900; color:#6366f1; margin-bottom:10px; }
-.si-price .si-currency { font-size:12px; font-weight:600; }
-.si-btn { width:100%; padding:8px; background:#6366f1; color:white; border:none; border-radius:6px; font-size:13px; font-weight:700; cursor:pointer; transition:background .2s; }
-.si-btn:hover { background:#4f46e5; }
-.si-btn:disabled { background:#e5e7eb; color:#aaa; cursor:not-allowed; }
-.qty-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
-.qty-btn { width:28px; height:28px; border:1px solid #d1d5db; background:#f9fafb; border-radius:5px; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:700; color:#555; }
-.qty-btn:hover { background:#e5e7eb; }
-.qty-num { font-size:16px; font-weight:700; min-width:24px; text-align:center; }
-.qty-total { font-size:12px; color:#6366f1; font-weight:600; }
+/* 头部折叠栏 */
+.shop-header {
+  padding:14px 20px; display:flex; justify-content:space-between; align-items:center;
+  cursor:pointer; user-select:none; transition:background .15s;
+  border-bottom:1px solid #f0f0f0;
+}
+.shop-header:hover { background:#fafbff; }
+.shop-header-left { display:flex; align-items:center; gap:12px; }
+.shop-header-icon { font-size:22px; }
+.shop-header-title { font-size:14px; font-weight:700; color:#222; }
+.shop-header-sub { font-size:12px; color:#888; margin-top:2px; }
+.shop-bal-num { color:#7c3aed; font-weight:700; }
+.shop-week-num { color:#059669; font-weight:700; }
+.shop-week-num.neg { color:#ef4444; }
+.shop-header-right { flex-shrink:0; }
+.shop-toggle-label { font-size:12px; color:#6366f1; font-weight:600; white-space:nowrap; }
+/* 主体 */
+.shop-body-inner {
+  display:flex; gap:20px; padding:20px;
+  align-items:flex-start;
+}
+/* 左侧余额卡 */
+.shop-wallet-col { flex:0 0 200px; }
+.shop-wallet-card {
+  background:linear-gradient(135deg,#f5f3ff,#ede9fe);
+  border:1px solid #ddd6fe; border-radius:12px; padding:18px 16px;
+}
+.swc-label { font-size:11px; font-weight:700; color:#7c3aed; letter-spacing:.5px; text-transform:uppercase; margin-bottom:4px; }
+.swc-val { font-size:28px; font-weight:900; color:#6d28d9; line-height:1.1; margin-bottom:2px; }
+.swc-sub { font-size:11px; color:#a78bfa; }
+.swc-week { background:rgba(255,255,255,.6); border-radius:8px; padding:8px 10px; }
+.swc-week-val { font-size:18px; font-weight:800; color:#059669; }
+.swc-week-val.neg { color:#ef4444; }
+.swc-week-sub { font-size:11px; color:#888; margin-top:2px; }
+.swc-note { font-size:11px; color:#a78bfa; line-height:1.5; }
+/* 右侧奖励 Grid */
+.shop-rewards-col { flex:1; min-width:0; }
+.shop-rewards-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+/* 奖励卡片 */
+.reward-card {
+  border:2px solid #e5e7eb; border-radius:10px; padding:14px;
+  transition:all .2s; background:white;
+}
+.reward-card.can-afford { border-color:#c7d2fe; cursor:pointer; }
+.reward-card.can-afford:hover { border-color:#6366f1; background:#f5f3ff; box-shadow:0 2px 8px rgba(99,102,241,.15); }
+.reward-card.selected { border-color:#6366f1; background:#f5f3ff; }
+.rc-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; }
+.rc-name { font-size:14px; font-weight:700; color:#222; }
+.rc-unit { font-size:11px; color:#aaa; }
+.rc-desc { font-size:12px; color:#888; margin-bottom:8px; }
+.rc-price-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.rc-price { font-size:18px; font-weight:900; color:#6366f1; }
+.rc-max { font-size:12px; color:#888; }
+.rc-max.ok { color:#059669; }
+.rc-btn { width:100%; padding:7px; border:none; border-radius:7px; font-size:13px; font-weight:700; cursor:pointer; transition:all .2s; }
+.rc-btn.primary { background:#6366f1; color:white; }
+.rc-btn.primary:hover { background:#4f46e5; }
+.rc-btn.selected-btn { background:#ede9fe; color:#6d28d9; }
+.rc-btn.disabled { background:#f3f4f6; color:#aaa; cursor:not-allowed; }
+/* 兑换操作区 */
+.shop-action-bar {
+  margin-top:12px; background:#f5f3ff; border:1px solid #c7d2fe;
+  border-radius:10px; padding:14px 16px;
+}
+.sab-title { font-size:13px; font-weight:700; color:#4f46e5; margin-bottom:10px; }
+.sab-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.sab-label { font-size:13px; color:#555; }
+.sab-qty-wrap { display:flex; align-items:center; gap:8px; }
+.sab-qty-btn { width:28px; height:28px; border:1px solid #c7d2fe; background:white; border-radius:6px; font-size:16px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#6366f1; }
+.sab-qty-btn:hover { background:#ede9fe; }
+.sab-qty-num { font-size:16px; font-weight:800; min-width:24px; text-align:center; color:#222; }
+.sab-total { font-size:14px; font-weight:700; color:#6366f1; }
+.sab-submit { padding:8px 20px; background:#6366f1; color:white; border:none; border-radius:7px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.sab-submit:hover { background:#4f46e5; }
+.sab-submit:disabled { background:#ccc; cursor:not-allowed; }
 /* 兑换弹窗 */
 .redeem-modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:3000; align-items:center; justify-content:center; }
 .redeem-modal-bg.open { display:flex; }
@@ -538,6 +582,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 .points-toggle-btn:hover { background:rgba(99,102,241,.3); }
 .points-toggle-btn.raw-mode { background:rgba(251,146,60,.15); color:#fb923c; border-color:rgba(251,146,60,.3); }
 .points-toggle-btn.raw-mode:hover { background:rgba(251,146,60,.3); }
+/* 移动端商店适配 */
+@media (max-width:768px) {
+  .shop-body-inner { flex-direction:column; padding:12px; gap:12px; }
+  .shop-wallet-col { flex:none; width:100%; }
+  .shop-rewards-grid { grid-template-columns:1fr 1fr; }
+}
 
 /* ===== 响应式：480px 以下（小屏手机） ===== */
 @media (max-width: 480px) {
@@ -675,7 +725,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   </div>
   <div class="sc" id="sc-s-balance" style="display:none">
     <div class="sc-label">账户余额</div>
-    <div class="sc-val c-purple" id="sc-s-balance-val">—</div>
+    <div class="sc-val" style="color:#a855f7" id="sc-s-balance-val">—</div>
     <div class="sc-sub gray">可用于兑换</div>
   </div>
 </div>
@@ -868,7 +918,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
                 <th>主播名称</th>
                 <th class="r th-sort" onclick="thSort('streaming_minutes',this)">开播时长(h)<span class="th-arrow"></span></th>
                 <th class="r th-sort" onclick="thSort('actual',this)" id="th-actual-col">实际完成<span class="th-arrow"></span></th>
-                <th class="r th-sort" id="th-points-col" onclick="thSort('points',this)" style="display:none">昨日积分(¥)<span class="th-arrow"></span></th>
+                <th class="r th-sort" id="th-points-col" onclick="thSort('points',this)" style="display:none">当前积分(💎)<span class="th-arrow"></span></th>
                 <th class="r th-sort" onclick="thSort('target',this)">任务目标<span class="th-arrow"></span></th>
                 <th class="r th-sort desc" onclick="thSort('completion_rate',this)">任务完成度<span class="th-arrow"></span></th>
                 <th class="r th-sort" onclick="thSort('base_target',this)" id="th-base-target">基期目标<span class="th-arrow"></span></th>
@@ -882,28 +932,51 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         </div>
       </div>
 
-      <!-- 积分商店（source/sub_admin视角，仅积分模式下可见） -->
+      <!-- 积分商店（source视角，版本A折叠式） -->
       <div class="points-section" id="shopSection" style="display:none">
-        <div class="points-header">
-          <h4>💎 积分商店</h4>
-          <span style="font-size:12px;color:#aaa">兑换后将由运营人员联系你</span>
-        </div>
-        <!-- 余额卡片 -->
-        <div class="points-wallet">
-          <div class="wallet-card balance">
-            <div class="wc-label">账户余额</div>
-            <div class="wc-val c-purple" id="shop-balance-val">¥0.00</div>
-            <div class="wc-sub">每周日结算后更新</div>
+        <!-- 头部：余额概览 + 展开按钮 -->
+        <div class="shop-header" onclick="toggleShop()">
+          <div class="shop-header-left">
+            <span class="shop-header-icon">💎</span>
+            <div>
+              <div class="shop-header-title">积分商店</div>
+              <div class="shop-header-sub">余额：<span id="shop-balance-val" class="shop-bal-num">💎0.0</span>
+                &nbsp;·&nbsp; 本周预计：<span id="shop-week-pts-val" class="shop-week-num">+💎0.0</span>
+              </div>
+            </div>
           </div>
-          <div class="wallet-card pending" id="shop-pending-card">
-            <div class="wc-label">本周预计积分</div>
-            <div class="wc-val c-green" id="shop-week-pts-val">¥0.00</div>
-            <div class="wc-sub" id="shop-week-pts-sub">周末结算后加入余额</div>
+          <div class="shop-header-right">
+            <span class="shop-toggle-label" id="shopToggleLabel">展开商店 ▼</span>
           </div>
         </div>
-        <!-- 商品列表 -->
-        <div class="shop-grid" id="shopGrid">
-          <!-- JS动态渲染 -->
+        <!-- 商店主体（折叠） -->
+        <div class="shop-body" id="shopBody" style="display:none">
+          <div class="shop-body-inner">
+            <!-- 左侧：余额卡 -->
+            <div class="shop-wallet-col">
+              <div class="shop-wallet-card">
+                <div class="swc-label">账户余额</div>
+                <div class="swc-val" id="shop-balance-big">💎0.0</div>
+                <div class="swc-sub">永久累积，不清零</div>
+                <div style="height:12px"></div>
+                <div class="swc-label">本周预计可得</div>
+                <div class="swc-week" id="shop-pending-card">
+                  <div class="swc-week-val" id="shop-week-pts-val2">+💎0.0</div>
+                  <div class="swc-week-sub" id="shop-week-pts-sub">周末结算后加入余额</div>
+                </div>
+                <div style="height:12px"></div>
+                <div class="swc-note">兑换后运营人员将与你联系发放奖励</div>
+              </div>
+            </div>
+            <!-- 右侧：奖励卡片 Grid -->
+            <div class="shop-rewards-col">
+              <div id="shopGrid" class="shop-rewards-grid">
+                <!-- JS渲染 -->
+              </div>
+              <!-- 选中后的兑换操作区 -->
+              <div id="shopActionBar" class="shop-action-bar" style="display:none"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -985,11 +1058,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
   // 商品定义
   const SHOP_ITEMS = [
-    { id:'fans',   icon:'🌟', name:'涨粉',   unit:'1000个/档', price:80   },
-    { id:'kuaibi', icon:'💰', name:'快币',   unit:'100个/档',  price:10   },
-    { id:'slot',   icon:'📡', name:'流量名额', unit:'1个/档',  price:1000 },
-    { id:'spark',  icon:'🔥', name:'火花流量', unit:'10万曝光/档', price:1000 },
-    { id:'coupon', icon:'🎟', name:'流量券',  unit:'10万曝光/档', price:800 },
+    { id:'fans',   icon:'🌟', name:'涨粉',   unit:'1000个/档', price:80,   desc:'直播间涨粉激励' },
+    { id:'kuaibi', icon:'💰', name:'快币',   unit:'100个/档',  price:10,   desc:'快币红包奖励' },
+    { id:'slot',   icon:'📡', name:'流量名额', unit:'1个/档',  price:1000, desc:'专属推流资源位' },
+    { id:'spark',  icon:'🔥', name:'火花流量', unit:'10万曝光/档', price:1000, desc:'内容曝光加速' },
+    { id:'coupon', icon:'🎟', name:'流量券',  unit:'10万曝光/档', price:800,  desc:'通用曝光资源' },
   ];
 
   const SOURCE_GROUP_MAP = {
@@ -1033,6 +1106,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (n == null || isNaN(n)) return '—';
     return Math.round(n).toLocaleString('zh-CN');
   }
+
+  // 积分格式化：UAD → 💎XX.X
+  function fmtPts(n) {
+    if (n == null || isNaN(n)) return '—';
+    const pts = n * 0.024;
+    return '💎' + (pts >= 0 ? '' : '') + pts.toFixed(1);
+  }
+  // 积分数值（无符号，用于计算展示）
+  function toPoints(n) { return (Number(n) || 0) * 0.024; }
 
   function calcAutoProgress(dateStr) {
     if (!dateStr) return '';
@@ -1220,13 +1302,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       await loadSidebarAndData();
 
     } else {
-      // source账号：隐藏侧边栏，直接加载本机构数据
+      // source账号：隐藏侧边栏，强制积分视角
+      state.pointsView = true;
       document.getElementById('badge-bet').classList.add('disabled');
       document.getElementById('badge-crc').classList.add('disabled');
       document.getElementById('bodyWrap').classList.add('no-sidebar');
       document.getElementById('sidebar').style.display = 'none';
       document.getElementById('mobileSidebarToggle').classList.add('hidden');
       showSourceStatsCards();
+      // 表格列头：source账号直接显示积分列，隐藏实际UAD列
+      const thActual = document.getElementById('th-actual-col');
+      if (thActual) thActual.style.display = 'none';
+      const thPts = document.getElementById('th-points-col');
+      if (thPts) thPts.style.display = '';
       state.currentSource = state.source;
       await loadDetailData(state.source);
       await loadOrgBalance(state.source, state.system);
@@ -1561,6 +1649,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const taskDiff  = (taskPct - tp);
     const baseDiff  = (basePct - tp);
     const tpStr     = tp.toFixed(2);
+    const pts = state.pointsView;
+
+    // 格式化函数：积分视角用 💎，原始视角用 UAD
+    const fmt = (n) => pts ? fmtPts(n) : fmtNum(n);
+    const lbl = (raw, pt) => pts ? pt : raw;
 
     // 任务口径
     const tpc = document.getElementById('d-task-pct');
@@ -1574,17 +1667,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     document.getElementById('d-task-bar').style.width = Math.min(taskPct, 100) + '%';
     document.getElementById('d-task-tick').style.left = Math.min(tp, 100) + '%';
     document.getElementById('d-task-prog-label').textContent = taskPct.toFixed(1) + '% ｜ 时间基准 ' + tpStr + '%';
-    document.getElementById('d-task-actual').textContent = fmtNum(actualN);
-    document.getElementById('d-task-target').textContent = fmtNum(targetN);
+
+    // 更新标签文字
+    const dgTaskActualLbl = document.querySelector('#d-task-actual')?.closest('.dg-cell')?.querySelector('.dg-label');
+    const dgTaskTargetLbl = document.querySelector('#d-task-target')?.closest('.dg-cell')?.querySelector('.dg-label');
+    const dgTaskShouldLbl = document.querySelector('#d-task-should')?.closest('.dg-cell')?.querySelector('.dg-label');
+    if (dgTaskActualLbl) dgTaskActualLbl.textContent = lbl('实际完成', '当前积分');
+    if (dgTaskTargetLbl) dgTaskTargetLbl.textContent = lbl('任务目标', '目标积分');
+    if (dgTaskShouldLbl) dgTaskShouldLbl.textContent = lbl('当前应完成', '应完成积分');
+
+    document.getElementById('d-task-actual').textContent = fmt(actualN);
+    document.getElementById('d-task-target').textContent = fmt(targetN);
 
     const taskShould = targetN * tp / 100;
     const taskDiffN  = actualN - taskShould;
-    document.getElementById('d-task-should').textContent = fmtNum(taskShould);
+    document.getElementById('d-task-should').textContent = fmt(taskShould);
     const tdEl  = document.getElementById('d-task-diff');
     const tdLbl = document.getElementById('d-task-diff-label');
-    tdEl.textContent = (taskDiffN >= 0 ? '+' : '') + fmtNum(taskDiffN);
+    tdEl.textContent = (taskDiffN >= 0 ? '+' : '') + fmt(Math.abs(taskDiffN));
     tdEl.className   = 'dg-val ' + (taskDiffN >= 0 ? 'c-red' : 'c-green');
-    tdLbl.textContent = taskDiffN >= 0 ? '超出绝对值' : '缺口绝对值';
+    tdLbl.textContent = (taskDiffN >= 0 ? lbl('超出绝对值','超出积分') : lbl('缺口绝对值','缺口积分'));
     document.getElementById('d-task-diff-cell').style.background = taskDiffN >= 0 ? '#fef2f2' : '#f0fdf4';
 
     // 基期口径
@@ -1596,7 +1698,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       return;
     }
     baseCard.style.display = '';
-    // 移动端由 CSS media query 控制为单列，PC端才用双列
     dualBlock.style.gridTemplateColumns = window.innerWidth <= 768 ? '' : '1fr 1fr';
 
     const bpc = document.getElementById('d-base-pct');
@@ -1610,17 +1711,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     document.getElementById('d-base-bar').style.width = Math.min(basePct, 100) + '%';
     document.getElementById('d-base-tick').style.left = Math.min(tp, 100) + '%';
     document.getElementById('d-base-prog-label').textContent = basePct.toFixed(1) + '% ｜ 时间基准 ' + tpStr + '%';
-    document.getElementById('d-base-actual').textContent = fmtNum(actualN);
-    document.getElementById('d-base-target').textContent = fmtNum(baseN);
+
+    const dgBaseActualLbl = document.querySelector('#d-base-actual')?.closest('.dg-cell')?.querySelector('.dg-label');
+    const dgBaseTargetLbl = document.querySelector('#d-base-target')?.closest('.dg-cell')?.querySelector('.dg-label');
+    const dgBaseShouldLbl = document.querySelector('#d-base-should')?.closest('.dg-cell')?.querySelector('.dg-label');
+    if (dgBaseActualLbl) dgBaseActualLbl.textContent = lbl('实际完成', '当前积分');
+    if (dgBaseTargetLbl) dgBaseTargetLbl.textContent = lbl('基期目标', '基期目标积分');
+    if (dgBaseShouldLbl) dgBaseShouldLbl.textContent = lbl('当前应完成', '应完成积分');
+
+    document.getElementById('d-base-actual').textContent = fmt(actualN);
+    document.getElementById('d-base-target').textContent = fmt(baseN);
 
     const baseShould = baseN * tp / 100;
     const baseDiffN  = actualN - baseShould;
-    document.getElementById('d-base-should').textContent = fmtNum(baseShould);
+    document.getElementById('d-base-should').textContent = fmt(baseShould);
     const bdEl  = document.getElementById('d-base-diff');
     const bdLbl = document.getElementById('d-base-diff-label');
-    bdEl.textContent = (baseDiffN >= 0 ? '+' : '') + fmtNum(baseDiffN);
+    bdEl.textContent = (baseDiffN >= 0 ? '+' : '') + fmt(Math.abs(baseDiffN));
     bdEl.className   = 'dg-val ' + (baseDiffN >= 0 ? 'c-red' : 'c-green');
-    bdLbl.textContent = baseDiffN >= 0 ? '超出绝对值' : '缺口绝对值';
+    bdLbl.textContent = (baseDiffN >= 0 ? lbl('超出绝对值','超出积分') : lbl('缺口绝对值','缺口积分'));
     document.getElementById('d-base-diff-cell').style.background = baseDiffN >= 0 ? '#fef2f2' : '#f0fdf4';
   }
 
@@ -1700,11 +1809,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const balEl = document.getElementById('sc-s-balance-val');
     const wp = state.orgWeekPoints;
     if (wPtsEl) {
-      wPtsEl.textContent = (wp >= 0 ? '+' : '') + '¥' + Math.abs(wp).toFixed(2);
+      wPtsEl.textContent = (wp >= 0 ? '+' : '') + '💎' + Math.abs(wp).toFixed(1);
       wPtsEl.className = 'sc-val ' + (wp >= 0 ? 'c-green' : 'c-red');
     }
     if (wPtsSub) wPtsSub.textContent = wp >= 0 ? '本周超出预计可得' : '本周暂时落后';
-    if (balEl) balEl.textContent = '¥' + (state.orgBalance || 0).toFixed(2);
+    if (balEl) balEl.textContent = '💎' + (state.orgBalance || 0).toFixed(1);
   }
 
   /* ===== 积分：加载机构余额 ===== */
@@ -1717,82 +1826,132 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     } catch(e) {
       state.orgBalance = 0; state.orgWeekPoints = 0;
     }
-    // 更新商店余额显示
-    const shopBal = document.getElementById('shop-balance-val');
-    const shopWp  = document.getElementById('shop-week-pts-val');
-    const shopWpSub = document.getElementById('shop-week-pts-sub');
-    const shopPendingCard = document.getElementById('shop-pending-card');
-    if (shopBal) shopBal.textContent = '¥' + state.orgBalance.toFixed(2);
-    const wp = state.orgWeekPoints;
-    if (shopWp) {
-      shopWp.textContent = (wp >= 0 ? '+' : '') + '¥' + Math.abs(wp).toFixed(2);
-      shopWp.className = 'wc-val ' + (wp >= 0 ? 'c-green' : 'c-red');
-    }
-    if (shopWpSub) shopWpSub.textContent = wp >= 0 ? '周末结算后加入余额' : '本周暂时落后，不影响余额';
-    if (shopPendingCard) {
-      shopPendingCard.className = 'wallet-card pending' + (wp < 0 ? ' negative' : '');
-    }
+    updateShopHeader();
   }
 
-  /* ===== 积分：渲染商店 ===== */
+  /* ===== 积分商店（版本A） ===== */
+  window.toggleShop = function() {
+    const body = document.getElementById('shopBody');
+    const lbl  = document.getElementById('shopToggleLabel');
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : '';
+    lbl.textContent = open ? '展开商店 ▼' : '收起商店 ▲';
+  };
+
+  let selectedRewardId = null;
+  let selectedQty = 1;
+
   function renderShop() {
     const grid = document.getElementById('shopGrid');
     if (!grid) return;
     const balance = state.orgBalance;
     grid.innerHTML = SHOP_ITEMS.map(item => {
-      const canAfford = balance >= item.price;
-      return `<div class="shop-item ${canAfford ? 'affordable' : ''}">
-        <div class="si-icon">${item.icon}</div>
-        <div class="si-name">${item.name}</div>
-        <div class="si-unit">${item.unit}</div>
-        <div class="si-price"><span class="si-currency">¥</span>${item.price}</div>
-        <div class="qty-row">
-          <button class="qty-btn" onclick="changeQty('${item.id}',-1)">−</button>
-          <span class="qty-num" id="qty-${item.id}">1</span>
-          <button class="qty-btn" onclick="changeQty('${item.id}',1)">+</button>
-          <span class="qty-total" id="qtotal-${item.id}">¥${item.price}</span>
+      const maxQ = Math.floor(balance / item.price);
+      const canAfford = maxQ > 0;
+      const isSelected = selectedRewardId === item.id;
+      return `<div class="reward-card ${canAfford ? 'can-afford' : ''} ${isSelected ? 'selected' : ''}"
+        onclick="${canAfford ? `selectReward('${item.id}')` : ''}">
+        <div class="rc-top">
+          <div class="rc-name">${item.icon} ${item.name}</div>
+          <div class="rc-unit">${item.unit}</div>
         </div>
-        <button class="si-btn" ${canAfford ? '' : 'disabled'}
-          onclick="${canAfford ? `openRedeemModal('${item.id}')` : ''}">
-          ${canAfford ? '立即兑换' : '余额不足'}
+        <div class="rc-desc">${item.desc}</div>
+        <div class="rc-price-row">
+          <div class="rc-price">💎${item.price}</div>
+          <div class="rc-max ${canAfford ? 'ok' : ''}">可兑 ${maxQ} 档</div>
+        </div>
+        <button class="rc-btn ${isSelected ? 'selected-btn' : (canAfford ? 'primary' : 'disabled')}" ${canAfford ? '' : 'disabled'}>
+          ${isSelected ? '✓ 已选中' : (canAfford ? '选择兑换' : '余额不足')}
         </button>
       </div>`;
     }).join('');
+    renderActionBar();
+    // 更新头部余额显示
+    updateShopHeader();
   }
 
-  /* ===== 积分：兑换数量 ===== */
-  window.changeQty = function(itemId, delta) {
-    const el = document.getElementById('qty-' + itemId);
-    if (!el) return;
-    let qty = parseInt(el.textContent) + delta;
-    if (qty < 1) qty = 1;
-    if (qty > 99) qty = 99;
-    el.textContent = qty;
-    const item = SHOP_ITEMS.find(i => i.id === itemId);
-    if (item) {
-      const totalEl = document.getElementById('qtotal-' + itemId);
-      if (totalEl) totalEl.textContent = '¥' + (item.price * qty);
+  function updateShopHeader() {
+    const bal = state.orgBalance;
+    const wp  = state.orgWeekPoints;
+    const hBal = document.getElementById('shop-balance-val');
+    const hWp  = document.getElementById('shop-week-pts-val');
+    const bigBal = document.getElementById('shop-balance-big');
+    const bigWp  = document.getElementById('shop-week-pts-val2');
+    const bigWpSub = document.getElementById('shop-week-pts-sub');
+    const bigWpCard = document.getElementById('shop-pending-card');
+    if (hBal) hBal.textContent = '💎' + bal.toFixed(1);
+    if (hWp) {
+      hWp.textContent = (wp >= 0 ? '+' : '') + '💎' + Math.abs(wp).toFixed(1);
+      hWp.className = 'shop-week-num' + (wp < 0 ? ' neg' : '');
     }
+    if (bigBal) bigBal.textContent = '💎' + bal.toFixed(1);
+    if (bigWp) {
+      bigWp.textContent = (wp >= 0 ? '+' : '') + '💎' + Math.abs(wp).toFixed(1);
+      bigWp.className = 'swc-week-val' + (wp < 0 ? ' neg' : '');
+    }
+    if (bigWpSub) bigWpSub.textContent = wp >= 0 ? '周末结算后加入余额' : '本周暂时落后，不影响余额';
+  }
+
+  window.selectReward = function(itemId) {
+    if (selectedRewardId === itemId) {
+      selectedRewardId = null; selectedQty = 1;
+    } else {
+      selectedRewardId = itemId; selectedQty = 1;
+    }
+    renderShop();
   };
 
-  /* ===== 积分：打开兑换弹窗 ===== */
-  window.openRedeemModal = function(itemId) {
-    const item = SHOP_ITEMS.find(i => i.id === itemId);
+  function renderActionBar() {
+    const bar = document.getElementById('shopActionBar');
+    if (!bar) return;
+    if (!selectedRewardId) { bar.style.display = 'none'; return; }
+    const item = SHOP_ITEMS.find(i => i.id === selectedRewardId);
+    if (!item) { bar.style.display = 'none'; return; }
+    const maxQ = Math.floor(state.orgBalance / item.price);
+    const totalCost = item.price * selectedQty;
+    const canSubmit = selectedQty >= 1 && totalCost <= state.orgBalance;
+    bar.style.display = '';
+    bar.innerHTML = `
+      <div class="sab-title">确认兑换：${item.icon} ${item.name}</div>
+      <div class="sab-row">
+        <span class="sab-label">数量（档）：</span>
+        <div class="sab-qty-wrap">
+          <button class="sab-qty-btn" onclick="changeShopQty(-1)">−</button>
+          <span class="sab-qty-num" id="sab-qty">${selectedQty}</span>
+          <button class="sab-qty-btn" onclick="changeShopQty(1)">+</button>
+        </div>
+        <span class="sab-label">消耗：</span>
+        <span class="sab-total" id="sab-total">💎${totalCost.toFixed(1)}</span>
+        <span class="sab-label" style="color:#aaa">/ 余额 💎${state.orgBalance.toFixed(1)}</span>
+        <button class="sab-submit" id="sabSubmitBtn" ${canSubmit ? '' : 'disabled'} onclick="confirmRedeem()">提交兑换申请</button>
+      </div>`;
+  }
+
+  window.changeShopQty = function(delta) {
+    const item = SHOP_ITEMS.find(i => i.id === selectedRewardId);
     if (!item) return;
-    const qty = parseInt(document.getElementById('qty-' + itemId)?.textContent || '1');
-    const cost = item.price * qty;
+    const maxQ = Math.floor(state.orgBalance / item.price);
+    selectedQty = Math.max(1, Math.min(maxQ, selectedQty + delta));
+    renderActionBar();
+  };
+
+  window.confirmRedeem = function() {
+    const item = SHOP_ITEMS.find(i => i.id === selectedRewardId);
+    if (!item) return;
+    const cost = item.price * selectedQty;
     const balance = state.orgBalance;
-    state.redeemPending = { item, qty, cost };
+    state.redeemPending = { item, qty: selectedQty, cost };
     document.getElementById('rm-name').textContent = `${item.icon} ${item.name}（${item.unit}）`;
-    document.getElementById('rm-qty').textContent = qty + ' 档';
-    document.getElementById('rm-cost').textContent = '¥' + cost.toFixed(2);
-    document.getElementById('rm-balance-cur').textContent = '¥' + balance.toFixed(2);
+    document.getElementById('rm-qty').textContent = selectedQty + ' 档';
+    document.getElementById('rm-cost').textContent = '💎' + cost.toFixed(1);
+    document.getElementById('rm-balance-cur').textContent = '💎' + balance.toFixed(1);
     const after = balance - cost;
-    document.getElementById('rm-balance-after').textContent = '¥' + after.toFixed(2);
+    document.getElementById('rm-balance-after').textContent = '💎' + after.toFixed(1);
     document.getElementById('rm-balance-after').className = 'rm-val ' + (after >= 0 ? 'c-green' : 'c-red');
     const errEl = document.getElementById('rm-err');
     errEl.style.display = 'none'; errEl.textContent = '';
     document.getElementById('rm-confirm-btn').disabled = false;
+    document.getElementById('rm-confirm-btn').textContent = '确认兑换';
     document.getElementById('redeemModalBg').classList.add('open');
   };
 
@@ -1825,15 +1984,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       if (!resp.ok || result.error) throw new Error(result.error || '兑换失败');
       // 更新本地余额
       state.orgBalance = result.new_balance;
+      selectedRewardId = null; selectedQty = 1;
       await loadOrgBalance(state.source, state.system);
       renderShop();
       document.getElementById('redeemModalBg').classList.remove('open');
       state.redeemPending = null;
-      // 重置数量
-      const qEl = document.getElementById('qty-' + item.id);
-      if (qEl) { qEl.textContent = '1'; }
-      const tEl = document.getElementById('qtotal-' + item.id);
-      if (tEl) tEl.textContent = '¥' + item.price;
       alert(`✅ 兑换申请已提交！运营同学将尽快与你联系。`);
     } catch(e) {
       errEl.textContent = '❌ ' + e.message;
@@ -1889,7 +2044,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
           </div>
           <div class="redeem-item-detail">
             ${r.reward_name} × ${r.quantity}档 &nbsp;|&nbsp;
-            <span class="redeem-item-cost">¥${Number(r.points_cost).toFixed(2)}</span>
+            <span class="redeem-item-cost">💎${Number(r.points_cost).toFixed(1)}</span>
             &nbsp;|&nbsp; ${r.system.toUpperCase()}
             ${r.status === 'pending' ? `&nbsp;<button onclick="markRedeemProcessed(${r.id})" style="padding:2px 8px;background:#059669;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px">标记已处理</button>` : ''}
           </div>
@@ -1981,7 +2136,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         <td class="name" title="${a.anchor_name||''}">${a.anchor_name||''}</td>
         <td class="r num" style="color:#555">${a.streaming_minutes ? (a.streaming_minutes / 60).toFixed(1) : '0.0'}</td>
         <td class="r num" style="color:#2563eb${showPts ? ';display:none' : ''}">${fmtNum(a.actual)}</td>
-        <td class="r num" style="color:#6366f1${showPts ? '' : ';display:none'}">¥${pts.toFixed(2)}</td>
+        <td class="r num" style="color:#7c3aed${showPts ? '' : ';display:none'}">💎${pts.toFixed(1)}</td>
         <td class="r num" style="color:#444">${fmtNum(a.target)}</td>
         <td class="r"><span class="chip ${tCls}">${taskPct.toFixed(1)}%</span></td>
         ${hasBase ? `<td class="r num" style="color:#444">${a.base_target > 0 ? fmtNum(a.base_target) : '—'}</td>` : '<td style="display:none"></td>'}
