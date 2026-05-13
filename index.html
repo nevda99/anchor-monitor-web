@@ -96,6 +96,42 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 }
 .switch-ui-btn:hover { background:rgba(99,102,241,.3); }
 
+/* ===== 玩法说明弹窗 ===== */
+.help-btn-top {
+  padding:5px 14px; background:rgba(251,191,36,.12); color:#fbbf24;
+  border:1px solid rgba(251,191,36,.3); border-radius:6px; font-size:12px;
+  cursor:pointer; transition:all .2s; font-weight:600;
+}
+.help-btn-top:hover { background:rgba(251,191,36,.25); }
+.help-modal-bg {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.5);
+  z-index:3000; align-items:center; justify-content:center;
+}
+.help-modal-bg.open { display:flex; }
+.help-modal {
+  background:white; border-radius:16px; padding:32px 36px; max-width:580px; width:92%;
+  max-height:85vh; overflow-y:auto; position:relative; box-shadow:0 20px 60px rgba(0,0,0,.2);
+}
+.help-modal-close {
+  position:absolute; top:16px; right:20px; font-size:20px; color:#aaa;
+  cursor:pointer; background:none; border:none; line-height:1;
+}
+.help-modal-close:hover { color:#333; }
+.help-modal h2 { font-size:18px; font-weight:900; color:#111; margin:0 0 20px; }
+.help-qa { margin-bottom:20px; }
+.help-q {
+  font-size:14px; font-weight:700; color:#111; margin-bottom:6px;
+  display:flex; gap:8px; align-items:flex-start;
+}
+.help-q::before { content:'Q'; color:#6366f1; font-weight:900; flex-shrink:0; }
+.help-a {
+  font-size:13px; color:#555; line-height:1.75; padding-left:20px;
+}
+.help-a ul { margin:4px 0 0 16px; padding:0; }
+.help-a li { margin-bottom:3px; }
+.help-divider { border:none; border-top:1px solid #f0f0f0; margin:4px 0 20px; }
+.help-section-title { font-size:12px; font-weight:800; color:#999; letter-spacing:1px; text-transform:uppercase; margin:0 0 14px; }
+
 /* ===== 顶部5卡片 ===== */
 .stats-bar { display:grid; grid-template-columns:repeat(5,1fr); gap:0; background:white; border-bottom:2px solid #f0f0f0; flex-shrink:0; }
 .stats-bar.source-mode { grid-template-columns:repeat(5,1fr); }
@@ -667,6 +703,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     <span id="topbarInfo"></span>
     <button class="admin-drawer-btn" id="adminToolsBtn" onclick="openAdminDrawer()" style="display:none">🛠 管理工具</button>
     <button class="points-toggle-btn" id="pointsToggleBtn" onclick="togglePointsView()" style="display:none">💰 积分视图</button>
+    <button class="help-btn-top" id="helpBtn" onclick="openHelpModal()" style="display:none">我有疑问？</button>
     <a class="switch-ui-btn" href="/index-v1.html" title="切换到经典UI版本" id="switchUiBtn" style="display:none">🔄 经典版</a>
     <button class="logout-btn-top" onclick="logout()">退出登录</button>
   </div>
@@ -997,6 +1034,87 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
 <!-- 兑换确认弹窗 -->
 <div class="redeem-modal-bg" id="redeemModalBg" onclick="closeRedeemModal(event)">
+
+<!-- 玩法说明弹窗 -->
+<div class="help-modal-bg" id="helpModalBg" onclick="closeHelpModal(event)">
+  <div class="help-modal">
+    <button class="help-modal-close" onclick="closeHelpModal()">✕</button>
+    <h2>🙋 常见问题</h2>
+
+    <p class="help-section-title">📊 数据看板</p>
+
+    <div class="help-qa">
+      <div class="help-q">这个系统是干什么的？</div>
+      <div class="help-a">这里是你机构的<strong>本周任务看板</strong>，随时能看到每个主播的完成进度，以及你们机构能拿到的积分奖励。</div>
+    </div>
+    <div class="help-qa">
+      <div class="help-q">颜色为什么有红有绿，哪个是好哪个是坏？</div>
+      <div class="help-a">🔴 红色 = 完成进度<strong>领先</strong>，是好事<br>🟢 绿色 = 完成进度<strong>落后</strong>，需要追追</div>
+    </div>
+    <div class="help-qa">
+      <div class="help-q">「任务口径」和「基期口径」分别是什么？</div>
+      <div class="help-a">
+        <ul>
+          <li><strong>任务口径</strong>：你们本周的对赌目标，这个是考核红线</li>
+          <li><strong>基期口径</strong>：去年同期的历史参照线，供参考</li>
+        </ul>
+        考核看任务口径就够了，基期口径仅供对比参考。
+      </div>
+    </div>
+
+    <hr class="help-divider">
+    <p class="help-section-title">💎 积分系统</p>
+
+    <div class="help-qa">
+      <div class="help-q">积分是怎么来的？</div>
+      <div class="help-a">本周完成量<strong>超过目标进度</strong>的部分，系统每天自动换算成积分。超得越多，积分越多；没超出就没有，不扣分。</div>
+    </div>
+    <div class="help-qa">
+      <div class="help-q">「本周可获积分」和「账户余额」有什么区别？</div>
+      <div class="help-a">
+        <ul>
+          <li><strong>本周可获积分</strong>：今天为止超出部分估算出的积分，每天实时更新</li>
+          <li><strong>账户余额</strong>：每周结算后正式到账的积分，可以用来兑换奖励</li>
+        </ul>
+        本周的积分要到<strong>每周结算后</strong>才会加进余额，结算前只能看，不能兑换。
+      </div>
+    </div>
+    <div class="help-qa">
+      <div class="help-q">我的积分是 0，正常吗？</div>
+      <div class="help-a">本周完成进度还没超过当前时间进度就是 0，追上来超过之后会自动更新。</div>
+    </div>
+
+    <hr class="help-divider">
+    <p class="help-section-title">🛍️ 积分商店</p>
+
+    <div class="help-qa">
+      <div class="help-q">积分可以换什么？</div>
+      <div class="help-a">
+        <ul>
+          <li>🌟 <strong>涨粉奖励</strong> — 主播账号涨粉激励</li>
+          <li>💰 <strong>快币奖励</strong> — 直播间礼物打赏</li>
+          <li>📡 <strong>流量名额（7天）</strong> — 大额推流名额，一人持续7天</li>
+          <li>🔥 <strong>火花流量 / 流量券</strong> — 直播间曝光资源</li>
+        </ul>
+      </div>
+    </div>
+    <div class="help-qa">
+      <div class="help-q">怎么兑换？</div>
+      <div class="help-a">
+        点击「积分商店」展开 → 选择奖励和数量 → 点「提交兑换申请」<br>
+        运营同学会在工作日内联系你安排发放。
+      </div>
+    </div>
+
+    <hr class="help-divider">
+    <p class="help-section-title">📋 其他</p>
+
+    <div class="help-qa">
+      <div class="help-q">为什么每个主播的目标不一样？</div>
+      <div class="help-a">目标根据每位主播的历史成绩计算，做得越好目标也会越高——这是对强主播的认可，不是惩罚。</div>
+    </div>
+  </div>
+</div>
   <div class="redeem-modal">
     <div class="rm-title">确认兑换</div>
     <div class="rm-row"><span class="rm-label">奖励内容</span><span class="rm-val" id="rm-name">—</span></div>
@@ -1276,6 +1394,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     // 积分视角切换按钮：仅 super_admin/sub_admin 可见
     const ptBtn = document.getElementById('pointsToggleBtn');
     if (ptBtn) ptBtn.style.display = (state.role === 'super_admin' || state.role === 'sub_admin') ? '' : 'none';
+    // 我有疑问按钮：仅 source 账号可见
+    const helpBtn = document.getElementById('helpBtn');
+    if (helpBtn) helpBtn.style.display = state.role === 'source' ? '' : 'none';
 
     if (state.role === 'super_admin') {
       // super_admin：显示侧边栏
@@ -1404,6 +1525,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (switchBtn) switchBtn.style.display = 'none';
     const ptBtn = document.getElementById('pointsToggleBtn');
     if (ptBtn) ptBtn.style.display = 'none';
+    const helpBtnEl = document.getElementById('helpBtn');
+    if (helpBtnEl) helpBtnEl.style.display = 'none';
     document.getElementById('sysToggleBar').style.display = 'none';
     document.getElementById('shopSection').style.display = 'none';
     const savedSys = localStorage.getItem('saved_system');
@@ -1854,8 +1977,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   }
 
   /* ===== 积分商店（版本A） ===== */
+  /* ===== 玩法说明弹窗 ===== */
+  window.openHelpModal = function() {
+    document.getElementById('helpModalBg').classList.add('open');
+  };
+  window.closeHelpModal = function(e) {
+    if (e && e.target !== document.getElementById('helpModalBg')) return;
+    document.getElementById('helpModalBg').classList.remove('open');
+  };
+
   window.toggleShop = function() {
-    const body = document.getElementById('shopBody');
     const lbl  = document.getElementById('shopToggleLabel');
     const open = body.style.display !== 'none';
     body.style.display = open ? 'none' : '';
