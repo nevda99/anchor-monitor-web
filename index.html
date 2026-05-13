@@ -2164,10 +2164,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (thActual) thActual.style.display = state.pointsView ? 'none' : '';
     const thPts = document.getElementById('th-points-col');
     if (thPts) thPts.style.display = state.pointsView ? '' : 'none';
-    // 重新渲染表格
+    // 重新渲染双口径卡片 + 表格
     if (state.currentData.length > 0) {
-      const hasBase = state.currentData.some(d => d.base_target > 0);
-      renderAnchorTable(state.currentData, state.timeProgress, hasBase);
+      const rows    = state.currentData;
+      const tp      = state.timeProgress;
+      const hasBase = rows.some(d => d.base_target > 0);
+      const totalActual = rows.reduce((s,i) => s + i.actual, 0);
+      const totalTarget = rows.reduce((s,i) => s + i.target, 0);
+      const totalBase   = rows.reduce((s,i) => s + (i.base_target||0), 0);
+      const taskPct     = totalTarget > 0 ? totalActual / totalTarget * 100 : 0;
+      const basePct     = totalBase   > 0 ? totalActual / totalBase   * 100 : 0;
+      renderDualBlock(taskPct, basePct, totalActual, totalTarget, totalBase, tp, hasBase);
+      renderAnchorTable(rows, tp, hasBase);
     }
   };
 
