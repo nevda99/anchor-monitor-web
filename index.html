@@ -719,12 +719,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     <div class="sc-sub" id="sc-s-base-sub"></div>
   </div>
   <div class="sc" id="sc-s-week-pts" style="display:none">
-    <div class="sc-label">本周预计积分</div>
+    <div class="sc-label">💎 本周已获积分</div>
     <div class="sc-val" id="sc-s-week-pts-val">—</div>
-    <div class="sc-sub" id="sc-s-week-pts-sub">结算前流动</div>
+    <div class="sc-sub" id="sc-s-week-pts-sub">实时计算</div>
   </div>
   <div class="sc" id="sc-s-balance" style="display:none">
-    <div class="sc-label">账户余额</div>
+    <div class="sc-label">💎 账户余额</div>
     <div class="sc-val" style="color:#a855f7" id="sc-s-balance-val">—</div>
     <div class="sc-sub gray">可用于兑换</div>
   </div>
@@ -849,6 +849,54 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         </div>
       </div>
 
+      <!-- 积分商店（source视角，版本A折叠式） -->
+      <div class="points-section" id="shopSection" style="display:none">
+        <!-- 头部：余额概览 + 展开按钮 -->
+        <div class="shop-header" onclick="toggleShop()">
+          <div class="shop-header-left">
+            <span class="shop-header-icon">💎</span>
+            <div>
+              <div class="shop-header-title">积分商店</div>
+              <div class="shop-header-sub">💎余额：<span id="shop-balance-val" class="shop-bal-num">0.0</span>
+                &nbsp;·&nbsp; 💎本周预计：<span id="shop-week-pts-val" class="shop-week-num">+0.0</span>
+              </div>
+            </div>
+          </div>
+          <div class="shop-header-right">
+            <span class="shop-toggle-label" id="shopToggleLabel">展开商店 ▼</span>
+          </div>
+        </div>
+        <!-- 商店主体（折叠） -->
+        <div class="shop-body" id="shopBody" style="display:none">
+          <div class="shop-body-inner">
+            <!-- 左侧：余额卡 -->
+            <div class="shop-wallet-col">
+              <div class="shop-wallet-card">
+                <div class="swc-label">💎 账户余额</div>
+                <div class="swc-val" id="shop-balance-big">0.0</div>
+                <div class="swc-sub">永久累积，不清零</div>
+                <div style="height:12px"></div>
+                <div class="swc-label">💎 本周预计可得</div>
+                <div class="swc-week" id="shop-pending-card">
+                  <div class="swc-week-val" id="shop-week-pts-val2">+0.0</div>
+                  <div class="swc-week-sub" id="shop-week-pts-sub">本周已获得积分</div>
+                </div>
+                <div style="height:12px"></div>
+                <div class="swc-note">兑换后运营人员将与你联系发放奖励</div>
+              </div>
+            </div>
+            <!-- 右侧：奖励卡片 Grid -->
+            <div class="shop-rewards-col">
+              <div id="shopGrid" class="shop-rewards-grid">
+                <!-- JS渲染 -->
+              </div>
+              <!-- 选中后的兑换操作区 -->
+              <div id="shopActionBar" class="shop-action-bar" style="display:none"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 双口径大块 -->
       <div class="dual-block" id="dualBlock">
 
@@ -902,54 +950,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
       </div>
 
-      <!-- 积分商店（source视角，版本A折叠式） -->
-      <div class="points-section" id="shopSection" style="display:none">
-        <!-- 头部：余额概览 + 展开按钮 -->
-        <div class="shop-header" onclick="toggleShop()">
-          <div class="shop-header-left">
-            <span class="shop-header-icon">💎</span>
-            <div>
-              <div class="shop-header-title">积分商店</div>
-              <div class="shop-header-sub">余额：<span id="shop-balance-val" class="shop-bal-num">💎0.0</span>
-                &nbsp;·&nbsp; 本周预计：<span id="shop-week-pts-val" class="shop-week-num">+💎0.0</span>
-              </div>
-            </div>
-          </div>
-          <div class="shop-header-right">
-            <span class="shop-toggle-label" id="shopToggleLabel">展开商店 ▼</span>
-          </div>
-        </div>
-        <!-- 商店主体（折叠） -->
-        <div class="shop-body" id="shopBody" style="display:none">
-          <div class="shop-body-inner">
-            <!-- 左侧：余额卡 -->
-            <div class="shop-wallet-col">
-              <div class="shop-wallet-card">
-                <div class="swc-label">账户余额</div>
-                <div class="swc-val" id="shop-balance-big">💎0.0</div>
-                <div class="swc-sub">永久累积，不清零</div>
-                <div style="height:12px"></div>
-                <div class="swc-label">本周预计可得</div>
-                <div class="swc-week" id="shop-pending-card">
-                  <div class="swc-week-val" id="shop-week-pts-val2">+💎0.0</div>
-                  <div class="swc-week-sub" id="shop-week-pts-sub">周末结算后加入余额</div>
-                </div>
-                <div style="height:12px"></div>
-                <div class="swc-note">兑换后运营人员将与你联系发放奖励</div>
-              </div>
-            </div>
-            <!-- 右侧：奖励卡片 Grid -->
-            <div class="shop-rewards-col">
-              <div id="shopGrid" class="shop-rewards-grid">
-                <!-- JS渲染 -->
-              </div>
-              <!-- 选中后的兑换操作区 -->
-              <div id="shopActionBar" class="shop-action-bar" style="display:none"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- 主播明细表 -->
       <div class="anchor-card">
         <div class="anchor-card-head">
@@ -966,7 +966,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
                 <th>主播名称</th>
                 <th class="r th-sort" onclick="thSort('streaming_minutes',this)">开播时长(h)<span class="th-arrow"></span></th>
                 <th class="r th-sort" onclick="thSort('actual',this)" id="th-actual-col">实际完成<span class="th-arrow"></span></th>
-                <th class="r th-sort" id="th-points-col" onclick="thSort('points',this)" style="display:none">当前积分(💎)<span class="th-arrow"></span></th>
+                <th class="r th-sort" id="th-points-col" onclick="thSort('points',this)" style="display:none">💎 当前积分<span class="th-arrow"></span></th>
                 <th class="r th-sort" onclick="thSort('target',this)" id="th-task-target">任务目标<span class="th-arrow"></span></th>
                 <th class="r th-sort desc" onclick="thSort('completion_rate',this)">任务完成度<span class="th-arrow"></span></th>
                 <th class="r th-sort" onclick="thSort('base_target',this)" id="th-base-target">基期目标<span class="th-arrow"></span></th>
@@ -999,9 +999,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     <div class="rm-title">确认兑换</div>
     <div class="rm-row"><span class="rm-label">奖励内容</span><span class="rm-val" id="rm-name">—</span></div>
     <div class="rm-row"><span class="rm-label">兑换数量</span><span class="rm-val" id="rm-qty">—</span></div>
-    <div class="rm-row"><span class="rm-label">消耗积分</span><span class="rm-val c-purple" id="rm-cost">—</span></div>
-    <div class="rm-row"><span class="rm-label">当前余额</span><span class="rm-val c-green" id="rm-balance-cur">—</span></div>
-    <div class="rm-row"><span class="rm-label">兑换后余额</span><span class="rm-val c-red" id="rm-balance-after">—</span></div>
+    <div class="rm-row"><span class="rm-label">💎 消耗积分</span><span class="rm-val c-purple" id="rm-cost">—</span></div>
+    <div class="rm-row"><span class="rm-label">💎 当前余额</span><span class="rm-val c-green" id="rm-balance-cur">—</span></div>
+    <div class="rm-row"><span class="rm-label">💎 兑换后余额</span><span class="rm-val c-red" id="rm-balance-after">—</span></div>
     <div id="rm-err" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></div>
     <div class="rm-footer">
       <button class="rm-cancel" onclick="closeRedeemModal()">取消</button>
@@ -1108,11 +1108,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     return Math.round(n).toLocaleString('zh-CN');
   }
 
-  // 积分格式化：UAD → 💎XX.X
+  // 积分格式化：UAD → XX.X（不含icon，icon显示在标签上）
   function fmtPts(n) {
     if (n == null || isNaN(n)) return '—';
     const pts = n * 0.024;
-    return '💎' + (pts >= 0 ? '' : '') + pts.toFixed(1);
+    return pts.toFixed(1);
   }
   // 积分数值（无符号，用于计算展示）
   function toPoints(n) { return (Number(n) || 0) * 0.024; }
@@ -1652,7 +1652,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const tpStr     = tp.toFixed(2);
     const pts = state.pointsView;
 
-    // 格式化函数：积分视角用 💎，原始视角用 UAD
+    // 格式化函数：积分视角纯数字，原始视角用 UAD
     const fmt = (n) => pts ? fmtPts(n) : fmtNum(n);
     const lbl = (raw, pt) => pts ? pt : raw;
 
@@ -1673,9 +1673,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const dgTaskActualLbl = document.querySelector('#d-task-actual')?.closest('.dg-cell')?.querySelector('.dg-label');
     const dgTaskTargetLbl = document.querySelector('#d-task-target')?.closest('.dg-cell')?.querySelector('.dg-label');
     const dgTaskShouldLbl = document.querySelector('#d-task-should')?.closest('.dg-cell')?.querySelector('.dg-label');
-    if (dgTaskActualLbl) dgTaskActualLbl.textContent = lbl('实际完成', '当前积分');
-    if (dgTaskTargetLbl) dgTaskTargetLbl.textContent = lbl('任务目标', '目标积分');
-    if (dgTaskShouldLbl) dgTaskShouldLbl.textContent = lbl('当前应完成', '应完成积分');
+    if (dgTaskActualLbl) dgTaskActualLbl.textContent = lbl('实际完成', '💎 当前积分');
+    if (dgTaskTargetLbl) dgTaskTargetLbl.textContent = lbl('任务目标', '💎 目标积分');
+    if (dgTaskShouldLbl) dgTaskShouldLbl.textContent = lbl('当前应完成', '💎 应完成积分');
 
     document.getElementById('d-task-actual').textContent = fmt(actualN);
     document.getElementById('d-task-target').textContent = fmt(targetN);
@@ -1687,7 +1687,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const tdLbl = document.getElementById('d-task-diff-label');
     tdEl.textContent = (taskDiffN >= 0 ? '+' : '') + fmt(Math.abs(taskDiffN));
     tdEl.className   = 'dg-val ' + (taskDiffN >= 0 ? 'c-red' : 'c-green');
-    tdLbl.textContent = (taskDiffN >= 0 ? lbl('超出绝对值','超出积分') : lbl('缺口绝对值','缺口积分'));
+    tdLbl.textContent = (taskDiffN >= 0 ? lbl('超出绝对值','💎 超出') : lbl('缺口绝对值','💎 缺口'));
     document.getElementById('d-task-diff-cell').style.background = taskDiffN >= 0 ? '#fef2f2' : '#f0fdf4';
 
     // 基期口径
@@ -1716,9 +1716,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const dgBaseActualLbl = document.querySelector('#d-base-actual')?.closest('.dg-cell')?.querySelector('.dg-label');
     const dgBaseTargetLbl = document.querySelector('#d-base-target')?.closest('.dg-cell')?.querySelector('.dg-label');
     const dgBaseShouldLbl = document.querySelector('#d-base-should')?.closest('.dg-cell')?.querySelector('.dg-label');
-    if (dgBaseActualLbl) dgBaseActualLbl.textContent = lbl('实际完成', '当前积分');
-    if (dgBaseTargetLbl) dgBaseTargetLbl.textContent = lbl('基期目标', '基期目标积分');
-    if (dgBaseShouldLbl) dgBaseShouldLbl.textContent = lbl('当前应完成', '应完成积分');
+    if (dgBaseActualLbl) dgBaseActualLbl.textContent = lbl('实际完成', '💎 当前积分');
+    if (dgBaseTargetLbl) dgBaseTargetLbl.textContent = lbl('基期目标', '💎 基期目标');
+    if (dgBaseShouldLbl) dgBaseShouldLbl.textContent = lbl('当前应完成', '💎 应完成积分');
 
     document.getElementById('d-base-actual').textContent = fmt(actualN);
     document.getElementById('d-base-target').textContent = fmt(baseN);
@@ -1730,7 +1730,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const bdLbl = document.getElementById('d-base-diff-label');
     bdEl.textContent = (baseDiffN >= 0 ? '+' : '') + fmt(Math.abs(baseDiffN));
     bdEl.className   = 'dg-val ' + (baseDiffN >= 0 ? 'c-red' : 'c-green');
-    bdLbl.textContent = (baseDiffN >= 0 ? lbl('超出绝对值','超出积分') : lbl('缺口绝对值','缺口积分'));
+    bdLbl.textContent = (baseDiffN >= 0 ? lbl('超出绝对值','💎 超出') : lbl('缺口绝对值','💎 缺口'));
     document.getElementById('d-base-diff-cell').style.background = baseDiffN >= 0 ? '#fef2f2' : '#f0fdf4';
   }
 
@@ -1757,6 +1757,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       const taskPct     = totalTarget > 0 ? totalActual / totalTarget * 100 : 0;
       const basePct     = totalBase   > 0 ? totalActual / totalBase   * 100 : 0;
       const hasBase     = totalBase > 0;
+
+      // 本周预计积分：实时计算（当前已完成UAD换算）
+      state.orgWeekPoints = totalActual * 0.024;
 
       updateSourceStats(rows.length, taskPct, basePct, tp, totalBase);
 
@@ -1810,22 +1813,22 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const balEl = document.getElementById('sc-s-balance-val');
     const wp = state.orgWeekPoints;
     if (wPtsEl) {
-      wPtsEl.textContent = (wp >= 0 ? '+' : '') + '💎' + Math.abs(wp).toFixed(1);
+      wPtsEl.textContent = (wp >= 0 ? '+' : '') + Math.abs(wp).toFixed(1);
       wPtsEl.className = 'sc-val ' + (wp >= 0 ? 'c-green' : 'c-red');
     }
-    if (wPtsSub) wPtsSub.textContent = wp >= 0 ? '本周超出预计可得' : '本周暂时落后';
-    if (balEl) balEl.textContent = '💎' + (state.orgBalance || 0).toFixed(1);
+    if (wPtsSub) wPtsSub.textContent = wp >= 0 ? '本周已获积分' : '本周暂时落后';
+    if (balEl) balEl.textContent = (state.orgBalance || 0).toFixed(1);
   }
 
-  /* ===== 积分：加载机构余额 ===== */
+  /* ===== 积分：加载机构余额（week_points改为实时计算，不从DB读） ===== */
   async function loadOrgBalance(source, system) {
     try {
-      const { data } = await db.from('org_balance').select('balance,week_points')
+      const { data } = await db.from('org_balance').select('balance')
         .eq('source', source).eq('system', system).single();
       state.orgBalance = Number(data?.balance || 0);
-      state.orgWeekPoints = Number(data?.week_points || 0);
+      // week_points 由 loadDetailData 实时计算，此处不覆盖
     } catch(e) {
-      state.orgBalance = 0; state.orgWeekPoints = 0;
+      state.orgBalance = 0;
     }
     updateShopHeader();
   }
@@ -1880,17 +1883,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const bigWp  = document.getElementById('shop-week-pts-val2');
     const bigWpSub = document.getElementById('shop-week-pts-sub');
     const bigWpCard = document.getElementById('shop-pending-card');
-    if (hBal) hBal.textContent = '💎' + bal.toFixed(1);
+    if (hBal) hBal.textContent = bal.toFixed(1);
     if (hWp) {
-      hWp.textContent = (wp >= 0 ? '+' : '') + '💎' + Math.abs(wp).toFixed(1);
+      hWp.textContent = (wp >= 0 ? '+' : '') + Math.abs(wp).toFixed(1);
       hWp.className = 'shop-week-num' + (wp < 0 ? ' neg' : '');
     }
-    if (bigBal) bigBal.textContent = '💎' + bal.toFixed(1);
+    if (bigBal) bigBal.textContent = bal.toFixed(1);
     if (bigWp) {
-      bigWp.textContent = (wp >= 0 ? '+' : '') + '💎' + Math.abs(wp).toFixed(1);
+      bigWp.textContent = (wp >= 0 ? '+' : '') + Math.abs(wp).toFixed(1);
       bigWp.className = 'swc-week-val' + (wp < 0 ? ' neg' : '');
     }
-    if (bigWpSub) bigWpSub.textContent = wp >= 0 ? '周末结算后加入余额' : '本周暂时落后，不影响余额';
+    if (bigWpSub) bigWpSub.textContent = '本周已获积分（实时）';
   }
 
   window.selectReward = function(itemId) {
@@ -1922,8 +1925,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
           <button class="sab-qty-btn" onclick="changeShopQty(1)">+</button>
         </div>
         <span class="sab-label">消耗：</span>
-        <span class="sab-total" id="sab-total">💎${totalCost.toFixed(1)}</span>
-        <span class="sab-label" style="color:#aaa">/ 余额 💎${state.orgBalance.toFixed(1)}</span>
+        <span class="sab-total" id="sab-total">${totalCost.toFixed(1)}</span>
+        <span class="sab-label" style="color:#aaa">/ 余额 ${state.orgBalance.toFixed(1)}</span>
         <button class="sab-submit" id="sabSubmitBtn" ${canSubmit ? '' : 'disabled'} onclick="confirmRedeem()">提交兑换申请</button>
       </div>`;
   }
@@ -1944,10 +1947,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     state.redeemPending = { item, qty: selectedQty, cost };
     document.getElementById('rm-name').textContent = `${item.icon} ${item.name}（${item.unit}）`;
     document.getElementById('rm-qty').textContent = selectedQty + ' 档';
-    document.getElementById('rm-cost').textContent = '💎' + cost.toFixed(1);
-    document.getElementById('rm-balance-cur').textContent = '💎' + balance.toFixed(1);
+    document.getElementById('rm-cost').textContent = cost.toFixed(1);
+    document.getElementById('rm-balance-cur').textContent = balance.toFixed(1);
     const after = balance - cost;
-    document.getElementById('rm-balance-after').textContent = '💎' + after.toFixed(1);
+    document.getElementById('rm-balance-after').textContent = after.toFixed(1);
     document.getElementById('rm-balance-after').className = 'rm-val ' + (after >= 0 ? 'c-green' : 'c-red');
     const errEl = document.getElementById('rm-err');
     errEl.style.display = 'none'; errEl.textContent = '';
@@ -2045,7 +2048,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
           </div>
           <div class="redeem-item-detail">
             ${r.reward_name} × ${r.quantity}档 &nbsp;|&nbsp;
-            <span class="redeem-item-cost">💎${Number(r.points_cost).toFixed(1)}</span>
+            <span class="redeem-item-cost">💎 ${Number(r.points_cost).toFixed(1)}</span>
             &nbsp;|&nbsp; ${r.system.toUpperCase()}
             ${r.status === 'pending' ? `&nbsp;<button onclick="markRedeemProcessed(${r.id})" style="padding:2px 8px;background:#059669;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px">标记已处理</button>` : ''}
           </div>
@@ -2113,13 +2116,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (thTaskTarget) {
       const arrow = thTaskTarget.querySelector('.th-arrow');
       while (thTaskTarget.firstChild) thTaskTarget.removeChild(thTaskTarget.firstChild);
-      thTaskTarget.appendChild(document.createTextNode(state.pointsView ? '目标积分(💎)' : '任务目标'));
+      thTaskTarget.appendChild(document.createTextNode(state.pointsView ? '💎 目标积分' : '任务目标'));
       if (arrow) thTaskTarget.appendChild(arrow);
     }
     if (thBase) {
       const arrow2 = thBase.querySelector('.th-arrow');
       while (thBase.firstChild) thBase.removeChild(thBase.firstChild);
-      thBase.appendChild(document.createTextNode(state.pointsView ? '基期目标积分(💎)' : '基期目标'));
+      thBase.appendChild(document.createTextNode(state.pointsView ? '💎 基期目标' : '基期目标'));
       if (arrow2) thBase.appendChild(arrow2);
     }
 
@@ -2151,10 +2154,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         <td class="name" title="${a.anchor_name||''}">${a.anchor_name||''}</td>
         <td class="r num" style="color:#555">${a.streaming_minutes ? (a.streaming_minutes / 60).toFixed(1) : '0.0'}</td>
         <td class="r num" style="color:#2563eb${showPts ? ';display:none' : ''}">${fmtNum(a.actual)}</td>
-        <td class="r num" style="color:#7c3aed${showPts ? '' : ';display:none'}">💎${pts.toFixed(1)}</td>
-        <td class="r num" style="color:#444">${showPts ? '💎' + (a.target * 0.024).toFixed(1) : fmtNum(a.target)}</td>
+        <td class="r num" style="color:#7c3aed${showPts ? '' : ';display:none'}">${pts.toFixed(1)}</td>
+        <td class="r num" style="color:#444">${showPts ? (a.target * 0.024).toFixed(1) : fmtNum(a.target)}</td>
         <td class="r"><span class="chip ${tCls}">${taskPct.toFixed(1)}%</span></td>
-        ${hasBase ? `<td class="r num" style="color:#444">${a.base_target > 0 ? (showPts ? '💎' + (a.base_target * 0.024).toFixed(1) : fmtNum(a.base_target)) : '—'}</td>` : '<td style="display:none"></td>'}
+        ${hasBase ? `<td class="r num" style="color:#444">${a.base_target > 0 ? (showPts ? (a.base_target * 0.024).toFixed(1) : fmtNum(a.base_target)) : '—'}</td>` : '<td style="display:none"></td>'}
         ${hasBase ? `<td class="r">${a.base_target > 0 ? `<span class="chip ${bCls}">${basePct.toFixed(1)}%</span>` : '—'}</td>` : '<td style="display:none"></td>'}
       </tr>`;
     }).join('');
