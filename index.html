@@ -1034,6 +1034,20 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
 <!-- 兑换确认弹窗 -->
 <div class="redeem-modal-bg" id="redeemModalBg" onclick="closeRedeemModal(event)">
+  <div class="redeem-modal">
+    <div class="rm-title">确认兑换</div>
+    <div class="rm-row"><span class="rm-label">奖励内容</span><span class="rm-val" id="rm-name">—</span></div>
+    <div class="rm-row"><span class="rm-label">兑换数量</span><span class="rm-val" id="rm-qty">—</span></div>
+    <div class="rm-row"><span class="rm-label">💎 消耗积分</span><span class="rm-val c-purple" id="rm-cost">—</span></div>
+    <div class="rm-row"><span class="rm-label">💎 当前余额</span><span class="rm-val c-green" id="rm-balance-cur">—</span></div>
+    <div class="rm-row"><span class="rm-label">💎 兑换后余额</span><span class="rm-val c-red" id="rm-balance-after">—</span></div>
+    <div id="rm-err" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></div>
+    <div class="rm-footer">
+      <button class="rm-cancel" onclick="closeRedeemModal()">取消</button>
+      <button class="rm-confirm" id="rm-confirm-btn" onclick="submitRedeem()">确认兑换</button>
+    </div>
+  </div>
+</div>
 
 <!-- 玩法说明弹窗 -->
 <div class="help-modal-bg" id="helpModalBg" onclick="closeHelpModal(event)">
@@ -1112,20 +1126,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     <div class="help-qa">
       <div class="help-q">为什么每个主播的目标不一样？</div>
       <div class="help-a">目标根据每位主播的历史成绩计算，做得越好目标也会越高——这是对强主播的认可，不是惩罚。</div>
-    </div>
-  </div>
-</div>
-  <div class="redeem-modal">
-    <div class="rm-title">确认兑换</div>
-    <div class="rm-row"><span class="rm-label">奖励内容</span><span class="rm-val" id="rm-name">—</span></div>
-    <div class="rm-row"><span class="rm-label">兑换数量</span><span class="rm-val" id="rm-qty">—</span></div>
-    <div class="rm-row"><span class="rm-label">💎 消耗积分</span><span class="rm-val c-purple" id="rm-cost">—</span></div>
-    <div class="rm-row"><span class="rm-label">💎 当前余额</span><span class="rm-val c-green" id="rm-balance-cur">—</span></div>
-    <div class="rm-row"><span class="rm-label">💎 兑换后余额</span><span class="rm-val c-red" id="rm-balance-after">—</span></div>
-    <div id="rm-err" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></div>
-    <div class="rm-footer">
-      <button class="rm-cancel" onclick="closeRedeemModal()">取消</button>
-      <button class="rm-confirm" id="rm-confirm-btn" onclick="submitRedeem()">确认兑换</button>
     </div>
   </div>
 </div>
