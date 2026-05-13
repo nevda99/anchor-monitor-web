@@ -704,6 +704,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     <button class="admin-drawer-btn" id="adminToolsBtn" onclick="openAdminDrawer()" style="display:none">🛠 管理工具</button>
     <button class="points-toggle-btn" id="pointsToggleBtn" onclick="togglePointsView()" style="display:none">💰 积分视图</button>
     <button class="help-btn-top" id="helpBtn" onclick="openHelpModal()" style="display:none">我有疑问？</button>
+    <button class="switch-ui-btn" id="refreshBtn" onclick="refreshData()" style="display:none">🔄 刷新</button>
     <a class="switch-ui-btn" href="/index-v1.html" title="切换到经典UI版本" id="switchUiBtn" style="display:none">🔄 经典版</a>
     <button class="logout-btn-top" onclick="logout()">退出登录</button>
   </div>
@@ -1397,6 +1398,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     // 我有疑问按钮：仅 source 账号可见
     const helpBtn = document.getElementById('helpBtn');
     if (helpBtn) helpBtn.style.display = state.role === 'source' ? '' : 'none';
+    // 刷新按钮：登录后所有角色可见
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) refreshBtn.style.display = '';
 
     if (state.role === 'super_admin') {
       // super_admin：显示侧边栏
@@ -1527,6 +1531,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (ptBtn) ptBtn.style.display = 'none';
     const helpBtnEl = document.getElementById('helpBtn');
     if (helpBtnEl) helpBtnEl.style.display = 'none';
+    const refreshBtnEl = document.getElementById('refreshBtn');
+    if (refreshBtnEl) refreshBtnEl.style.display = 'none';
     document.getElementById('sysToggleBar').style.display = 'none';
     document.getElementById('shopSection').style.display = 'none';
     const savedSys = localStorage.getItem('saved_system');
@@ -2148,6 +2154,23 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       errEl.textContent = '❌ ' + e.message;
       errEl.style.display = 'block';
       btn.disabled = false; btn.textContent = '确认兑换';
+    }
+  };
+
+  /* ===== 刷新数据 ===== */
+  window.refreshData = async function() {
+    const btn = document.getElementById('refreshBtn');
+    if (btn) { btn.textContent = '⏳ 刷新中...'; btn.disabled = true; }
+    try {
+      if (state.role === 'source') {
+        await loadDetailData(state.source);
+        await loadOrgBalance(state.source, state.system);
+        renderShop();
+      } else {
+        await loadSidebarAndData();
+      }
+    } finally {
+      if (btn) { btn.textContent = '🔄 刷新'; btn.disabled = false; }
     }
   };
 
