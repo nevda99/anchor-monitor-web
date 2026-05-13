@@ -902,36 +902,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
       </div>
 
-      <!-- 主播明细表 -->
-      <div class="anchor-card">
-        <div class="anchor-card-head">
-          <h4>📋 主播明细</h4>
-          <span class="anchor-count" id="d-anchor-count"></span>
-          <button class="download-excel-btn" onclick="downloadExcel()">📥 下载Excel</button>
-        </div>
-        <div style="overflow-x:auto">
-          <table class="anchor-table">
-            <thead>
-              <tr>
-                <th style="width:36px">#</th>
-                <th style="width:100px">主播ID</th>
-                <th>主播名称</th>
-                <th class="r th-sort" onclick="thSort('streaming_minutes',this)">开播时长(h)<span class="th-arrow"></span></th>
-                <th class="r th-sort" onclick="thSort('actual',this)" id="th-actual-col">实际完成<span class="th-arrow"></span></th>
-                <th class="r th-sort" id="th-points-col" onclick="thSort('points',this)" style="display:none">当前积分(💎)<span class="th-arrow"></span></th>
-                <th class="r th-sort" onclick="thSort('target',this)">任务目标<span class="th-arrow"></span></th>
-                <th class="r th-sort desc" onclick="thSort('completion_rate',this)">任务完成度<span class="th-arrow"></span></th>
-                <th class="r th-sort" onclick="thSort('base_target',this)" id="th-base-target">基期目标<span class="th-arrow"></span></th>
-                <th class="r th-sort" onclick="thSort('base_completion',this)" id="th-base-comp">基期完成度<span class="th-arrow"></span></th>
-              </tr>
-            </thead>
-            <tbody id="anchor-tbody">
-              <tr><td colspan="9" class="loading-tip">请先选择机构</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       <!-- 积分商店（source视角，版本A折叠式） -->
       <div class="points-section" id="shopSection" style="display:none">
         <!-- 头部：余额概览 + 展开按钮 -->
@@ -979,6 +949,37 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
           </div>
         </div>
       </div>
+
+      <!-- 主播明细表 -->
+      <div class="anchor-card">
+        <div class="anchor-card-head">
+          <h4>📋 主播明细</h4>
+          <span class="anchor-count" id="d-anchor-count"></span>
+          <button class="download-excel-btn" onclick="downloadExcel()">📥 下载Excel</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="anchor-table">
+            <thead>
+              <tr>
+                <th style="width:36px">#</th>
+                <th style="width:100px">主播ID</th>
+                <th>主播名称</th>
+                <th class="r th-sort" onclick="thSort('streaming_minutes',this)">开播时长(h)<span class="th-arrow"></span></th>
+                <th class="r th-sort" onclick="thSort('actual',this)" id="th-actual-col">实际完成<span class="th-arrow"></span></th>
+                <th class="r th-sort" id="th-points-col" onclick="thSort('points',this)" style="display:none">当前积分(💎)<span class="th-arrow"></span></th>
+                <th class="r th-sort" onclick="thSort('target',this)" id="th-task-target">任务目标<span class="th-arrow"></span></th>
+                <th class="r th-sort desc" onclick="thSort('completion_rate',this)">任务完成度<span class="th-arrow"></span></th>
+                <th class="r th-sort" onclick="thSort('base_target',this)" id="th-base-target">基期目标<span class="th-arrow"></span></th>
+                <th class="r th-sort" onclick="thSort('base_completion',this)" id="th-base-comp">基期完成度<span class="th-arrow"></span></th>
+              </tr>
+            </thead>
+            <tbody id="anchor-tbody">
+              <tr><td colspan="9" class="loading-tip">请先选择机构</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
 
     </div>
   </div>
@@ -2107,6 +2108,20 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     // 积分列可见性
     const thPts = document.getElementById('th-points-col');
     if (thPts) thPts.style.display = state.pointsView ? '' : 'none';
+    // 积分视角下更新列头文字
+    const thTaskTarget = document.getElementById('th-task-target');
+    if (thTaskTarget) {
+      const arrow = thTaskTarget.querySelector('.th-arrow');
+      while (thTaskTarget.firstChild) thTaskTarget.removeChild(thTaskTarget.firstChild);
+      thTaskTarget.appendChild(document.createTextNode(state.pointsView ? '目标积分(💎)' : '任务目标'));
+      if (arrow) thTaskTarget.appendChild(arrow);
+    }
+    if (thBase) {
+      const arrow2 = thBase.querySelector('.th-arrow');
+      while (thBase.firstChild) thBase.removeChild(thBase.firstChild);
+      thBase.appendChild(document.createTextNode(state.pointsView ? '基期目标积分(💎)' : '基期目标'));
+      if (arrow2) thBase.appendChild(arrow2);
+    }
 
     const sorted = [...rows].sort((a,b) => {
       let av = a[state.sortKey], bv = b[state.sortKey];
@@ -2137,9 +2152,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         <td class="r num" style="color:#555">${a.streaming_minutes ? (a.streaming_minutes / 60).toFixed(1) : '0.0'}</td>
         <td class="r num" style="color:#2563eb${showPts ? ';display:none' : ''}">${fmtNum(a.actual)}</td>
         <td class="r num" style="color:#7c3aed${showPts ? '' : ';display:none'}">💎${pts.toFixed(1)}</td>
-        <td class="r num" style="color:#444">${fmtNum(a.target)}</td>
+        <td class="r num" style="color:#444">${showPts ? '💎' + (a.target * 0.024).toFixed(1) : fmtNum(a.target)}</td>
         <td class="r"><span class="chip ${tCls}">${taskPct.toFixed(1)}%</span></td>
-        ${hasBase ? `<td class="r num" style="color:#444">${a.base_target > 0 ? fmtNum(a.base_target) : '—'}</td>` : '<td style="display:none"></td>'}
+        ${hasBase ? `<td class="r num" style="color:#444">${a.base_target > 0 ? (showPts ? '💎' + (a.base_target * 0.024).toFixed(1) : fmtNum(a.base_target)) : '—'}</td>` : '<td style="display:none"></td>'}
         ${hasBase ? `<td class="r">${a.base_target > 0 ? `<span class="chip ${bCls}">${basePct.toFixed(1)}%</span>` : '—'}</td>` : '<td style="display:none"></td>'}
       </tr>`;
     }).join('');
