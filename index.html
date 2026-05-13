@@ -226,7 +226,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 .nav-total.active { background:#eef2ff; }
 .ni-left .ni-name { font-size:13px; font-weight:600; color:#1a1a2e; }
 .ni-left .ni-name.tot { color:#6366f1; }
-.ni-left .ni-count { font-size:11px; color:#b0b0b0; margin-top:2px; }
+.ni-left .ni-count { font-size:11px; color:#b0b0b0; margin-top:2px; display:flex; align-items:center; gap:6px; }
+.ni-bal { font-size:11px; color:#d97706; font-weight:700; background:rgba(217,119,6,.1); padding:1px 5px; border-radius:4px; }
 .ni-right { text-align:right; }
 .ni-task { font-size:13px; font-weight:800; }
 .ni-task.r { color:#ef4444; }
@@ -1101,6 +1102,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     orgBalance: 0,        // source账号机构余额
     orgWeekPoints: 0,     // source账号本周可获积分（任务口径超出值）
     taskDiffUAD: 0,       // 任务口径超出/缺口绝对值UAD
+    orgBalanceMap: {},    // 管理员视角：{ source: balance }
     redeemPending: null,  // 待确认的兑换
   };
 
@@ -1456,6 +1458,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
       state.allOrgData = data;
 
+      // 加载所有机构的积分余额
+      try {
+        const { data: balData } = await db.from('org_balance').select('source,balance').eq('system', state.system);
+        state.orgBalanceMap = {};
+        (balData || []).forEach(b => { state.orgBalanceMap[b.source] = Number(b.balance || 0); });
+      } catch(e) {
+        state.orgBalanceMap = {};
+      }
+
       if (!data || data.length === 0) {
         document.getElementById('sidebarList').innerHTML = '<div class="loading-tip">暂无数据</div>';
         return;
@@ -1557,11 +1568,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       const ta   = tPct >= tp;
       const ba   = bPct >= tp;
       const isActive = state.currentSource === src;
+      const bal  = state.orgBalanceMap[src];
+      const balHtml = (bal != null && bal > 0)
+        ? `<div class="ni-bal">💎${bal.toFixed(0)}</div>`
+        : '';
       html += `
         <div class="nav-item ${isActive ? 'active' : ''}" onclick="onSidebarClick('${src.replace(/'/g,"\\'")}')">
           <div class="ni-left">
             <div class="ni-name">${src}</div>
-            <div class="ni-count">${o.count}人</div>
+            <div class="ni-count">${o.count}人 ${balHtml}</div>
           </div>
           <div class="ni-right">
             <div class="ni-task ${ta ? 'r' : 'g'}">${tPct.toFixed(1)}%</div>
@@ -1818,10 +1833,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const balEl = document.getElementById('sc-s-balance-val');
     const wp = state.orgWeekPoints;
     if (wPtsEl) {
-      wPtsEl.textContent = (wp >= 0 ? '+' : '') + Math.abs(wp).toFixed(1);
-      wPtsEl.className = 'sc-val ' + (wp >= 0 ? 'c-green' : 'c-red');
+      wPtsEl.textContent = wp.toFixed(1);
+      wPtsEl.className = 'sc-val c-gold';
     }
-    if (wPtsSub) wPtsSub.textContent = wp >= 0 ? '本周已获积分' : '本周暂时落后';
+    if (wPtsSub) wPtsSub.textContent = wp > 0 ? '超出任务口径指标' : '暫无超出积分';
     if (balEl) balEl.textContent = (state.orgBalance || 0).toFixed(1);
   }
 
