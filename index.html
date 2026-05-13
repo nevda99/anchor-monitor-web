@@ -108,6 +108,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 .sc-val.c-green{ color:#059669; }
 .sc-val.c-dark { color:#111; }
 .sc-val.c-purple { color:#6366f1; }
+.sc-val.c-gold   { color:#d97706; font-weight:900; }
 .sc-row { display:flex; align-items:baseline; gap:8px; }
 .sc-row .sc-val2 { font-size:18px; font-weight:700; color:#059669; }
 .sc-sub { font-size:12px; margin-top:6px; font-weight:600; }
@@ -719,9 +720,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     <div class="sc-sub" id="sc-s-base-sub"></div>
   </div>
   <div class="sc" id="sc-s-week-pts" style="display:none">
-    <div class="sc-label">💎 本周已获积分</div>
-    <div class="sc-val" id="sc-s-week-pts-val">—</div>
-    <div class="sc-sub" id="sc-s-week-pts-sub">实时计算</div>
+    <div class="sc-label">💎 当前本周可获积分</div>
+    <div class="sc-val c-gold" id="sc-s-week-pts-val">—</div>
+    <div class="sc-sub" id="sc-s-week-pts-sub">超出任务口径指标</div>
   </div>
   <div class="sc" id="sc-s-balance" style="display:none">
     <div class="sc-label">💎 账户余额</div>
@@ -858,7 +859,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
             <div>
               <div class="shop-header-title">积分商店</div>
               <div class="shop-header-sub">💎余额：<span id="shop-balance-val" class="shop-bal-num">0.0</span>
-                &nbsp;·&nbsp; 💎本周预计：<span id="shop-week-pts-val" class="shop-week-num">+0.0</span>
+                &nbsp;·&nbsp; 💎本周可获：<span id="shop-week-pts-val" class="shop-week-num">0.0</span>
               </div>
             </div>
           </div>
@@ -876,7 +877,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
                 <div class="swc-val" id="shop-balance-big">0.0</div>
                 <div class="swc-sub">永久累积，不清零</div>
                 <div style="height:12px"></div>
-                <div class="swc-label">💎 本周预计可得</div>
+                <div class="swc-label">💎 本周可获积分</div>
                 <div class="swc-week" id="shop-pending-card">
                   <div class="swc-week-val" id="shop-week-pts-val2">+0.0</div>
                   <div class="swc-week-sub" id="shop-week-pts-sub">本周已获得积分</div>
@@ -1059,11 +1060,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
   // 商品定义
   const SHOP_ITEMS = [
-    { id:'fans',   icon:'🌟', name:'涨粉',   unit:'1000个/档', price:80,   desc:'直播间涨粉激励' },
-    { id:'kuaibi', icon:'💰', name:'快币',   unit:'100个/档',  price:10,   desc:'快币红包奖励' },
-    { id:'slot',   icon:'📡', name:'流量名额', unit:'1个/档',  price:1000, desc:'专属推流资源位' },
-    { id:'spark',  icon:'🔥', name:'火花流量', unit:'10万曝光/档', price:1000, desc:'内容曝光加速' },
-    { id:'coupon', icon:'🎟', name:'流量券',  unit:'10万曝光/档', price:800,  desc:'通用曝光资源' },
+    { id:'fans',   icon:'🌟', name:'涨粉奖励', unit:'1000个/份', price:80,   desc:'主播账号涨粉激励' },
+    { id:'kuaibi', icon:'💰', name:'快币奖励', unit:'100个/份',  price:10,   desc:'直播间礼物打赏' },
+    { id:'slot',   icon:'📡', name:'流量名额（7天）', unit:'1个/份',  price:1000, desc:'大额推流名额一人（7天）' },
+    { id:'spark',  icon:'🔥', name:'火花流量', unit:'10万曝光/份', price:1000, desc:'内容曝光加速' },
+    { id:'coupon', icon:'🎟', name:'流量券',  unit:'10万曝光/份', price:800,  desc:'通用曝光资源' },
   ];
 
   const SOURCE_GROUP_MAP = {
@@ -1098,7 +1099,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     // 积分相关
     pointsView: false,    // admin 是否切换到积分视角
     orgBalance: 0,        // source账号机构余额
-    orgWeekPoints: 0,     // source账号本周流动积分
+    orgWeekPoints: 0,     // source账号本周可获积分（任务口径超出值）
+    taskDiffUAD: 0,       // 任务口径超出/缺口绝对值UAD
     redeemPending: null,  // 待确认的兑换
   };
 
@@ -1687,8 +1689,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const tdLbl = document.getElementById('d-task-diff-label');
     tdEl.textContent = (taskDiffN >= 0 ? '+' : '') + fmt(Math.abs(taskDiffN));
     tdEl.className   = 'dg-val ' + (taskDiffN >= 0 ? 'c-red' : 'c-green');
-    tdLbl.textContent = (taskDiffN >= 0 ? lbl('超出绝对值','💎 超出') : lbl('缺口绝对值','💎 缺口'));
+    tdLbl.textContent = (taskDiffN >= 0 ? lbl('超出绝对值','💎 当前积分超出') : lbl('缺口绝对值','💎 当前积分差距'));
     document.getElementById('d-task-diff-cell').style.background = taskDiffN >= 0 ? '#fef2f2' : '#f0fdf4';
+    // 将任务口径超出保存到 state，主要用于 source 账号积分卡片
+    state.taskDiffUAD = taskDiffN;
 
     // 基期口径
     const baseCard = document.getElementById('baseMetricCard');
@@ -1758,10 +1762,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       const basePct     = totalBase   > 0 ? totalActual / totalBase   * 100 : 0;
       const hasBase     = totalBase > 0;
 
-      // 本周预计积分：实时计算（当前已完成UAD换算）
-      state.orgWeekPoints = totalActual * 0.024;
-
-      updateSourceStats(rows.length, taskPct, basePct, tp, totalBase);
+      // 本周可获积分占位（renderDualBlock后会正确更新）
+      state.orgWeekPoints = 0;
 
       document.getElementById('d-orgname').textContent = source;
       document.getElementById('d-orgsub').textContent = `共 ${rows.length} 名主播 · 数据日期 ${date}`;
@@ -1771,6 +1773,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       document.getElementById('d-time-badge').textContent = `⏱ 时间进度 ${tp.toFixed(2)}%（第 ${tpDay} 天 / 7 天）`;
 
       renderDualBlock(taskPct, basePct, totalActual, totalTarget, totalBase, tp, hasBase);
+      // renderDualBlock 内会设置 state.taskDiffUAD，再更新积分卡片
+      state.orgWeekPoints = Math.max(0, state.taskDiffUAD) * 0.024;
+      updateSourceStats(rows.length, taskPct, basePct, tp, totalBase);
       renderAnchorTable(rows, tp, hasBase);
     } catch(err) {
       document.getElementById('anchor-tbody').innerHTML = `<tr><td colspan="9" class="loading-tip">加载失败: ${err.message}</td></tr>`;
@@ -1876,24 +1881,23 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
   function updateShopHeader() {
     const bal = state.orgBalance;
-    const wp  = state.orgWeekPoints;
+    const wp  = state.orgWeekPoints;  // 已是 Math.max(0,...) 处理过的值
     const hBal = document.getElementById('shop-balance-val');
     const hWp  = document.getElementById('shop-week-pts-val');
     const bigBal = document.getElementById('shop-balance-big');
     const bigWp  = document.getElementById('shop-week-pts-val2');
     const bigWpSub = document.getElementById('shop-week-pts-sub');
-    const bigWpCard = document.getElementById('shop-pending-card');
     if (hBal) hBal.textContent = bal.toFixed(1);
     if (hWp) {
-      hWp.textContent = (wp >= 0 ? '+' : '') + Math.abs(wp).toFixed(1);
-      hWp.className = 'shop-week-num' + (wp < 0 ? ' neg' : '');
+      hWp.textContent = wp.toFixed(1);
+      hWp.className = 'shop-week-num';
     }
     if (bigBal) bigBal.textContent = bal.toFixed(1);
     if (bigWp) {
-      bigWp.textContent = (wp >= 0 ? '+' : '') + Math.abs(wp).toFixed(1);
-      bigWp.className = 'swc-week-val' + (wp < 0 ? ' neg' : '');
+      bigWp.textContent = wp.toFixed(1);
+      bigWp.className = 'swc-week-val';
     }
-    if (bigWpSub) bigWpSub.textContent = '本周已获积分（实时）';
+    if (bigWpSub) bigWpSub.textContent = wp > 0 ? '本周超额部分将转化为积分' : '暂无超额积分';
   }
 
   window.selectReward = function(itemId) {
