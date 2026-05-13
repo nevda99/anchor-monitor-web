@@ -1985,8 +1985,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (e && e.target !== document.getElementById('helpModalBg')) return;
     document.getElementById('helpModalBg').classList.remove('open');
   };
-
   window.toggleShop = function() {
+    const body = document.getElementById('shopBody');
     const lbl  = document.getElementById('shopToggleLabel');
     const open = body.style.display !== 'none';
     body.style.display = open ? 'none' : '';
