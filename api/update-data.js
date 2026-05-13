@@ -116,6 +116,82 @@ export default async function handler(req, res) {
       }
     }
 
+    // ── 积分结算逻辑 ──────────────────────────────────────────────
+    // 判断本次上传日期是否为周日（结算日）
+    const isSunday = dateObj.getDay() === 0;
+
+    for (const system of ['bet', 'crc']) {
+      try {
+        // 读取当前最新日期（即刚上传的 date）该 system 下所有主播记录
+        // 按 source 分组，计算每个机构的：sum(actual - target)，只取 target > 0 的行
+        let allRows = [];
+        let frm2 = 0;
+        while (true) {
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/anchor_data?system=eq.${system}&date=eq.${date}&select=source,actual,target`,
+            { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, Range: `${frm2}-${frm2+999}` } }
+          );
+          const rows = await r.json();
+          if (!Array.isArray(rows) || rows.length === 0) break;
+          allRows = allRows.concat(rows);
+          if (rows.length < 1000) break;
+          frm2 += 1000;
+        }
+
+        // 按机构聚合超出量
+        const orgSurplus = {};
+        for (const row of allRows) {
+          if (!row.source || row.target <= 0) continue;
+          const surplus = (Number(row.actual) || 0) - (Number(row.target) || 0);
+          orgSurplus[row.source] = (orgSurplus[row.source] || 0) + surplus;
+        }
+
+        // 读取所有机构当前余额（upsert 模式）
+        const balR = await fetch(
+          `${SUPABASE_URL}/rest/v1/org_balance?system=eq.${system}&select=source,balance,week_points,week_start`,
+          { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
+        );
+        const balRows = await balR.json();
+        const balMap = {};
+        if (Array.isArray(balRows)) {
+          for (const b of balRows) balMap[b.source] = b;
+        }
+
+        // 对每个有数据的机构执行 upsert
+        for (const [source, surplus] of Object.entries(orgSurplus)) {
+          const cur = balMap[source] || { balance: 0, week_points: 0 };
+          const weekPoints = (Number(cur.week_points) || 0) + (surplus * 0.024);
+          let newBalance = Number(cur.balance) || 0;
+          let newWeekPoints = weekPoints;
+
+          if (isSunday) {
+            // 周日结算：正数才加入余额，week_points 清零
+            if (weekPoints > 0) newBalance = newBalance + weekPoints;
+            newWeekPoints = 0;
+          }
+
+          await fetch(`${SUPABASE_URL}/rest/v1/org_balance`, {
+            method: 'POST',
+            headers: {
+              apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`,
+              'Content-Type': 'application/json',
+              Prefer: 'resolution=merge-duplicates,return=minimal'
+            },
+            body: JSON.stringify({
+              source, system,
+              balance: Math.round(newBalance * 10000) / 10000,
+              week_points: Math.round(newWeekPoints * 10000) / 10000,
+              week_start: thisMonday,
+              last_updated: new Date().toISOString()
+            })
+          });
+        }
+      } catch (e) {
+        results.errors.push(`points_${system}: ${e.message}`);
+      }
+    }
+    // ──────────────────────────────────────────────────────────────
+
     return res.status(200).json({ success: true, ...results });
   } catch (e) {
     return res.status(500).json({ error: e.message });

@@ -98,7 +98,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
 /* ===== 顶部5卡片 ===== */
 .stats-bar { display:grid; grid-template-columns:repeat(5,1fr); gap:0; background:white; border-bottom:2px solid #f0f0f0; flex-shrink:0; }
-.stats-bar.source-mode { grid-template-columns:repeat(3,1fr); }
+.stats-bar.source-mode { grid-template-columns:repeat(5,1fr); }
 .sc { padding:16px 22px; border-right:1px solid #f0f0f0; }
 .sc:last-child { border-right:none; }
 .sc-label { font-size:11px; color:#999; font-weight:700; letter-spacing:.5px; text-transform:uppercase; margin-bottom:8px; }
@@ -107,6 +107,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 .sc-val.c-red  { color:#ef4444; }
 .sc-val.c-green{ color:#059669; }
 .sc-val.c-dark { color:#111; }
+.sc-val.c-purple { color:#6366f1; }
 .sc-row { display:flex; align-items:baseline; gap:8px; }
 .sc-row .sc-val2 { font-size:18px; font-weight:700; color:#059669; }
 .sc-sub { font-size:12px; margin-top:6px; font-weight:600; }
@@ -380,8 +381,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
   /* --- 统计卡片 --- */
   .stats-bar { grid-template-columns: repeat(2, 1fr) !important; overflow-x:auto; }
-  .stats-bar.source-mode { grid-template-columns: repeat(3, 1fr) !important; }
-  .sc { padding:12px 14px; border-right:1px solid #f0f0f0; border-bottom:1px solid #f0f0f0; min-width:0; }
+  .stats-bar.source-mode { grid-template-columns: repeat(3, 1fr) !important; }  .sc { padding:12px 14px; border-right:1px solid #f0f0f0; border-bottom:1px solid #f0f0f0; min-width:0; }
   .sc-val { font-size:20px; }
   .sc-val2 { font-size:15px; }
   .sc-row .sc-val { font-size:18px; }
@@ -462,9 +462,82 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     margin:0 auto 16px;
   }
 
+  /* --- 积分商店 --- */
+  .points-wallet { grid-template-columns:1fr 1fr; }
+  .shop-grid { grid-template-columns:1fr 1fr; }
+
   /* 底部留出浮动按钮空间 */
   .detail-inner { padding-bottom:72px; }
 }
+
+/* ===== 积分商店 ===== */
+.points-section { background:white; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.06); overflow:hidden; }
+.points-header { padding:14px 20px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.points-header h4 { font-size:14px; font-weight:700; color:#222; }
+.points-wallet { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:16px 20px 8px; }
+.wallet-card { border-radius:10px; padding:14px 16px; }
+.wallet-card.balance { background:linear-gradient(135deg,#f0f4ff,#e0e7ff); border:1px solid #c7d2fe; }
+.wallet-card.pending { background:linear-gradient(135deg,#f0fdf4,#dcfce7); border:1px solid #bbf7d0; }
+.wallet-card.pending.negative { background:linear-gradient(135deg,#fef2f2,#fce4e4); border:1px solid #fca5a5; }
+.wc-label { font-size:11px; font-weight:700; color:#888; letter-spacing:.5px; margin-bottom:6px; }
+.wc-val { font-size:26px; font-weight:900; line-height:1.1; }
+.wc-val.c-purple { color:#6366f1; }
+.wc-val.c-green  { color:#059669; }
+.wc-val.c-red    { color:#ef4444; }
+.wc-sub { font-size:11px; color:#aaa; margin-top:4px; }
+.shop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; padding:12px 20px 20px; }
+.shop-item { border:2px solid #e5e7eb; border-radius:10px; padding:14px; transition:all .2s; cursor:default; }
+.shop-item.affordable { border-color:#c7d2fe; cursor:pointer; }
+.shop-item.affordable:hover { border-color:#6366f1; background:#f5f3ff; box-shadow:0 2px 8px rgba(99,102,241,.15); }
+.si-icon { font-size:28px; margin-bottom:8px; }
+.si-name { font-size:14px; font-weight:700; color:#222; margin-bottom:2px; }
+.si-unit { font-size:12px; color:#888; margin-bottom:8px; }
+.si-price { font-size:18px; font-weight:900; color:#6366f1; margin-bottom:10px; }
+.si-price .si-currency { font-size:12px; font-weight:600; }
+.si-btn { width:100%; padding:8px; background:#6366f1; color:white; border:none; border-radius:6px; font-size:13px; font-weight:700; cursor:pointer; transition:background .2s; }
+.si-btn:hover { background:#4f46e5; }
+.si-btn:disabled { background:#e5e7eb; color:#aaa; cursor:not-allowed; }
+.qty-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.qty-btn { width:28px; height:28px; border:1px solid #d1d5db; background:#f9fafb; border-radius:5px; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:700; color:#555; }
+.qty-btn:hover { background:#e5e7eb; }
+.qty-num { font-size:16px; font-weight:700; min-width:24px; text-align:center; }
+.qty-total { font-size:12px; color:#6366f1; font-weight:600; }
+/* 兑换弹窗 */
+.redeem-modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:3000; align-items:center; justify-content:center; }
+.redeem-modal-bg.open { display:flex; }
+.redeem-modal { background:white; border-radius:14px; padding:28px; width:360px; max-width:92vw; box-shadow:0 8px 32px rgba(0,0,0,.18); }
+.rm-title { font-size:16px; font-weight:800; margin-bottom:16px; color:#1a1a2e; }
+.rm-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
+.rm-row:last-of-type { border-bottom:none; }
+.rm-label { color:#888; }
+.rm-val { font-weight:700; color:#222; }
+.rm-val.c-purple { color:#6366f1; }
+.rm-val.c-green  { color:#059669; }
+.rm-val.c-red    { color:#ef4444; }
+.rm-footer { display:flex; gap:10px; margin-top:18px; }
+.rm-cancel { flex:1; padding:10px; background:#f0f2f5; color:#666; border:none; border-radius:7px; font-size:14px; font-weight:600; cursor:pointer; }
+.rm-confirm { flex:1; padding:10px; background:#6366f1; color:white; border:none; border-radius:7px; font-size:14px; font-weight:700; cursor:pointer; }
+.rm-confirm:hover { background:#4f46e5; }
+.rm-confirm:disabled { background:#ccc; cursor:not-allowed; }
+/* 兑换记录（admin抽屉内） */
+.redeem-list-wrap { margin-top:4px; }
+.redeem-item { padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px; margin-bottom:8px; font-size:13px; }
+.redeem-item-head { display:flex; justify-content:space-between; margin-bottom:4px; }
+.redeem-item-name { font-weight:700; color:#222; }
+.redeem-item-time { color:#aaa; font-size:11px; }
+.redeem-item-detail { color:#666; }
+.redeem-item-cost { color:#6366f1; font-weight:700; }
+.status-pending  { background:#fef9ee; color:#d97706; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; }
+.status-processed { background:#f0fdf4; color:#059669; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; }
+/* 积分视角切换按钮 */
+.points-toggle-btn {
+  padding:5px 14px; background:rgba(99,102,241,.15); color:#a5b4fc;
+  border:1px solid rgba(165,180,252,.3); border-radius:6px; font-size:12px;
+  cursor:pointer; transition:all .2s; font-weight:600;
+}
+.points-toggle-btn:hover { background:rgba(99,102,241,.3); }
+.points-toggle-btn.raw-mode { background:rgba(251,146,60,.15); color:#fb923c; border-color:rgba(251,146,60,.3); }
+.points-toggle-btn.raw-mode:hover { background:rgba(251,146,60,.3); }
 
 /* ===== 响应式：480px 以下（小屏手机） ===== */
 @media (max-width: 480px) {
@@ -541,6 +614,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   <div class="topbar-right" id="topbarRight">
     <span id="topbarInfo"></span>
     <button class="admin-drawer-btn" id="adminToolsBtn" onclick="openAdminDrawer()" style="display:none">🛠 管理工具</button>
+    <button class="points-toggle-btn" id="pointsToggleBtn" onclick="togglePointsView()" style="display:none">💰 积分视图</button>
     <a class="switch-ui-btn" href="/index-v1.html" title="切换到经典UI版本" id="switchUiBtn" style="display:none">🔄 经典版</a>
     <button class="logout-btn-top" onclick="logout()">退出登录</button>
   </div>
@@ -593,6 +667,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     <div class="sc-label">基期完成度</div>
     <div class="sc-val" id="sc-s-base-val">—</div>
     <div class="sc-sub" id="sc-s-base-sub"></div>
+  </div>
+  <div class="sc" id="sc-s-week-pts" style="display:none">
+    <div class="sc-label">本周预计积分</div>
+    <div class="sc-val" id="sc-s-week-pts-val">—</div>
+    <div class="sc-sub" id="sc-s-week-pts-sub">结算前流动</div>
+  </div>
+  <div class="sc" id="sc-s-balance" style="display:none">
+    <div class="sc-label">账户余额</div>
+    <div class="sc-val c-purple" id="sc-s-balance-val">—</div>
+    <div class="sc-sub gray">可用于兑换</div>
   </div>
 </div>
 
@@ -654,6 +738,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   </div>
 
 </div>
+
+  <!-- 兑换申请管理（仅 super_admin） -->
+  <div id="redeemMgmtPanel">
+    <div class="upload-toggle-bar" style="background:#faf5ff;border:1px solid #e9d5ff;" onclick="togglePanel('redeemMgmtBody','redeemMgmtIcon')">
+      <span class="tog-title" style="color:#7c3aed">💎 兑换申请管理</span>
+      <span class="tog-icon" id="redeemMgmtIcon">▼ 展开</span>
+    </div>
+    <div class="upload-body" id="redeemMgmtBody" style="display:none;background:#fdfaff;border:1px solid #e9d5ff;border-top:none">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <select id="redeemStatusFilter" onchange="loadRedeemList()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px">
+          <option value="pending">待处理</option>
+          <option value="processed">已处理</option>
+          <option value="">全部</option>
+        </select>
+        <button onclick="loadRedeemList()" style="padding:5px 12px;background:#7c3aed;color:white;border:none;border-radius:5px;font-size:13px;cursor:pointer">刷新</button>
+      </div>
+      <div id="redeemListContainer" class="redeem-list-wrap"><div class="loading-tip" style="padding:20px;text-align:center;color:#aaa">点击展开加载...</div></div>
+    </div>
+  </div>
 
   </div><!-- /admin-drawer-body -->
 </div><!-- /admin-drawer -->
@@ -764,7 +867,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
                 <th style="width:100px">主播ID</th>
                 <th>主播名称</th>
                 <th class="r th-sort" onclick="thSort('streaming_minutes',this)">开播时长(h)<span class="th-arrow"></span></th>
-                <th class="r th-sort" onclick="thSort('actual',this)">实际完成<span class="th-arrow"></span></th>
+                <th class="r th-sort" onclick="thSort('actual',this)" id="th-actual-col">实际完成<span class="th-arrow"></span></th>
+                <th class="r th-sort" id="th-points-col" onclick="thSort('points',this)" style="display:none">昨日积分(¥)<span class="th-arrow"></span></th>
                 <th class="r th-sort" onclick="thSort('target',this)">任务目标<span class="th-arrow"></span></th>
                 <th class="r th-sort desc" onclick="thSort('completion_rate',this)">任务完成度<span class="th-arrow"></span></th>
                 <th class="r th-sort" onclick="thSort('base_target',this)" id="th-base-target">基期目标<span class="th-arrow"></span></th>
@@ -775,6 +879,31 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
               <tr><td colspan="9" class="loading-tip">请先选择机构</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- 积分商店（source/sub_admin视角，仅积分模式下可见） -->
+      <div class="points-section" id="shopSection" style="display:none">
+        <div class="points-header">
+          <h4>💎 积分商店</h4>
+          <span style="font-size:12px;color:#aaa">兑换后将由运营人员联系你</span>
+        </div>
+        <!-- 余额卡片 -->
+        <div class="points-wallet">
+          <div class="wallet-card balance">
+            <div class="wc-label">账户余额</div>
+            <div class="wc-val c-purple" id="shop-balance-val">¥0.00</div>
+            <div class="wc-sub">每周日结算后更新</div>
+          </div>
+          <div class="wallet-card pending" id="shop-pending-card">
+            <div class="wc-label">本周预计积分</div>
+            <div class="wc-val c-green" id="shop-week-pts-val">¥0.00</div>
+            <div class="wc-sub" id="shop-week-pts-sub">周末结算后加入余额</div>
+          </div>
+        </div>
+        <!-- 商品列表 -->
+        <div class="shop-grid" id="shopGrid">
+          <!-- JS动态渲染 -->
         </div>
       </div>
 
@@ -789,6 +918,23 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 <button class="mobile-sidebar-toggle hidden" id="mobileSidebarToggle" onclick="toggleMobileSidebar()">
   📋 机构导航
 </button>
+
+<!-- 兑换确认弹窗 -->
+<div class="redeem-modal-bg" id="redeemModalBg" onclick="closeRedeemModal(event)">
+  <div class="redeem-modal">
+    <div class="rm-title">确认兑换</div>
+    <div class="rm-row"><span class="rm-label">奖励内容</span><span class="rm-val" id="rm-name">—</span></div>
+    <div class="rm-row"><span class="rm-label">兑换数量</span><span class="rm-val" id="rm-qty">—</span></div>
+    <div class="rm-row"><span class="rm-label">消耗积分</span><span class="rm-val c-purple" id="rm-cost">—</span></div>
+    <div class="rm-row"><span class="rm-label">当前余额</span><span class="rm-val c-green" id="rm-balance-cur">—</span></div>
+    <div class="rm-row"><span class="rm-label">兑换后余额</span><span class="rm-val c-red" id="rm-balance-after">—</span></div>
+    <div id="rm-err" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></div>
+    <div class="rm-footer">
+      <button class="rm-cancel" onclick="closeRedeemModal()">取消</button>
+      <button class="rm-confirm" id="rm-confirm-btn" onclick="submitRedeem()">确认兑换</button>
+    </div>
+  </div>
+</div>
 
 </div><!-- /mainApp -->
 
@@ -837,6 +983,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlveXdoZGZxaHltZHVheGhhbGhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNjI0NDcsImV4cCI6MjA5MTczODQ0N30.sWYLzZM3olMfaC2IcRaBkHqFT2UPEzUsFWAxqstkHcA';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+  // 商品定义
+  const SHOP_ITEMS = [
+    { id:'fans',   icon:'🌟', name:'涨粉',   unit:'1000个/档', price:80   },
+    { id:'kuaibi', icon:'💰', name:'快币',   unit:'100个/档',  price:10   },
+    { id:'slot',   icon:'📡', name:'流量名额', unit:'1个/档',  price:1000 },
+    { id:'spark',  icon:'🔥', name:'火花流量', unit:'10万曝光/档', price:1000 },
+    { id:'coupon', icon:'🎟', name:'流量券',  unit:'10万曝光/档', price:800 },
+  ];
+
   const SOURCE_GROUP_MAP = {
     '不可控个播':'个播大类','可控个播':'个播大类','个播（需建联）':'个播大类',
     '二后生家':'电商家族','马美如团队':'电商家族',
@@ -866,6 +1021,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     allOrgData: [],       // 全量数据（管理员视图）
     sortKey: 'completion_rate',
     sortDir: 'desc',
+    // 积分相关
+    pointsView: false,    // admin 是否切换到积分视角
+    orgBalance: 0,        // source账号机构余额
+    orgWeekPoints: 0,     // source账号本周流动积分
+    redeemPending: null,  // 待确认的兑换
   };
 
   /* ===== 工具函数 ===== */
@@ -1026,6 +1186,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     // 系统切换 Tab：仅 super_admin 可见
     document.getElementById('sysToggleBar').style.display =
       state.role === 'super_admin' ? '' : 'none';
+    // 积分视角切换按钮：仅 super_admin/sub_admin 可见
+    const ptBtn = document.getElementById('pointsToggleBtn');
+    if (ptBtn) ptBtn.style.display = (state.role === 'super_admin' || state.role === 'sub_admin') ? '' : 'none';
 
     if (state.role === 'super_admin') {
       // super_admin：显示侧边栏
@@ -1066,6 +1229,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       showSourceStatsCards();
       state.currentSource = state.source;
       await loadDetailData(state.source);
+      await loadOrgBalance(state.source, state.system);
+      renderShop();
+      document.getElementById('shopSection').style.display = '';
     }
   }
 
@@ -1083,7 +1249,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     ['sc-total','sc-actual','sc-targets','sc-task-comp','sc-base-comp'].forEach(id => {
       document.getElementById(id).style.display = 'none';
     });
-    ['sc-s-total','sc-s-task','sc-s-base'].forEach(id => {
+    ['sc-s-total','sc-s-task','sc-s-base','sc-s-week-pts','sc-s-balance'].forEach(id => {
       document.getElementById(id).style.display = '';
     });
     document.getElementById('statsBar').classList.add('source-mode');
@@ -1130,7 +1296,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   window.logout = function() {
     state = { user:null, role:'source', system:'bet', source:null, currentSource:null,
       currentDate:'', timeProgress:0, allSources:[], subAdminSources:[],
-      currentGroupFilter:'', currentData:[], allOrgData:[], sortKey:'completion_rate', sortDir:'desc' };
+      currentGroupFilter:'', currentData:[], allOrgData:[], sortKey:'completion_rate', sortDir:'desc',
+      pointsView:false, orgBalance:0, orgWeekPoints:0, redeemPending:null };
     document.getElementById('mainApp').style.display = 'none';
     document.getElementById('loginPage').style.display = 'flex';
     document.getElementById('loginForm').reset();
@@ -1142,7 +1309,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (adminBtn) adminBtn.style.display = 'none';
     const switchBtn = document.getElementById('switchUiBtn');
     if (switchBtn) switchBtn.style.display = 'none';
+    const ptBtn = document.getElementById('pointsToggleBtn');
+    if (ptBtn) ptBtn.style.display = 'none';
     document.getElementById('sysToggleBar').style.display = 'none';
+    document.getElementById('shopSection').style.display = 'none';
     const savedSys = localStorage.getItem('saved_system');
     if (savedSys) document.getElementById('systemSelect').value = savedSys;
     const remember = localStorage.getItem('remember_me') === 'true';
@@ -1524,7 +1694,220 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       sBaseSub.textContent = (baseAhead ? '↑ 超前时间进度 +' : '↓ 落后时间进度 ') + Math.abs(baseDiff) + '%';
       sBaseSub.className   = 'sc-sub ' + (baseAhead ? 'up' : 'dn');
     }
+    // 更新积分卡片
+    const wPtsEl = document.getElementById('sc-s-week-pts-val');
+    const wPtsSub = document.getElementById('sc-s-week-pts-sub');
+    const balEl = document.getElementById('sc-s-balance-val');
+    const wp = state.orgWeekPoints;
+    if (wPtsEl) {
+      wPtsEl.textContent = (wp >= 0 ? '+' : '') + '¥' + Math.abs(wp).toFixed(2);
+      wPtsEl.className = 'sc-val ' + (wp >= 0 ? 'c-green' : 'c-red');
+    }
+    if (wPtsSub) wPtsSub.textContent = wp >= 0 ? '本周超出预计可得' : '本周暂时落后';
+    if (balEl) balEl.textContent = '¥' + (state.orgBalance || 0).toFixed(2);
   }
+
+  /* ===== 积分：加载机构余额 ===== */
+  async function loadOrgBalance(source, system) {
+    try {
+      const { data } = await db.from('org_balance').select('balance,week_points')
+        .eq('source', source).eq('system', system).single();
+      state.orgBalance = Number(data?.balance || 0);
+      state.orgWeekPoints = Number(data?.week_points || 0);
+    } catch(e) {
+      state.orgBalance = 0; state.orgWeekPoints = 0;
+    }
+    // 更新商店余额显示
+    const shopBal = document.getElementById('shop-balance-val');
+    const shopWp  = document.getElementById('shop-week-pts-val');
+    const shopWpSub = document.getElementById('shop-week-pts-sub');
+    const shopPendingCard = document.getElementById('shop-pending-card');
+    if (shopBal) shopBal.textContent = '¥' + state.orgBalance.toFixed(2);
+    const wp = state.orgWeekPoints;
+    if (shopWp) {
+      shopWp.textContent = (wp >= 0 ? '+' : '') + '¥' + Math.abs(wp).toFixed(2);
+      shopWp.className = 'wc-val ' + (wp >= 0 ? 'c-green' : 'c-red');
+    }
+    if (shopWpSub) shopWpSub.textContent = wp >= 0 ? '周末结算后加入余额' : '本周暂时落后，不影响余额';
+    if (shopPendingCard) {
+      shopPendingCard.className = 'wallet-card pending' + (wp < 0 ? ' negative' : '');
+    }
+  }
+
+  /* ===== 积分：渲染商店 ===== */
+  function renderShop() {
+    const grid = document.getElementById('shopGrid');
+    if (!grid) return;
+    const balance = state.orgBalance;
+    grid.innerHTML = SHOP_ITEMS.map(item => {
+      const canAfford = balance >= item.price;
+      return `<div class="shop-item ${canAfford ? 'affordable' : ''}">
+        <div class="si-icon">${item.icon}</div>
+        <div class="si-name">${item.name}</div>
+        <div class="si-unit">${item.unit}</div>
+        <div class="si-price"><span class="si-currency">¥</span>${item.price}</div>
+        <div class="qty-row">
+          <button class="qty-btn" onclick="changeQty('${item.id}',-1)">−</button>
+          <span class="qty-num" id="qty-${item.id}">1</span>
+          <button class="qty-btn" onclick="changeQty('${item.id}',1)">+</button>
+          <span class="qty-total" id="qtotal-${item.id}">¥${item.price}</span>
+        </div>
+        <button class="si-btn" ${canAfford ? '' : 'disabled'}
+          onclick="${canAfford ? `openRedeemModal('${item.id}')` : ''}">
+          ${canAfford ? '立即兑换' : '余额不足'}
+        </button>
+      </div>`;
+    }).join('');
+  }
+
+  /* ===== 积分：兑换数量 ===== */
+  window.changeQty = function(itemId, delta) {
+    const el = document.getElementById('qty-' + itemId);
+    if (!el) return;
+    let qty = parseInt(el.textContent) + delta;
+    if (qty < 1) qty = 1;
+    if (qty > 99) qty = 99;
+    el.textContent = qty;
+    const item = SHOP_ITEMS.find(i => i.id === itemId);
+    if (item) {
+      const totalEl = document.getElementById('qtotal-' + itemId);
+      if (totalEl) totalEl.textContent = '¥' + (item.price * qty);
+    }
+  };
+
+  /* ===== 积分：打开兑换弹窗 ===== */
+  window.openRedeemModal = function(itemId) {
+    const item = SHOP_ITEMS.find(i => i.id === itemId);
+    if (!item) return;
+    const qty = parseInt(document.getElementById('qty-' + itemId)?.textContent || '1');
+    const cost = item.price * qty;
+    const balance = state.orgBalance;
+    state.redeemPending = { item, qty, cost };
+    document.getElementById('rm-name').textContent = `${item.icon} ${item.name}（${item.unit}）`;
+    document.getElementById('rm-qty').textContent = qty + ' 档';
+    document.getElementById('rm-cost').textContent = '¥' + cost.toFixed(2);
+    document.getElementById('rm-balance-cur').textContent = '¥' + balance.toFixed(2);
+    const after = balance - cost;
+    document.getElementById('rm-balance-after').textContent = '¥' + after.toFixed(2);
+    document.getElementById('rm-balance-after').className = 'rm-val ' + (after >= 0 ? 'c-green' : 'c-red');
+    const errEl = document.getElementById('rm-err');
+    errEl.style.display = 'none'; errEl.textContent = '';
+    document.getElementById('rm-confirm-btn').disabled = false;
+    document.getElementById('redeemModalBg').classList.add('open');
+  };
+
+  window.closeRedeemModal = function(e) {
+    if (e && e.target !== document.getElementById('redeemModalBg')) return;
+    document.getElementById('redeemModalBg').classList.remove('open');
+    state.redeemPending = null;
+  };
+
+  window.submitRedeem = async function() {
+    if (!state.redeemPending) return;
+    const { item, qty, cost } = state.redeemPending;
+    const btn = document.getElementById('rm-confirm-btn');
+    const errEl = document.getElementById('rm-err');
+    btn.disabled = true; btn.textContent = '提交中...';
+    errEl.style.display = 'none';
+    try {
+      const resp = await fetch('/api/redeem', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          source: state.source,
+          system: state.system,
+          reward_type: item.id,
+          reward_name: item.name,
+          quantity: qty,
+          points_cost: cost
+        })
+      });
+      const result = await resp.json();
+      if (!resp.ok || result.error) throw new Error(result.error || '兑换失败');
+      // 更新本地余额
+      state.orgBalance = result.new_balance;
+      await loadOrgBalance(state.source, state.system);
+      renderShop();
+      document.getElementById('redeemModalBg').classList.remove('open');
+      state.redeemPending = null;
+      // 重置数量
+      const qEl = document.getElementById('qty-' + item.id);
+      if (qEl) { qEl.textContent = '1'; }
+      const tEl = document.getElementById('qtotal-' + item.id);
+      if (tEl) tEl.textContent = '¥' + item.price;
+      alert(`✅ 兑换申请已提交！运营同学将尽快与你联系。`);
+    } catch(e) {
+      errEl.textContent = '❌ ' + e.message;
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = '确认兑换';
+    }
+  };
+
+  /* ===== admin：积分视角切换 ===== */
+  window.togglePointsView = function() {
+    state.pointsView = !state.pointsView;
+    const btn = document.getElementById('pointsToggleBtn');
+    if (btn) {
+      btn.textContent = state.pointsView ? '📊 原始视图' : '💰 积分视图';
+      btn.classList.toggle('raw-mode', state.pointsView);
+    }
+    // 切换 th 可见性
+    const thActual = document.getElementById('th-actual-col');
+    if (thActual) thActual.style.display = state.pointsView ? 'none' : '';
+    const thPts = document.getElementById('th-points-col');
+    if (thPts) thPts.style.display = state.pointsView ? '' : 'none';
+    // 重新渲染表格
+    if (state.currentData.length > 0) {
+      const hasBase = state.currentData.some(d => d.base_target > 0);
+      renderAnchorTable(state.currentData, state.timeProgress, hasBase);
+    }
+  };
+
+  /* ===== admin：加载兑换申请列表 ===== */
+  window.loadRedeemList = async function() {
+    const container = document.getElementById('redeemListContainer');
+    if (!container) return;
+    container.innerHTML = '<div class="loading-tip" style="padding:16px;text-align:center;color:#aaa">加载中...</div>';
+    try {
+      const statusVal = document.getElementById('redeemStatusFilter')?.value;
+      let query = db.from('redeem_requests').select('*').order('created_at', {ascending:false}).limit(50);
+      if (statusVal) query = query.eq('status', statusVal);
+      const { data, error } = await query;
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        container.innerHTML = '<div class="loading-tip" style="padding:16px;text-align:center;color:#aaa">暂无申请记录</div>';
+        return;
+      }
+      container.innerHTML = data.map(r => {
+        const d = new Date(r.created_at);
+        const timeStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+        const statusCls = r.status === 'processed' ? 'status-processed' : 'status-pending';
+        const statusTxt = r.status === 'processed' ? '已处理' : '待处理';
+        return `<div class="redeem-item">
+          <div class="redeem-item-head">
+            <span class="redeem-item-name">${r.source}</span>
+            <span><span class="${statusCls}">${statusTxt}</span> <span class="redeem-item-time">${timeStr}</span></span>
+          </div>
+          <div class="redeem-item-detail">
+            ${r.reward_name} × ${r.quantity}档 &nbsp;|&nbsp;
+            <span class="redeem-item-cost">¥${Number(r.points_cost).toFixed(2)}</span>
+            &nbsp;|&nbsp; ${r.system.toUpperCase()}
+            ${r.status === 'pending' ? `&nbsp;<button onclick="markRedeemProcessed(${r.id})" style="padding:2px 8px;background:#059669;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px">标记已处理</button>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      container.innerHTML = `<div class="loading-tip" style="padding:16px;text-align:center;color:#f56c6c">加载失败: ${e.message}</div>`;
+    }
+  };
+
+  window.markRedeemProcessed = async function(id) {
+    try {
+      const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlveXdoZGZxaHltZHVheGhhbGhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNjI0NDcsImV4cCI6MjA5MTczODQ0N30.sWYLzZM3olMfaC2IcRaBkHqFT2UPEzUsFWAxqstkHcA';
+      const { error } = await db.from('redeem_requests').update({ status: 'processed' }).eq('id', id);
+      if (error) throw error;
+      await loadRedeemList();
+    } catch(e) { alert('更新失败: ' + e.message); }
+  };
 
   function updateTopStats(count, actualN, targetN, baseN, taskPct, basePct, tp) {
     document.getElementById('sc-total-val').textContent = fmtNum(count);
@@ -1566,12 +1949,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const thBaseComp = document.getElementById('th-base-comp');
     if (thBase)     thBase.style.display     = hasBase ? '' : 'none';
     if (thBaseComp) thBaseComp.style.display = hasBase ? '' : 'none';
+    // 积分列可见性
+    const thPts = document.getElementById('th-points-col');
+    if (thPts) thPts.style.display = state.pointsView ? '' : 'none';
 
     const sorted = [...rows].sort((a,b) => {
       let av = a[state.sortKey], bv = b[state.sortKey];
       if (state.sortKey === 'base_completion') {
         av = a.base_target > 0 ? a.actual / a.base_target * 100 : 0;
         bv = b.base_target > 0 ? b.actual / b.base_target * 100 : 0;
+      }
+      if (state.sortKey === 'points') {
+        av = (Number(a.actual) || 0) * 0.024;
+        bv = (Number(b.actual) || 0) * 0.024;
       }
       av = av || 0; bv = bv || 0;
       return state.sortDir === 'desc' ? bv - av : av - bv;
@@ -1583,12 +1973,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       const basePct = a.base_target > 0 ? a.actual / a.base_target * 100 : 0;
       const tCls    = getPctChipClass(taskPct, tp);
       const bCls    = getPctChipClass(basePct, tp);
+      const pts     = (Number(a.actual) || 0) * 0.024;
+      const showPts = state.pointsView;
       return `<tr>
         <td style="color:#ccc;font-size:11px">${i+1}</td>
         <td style="color:#aaa;font-size:12px;font-variant-numeric:tabular-nums">${a.anchor_id || ''}</td>
         <td class="name" title="${a.anchor_name||''}">${a.anchor_name||''}</td>
         <td class="r num" style="color:#555">${a.streaming_minutes ? (a.streaming_minutes / 60).toFixed(1) : '0.0'}</td>
-        <td class="r num" style="color:#2563eb">${fmtNum(a.actual)}</td>
+        <td class="r num" style="color:#2563eb${showPts ? ';display:none' : ''}">${fmtNum(a.actual)}</td>
+        <td class="r num" style="color:#6366f1${showPts ? '' : ';display:none'}">¥${pts.toFixed(2)}</td>
         <td class="r num" style="color:#444">${fmtNum(a.target)}</td>
         <td class="r"><span class="chip ${tCls}">${taskPct.toFixed(1)}%</span></td>
         ${hasBase ? `<td class="r num" style="color:#444">${a.base_target > 0 ? fmtNum(a.base_target) : '—'}</td>` : '<td style="display:none"></td>'}
@@ -1667,6 +2060,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const open = body.style.display !== 'none';
     body.style.display = open ? 'none' : 'block';
     icon.textContent   = open ? '▼ 展开' : '▲ 收起';
+    // 兑换申请面板：首次展开时加载数据
+    if (!open && bodyId === 'redeemMgmtBody') {
+      loadRedeemList();
+    }
   };
 
   window.calcAutoProgress = calcAutoProgress;
