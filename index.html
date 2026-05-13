@@ -1808,7 +1808,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     tpc.className   = 'mc-pct ' + (taskAhead ? 'red' : 'green');
 
     const tb = document.getElementById('d-task-badge');
-    tb.textContent = (taskAhead ? '↑ 超前' : '↓ 落后') + '时间进度 ' + (taskAhead ? '+' : '') + taskDiff.toFixed(1) + '%';
+    tb.textContent = (taskAhead ? '↑ 超前' : '↓ 落后') + '时间进度 ' + (taskAhead ? '' : '-') + Math.abs(taskDiff).toFixed(1) + '%';
     tb.className   = 'mc-badge ' + (taskAhead ? 'mb-red' : 'mb-green');
 
     document.getElementById('d-task-bar').style.width = Math.min(taskPct, 100) + '%';
@@ -1819,9 +1819,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const dgTaskActualLbl = document.querySelector('#d-task-actual')?.closest('.dg-cell')?.querySelector('.dg-label');
     const dgTaskTargetLbl = document.querySelector('#d-task-target')?.closest('.dg-cell')?.querySelector('.dg-label');
     const dgTaskShouldLbl = document.querySelector('#d-task-should')?.closest('.dg-cell')?.querySelector('.dg-label');
-    if (dgTaskActualLbl) dgTaskActualLbl.textContent = lbl('实际完成', '💎 当前积分');
-    if (dgTaskTargetLbl) dgTaskTargetLbl.textContent = lbl('任务目标', '💎 目标积分');
-    if (dgTaskShouldLbl) dgTaskShouldLbl.textContent = lbl('当前应完成', '💎 应完成积分');
+    if (dgTaskActualLbl) dgTaskActualLbl.textContent = lbl('实际完成', '💎 当前累计积分');
+    if (dgTaskTargetLbl) dgTaskTargetLbl.textContent = lbl('任务目标', '💎 目标达成积分');
+    if (dgTaskShouldLbl) dgTaskShouldLbl.textContent = lbl('当前应完成', '💎 当前应完成积分');
 
     document.getElementById('d-task-actual').textContent = fmt(actualN);
     document.getElementById('d-task-target').textContent = fmt(targetN);
@@ -1831,7 +1831,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     document.getElementById('d-task-should').textContent = fmt(taskShould);
     const tdEl  = document.getElementById('d-task-diff');
     const tdLbl = document.getElementById('d-task-diff-label');
-    tdEl.textContent = (taskDiffN >= 0 ? '+' : '') + fmt(Math.abs(taskDiffN));
+    tdEl.textContent = (taskDiffN >= 0 ? '' : '-') + fmt(Math.abs(taskDiffN));
     tdEl.className   = 'dg-val ' + (taskDiffN >= 0 ? 'c-red' : 'c-green');
     tdLbl.textContent = (taskDiffN >= 0 ? lbl('超出绝对值','💎 当前积分超出') : lbl('缺口绝对值','💎 当前积分差距'));
     document.getElementById('d-task-diff-cell').style.background = taskDiffN >= 0 ? '#fef2f2' : '#f0fdf4';
@@ -1854,7 +1854,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     bpc.className   = 'mc-pct ' + (baseAhead ? 'red' : 'green');
 
     const bb = document.getElementById('d-base-badge');
-    bb.textContent = (baseAhead ? '↑ 超前' : '↓ 落后') + '时间进度 ' + (baseAhead ? '+' : '') + baseDiff.toFixed(1) + '%';
+    bb.textContent = (baseAhead ? '↑ 超前' : '↓ 落后') + '时间进度 ' + (baseAhead ? '' : '-') + Math.abs(baseDiff).toFixed(1) + '%';
     bb.className   = 'mc-badge ' + (baseAhead ? 'mb-red' : 'mb-green');
 
     document.getElementById('d-base-bar').style.width = Math.min(basePct, 100) + '%';
@@ -1864,9 +1864,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const dgBaseActualLbl = document.querySelector('#d-base-actual')?.closest('.dg-cell')?.querySelector('.dg-label');
     const dgBaseTargetLbl = document.querySelector('#d-base-target')?.closest('.dg-cell')?.querySelector('.dg-label');
     const dgBaseShouldLbl = document.querySelector('#d-base-should')?.closest('.dg-cell')?.querySelector('.dg-label');
-    if (dgBaseActualLbl) dgBaseActualLbl.textContent = lbl('实际完成', '💎 当前积分');
-    if (dgBaseTargetLbl) dgBaseTargetLbl.textContent = lbl('基期目标', '💎 基期目标');
-    if (dgBaseShouldLbl) dgBaseShouldLbl.textContent = lbl('当前应完成', '💎 应完成积分');
+    if (dgBaseActualLbl) dgBaseActualLbl.textContent = lbl('实际完成', '💎 当前累计积分');
+    if (dgBaseTargetLbl) dgBaseTargetLbl.textContent = lbl('基期目标', '💎 基期目标积分');
+    if (dgBaseShouldLbl) dgBaseShouldLbl.textContent = lbl('当前应完成', '💎 当前应完成积分');
 
     document.getElementById('d-base-actual').textContent = fmt(actualN);
     document.getElementById('d-base-target').textContent = fmt(baseN);
@@ -1876,9 +1876,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     document.getElementById('d-base-should').textContent = fmt(baseShould);
     const bdEl  = document.getElementById('d-base-diff');
     const bdLbl = document.getElementById('d-base-diff-label');
-    bdEl.textContent = (baseDiffN >= 0 ? '+' : '') + fmt(Math.abs(baseDiffN));
+    bdEl.textContent = (baseDiffN >= 0 ? '' : '-') + fmt(Math.abs(baseDiffN));
     bdEl.className   = 'dg-val ' + (baseDiffN >= 0 ? 'c-red' : 'c-green');
-    bdLbl.textContent = (baseDiffN >= 0 ? lbl('超出绝对值','💎 超出') : lbl('缺口绝对值','💎 缺口'));
+    bdLbl.textContent = (baseDiffN >= 0 ? lbl('超出绝对值','💎 当前积分超出') : lbl('缺口绝对值','💎 当前积分差距'));
     document.getElementById('d-base-diff-cell').style.background = baseDiffN >= 0 ? '#fef2f2' : '#f0fdf4';
   }
 
