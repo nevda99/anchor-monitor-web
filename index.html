@@ -1207,8 +1207,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         <div class="anchor-card-head">
           <h4>📋 主播明细</h4>
           <span class="anchor-count" id="d-anchor-count"></span>
-          <button class="warn-filter-btn" id="warnFilterBtn" onclick="toggleWarnFilter()" style="display:none">⚠️ 严重落后</button>
-          <button class="download-excel-btn" onclick="downloadExcel()">📥 下载Excel</button>
+          <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
+            <button class="warn-filter-btn" id="warnFilterBtn" onclick="toggleWarnFilter()" style="display:none">⚠️ 严重落后</button>
+            <button class="download-excel-btn" onclick="downloadExcel()">📥 下载Excel</button>
+          </div>
         </div>
         <div style="overflow-x:auto">
           <table class="anchor-table">
