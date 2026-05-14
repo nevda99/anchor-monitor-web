@@ -1404,11 +1404,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
   // 商品定义
   const SHOP_ITEMS = [
-    { id:'fans',   icon:'🌟', name:'涨粉奖励', unit:'1000个/份', price:80,   desc:'主播账号涨粉激励' },
-    { id:'kuaibi', icon:'💰', name:'快币奖励', unit:'100个/份',  price:10,   desc:'直播间礼物打赏' },
-    { id:'slot',   icon:'📡', name:'流量名额（7天）', unit:'1个/份',  price:1000, desc:'大额推流名额一人（7天）' },
-    { id:'spark',  icon:'🔥', name:'火花流量', unit:'10万曝光/份', price:1000, desc:'内容曝光加速' },
-    { id:'coupon', icon:'🎟', name:'流量券',  unit:'10万曝光/份', price:800,  desc:'通用曝光资源' },
+    { id:'fans',   icon:'🌟', name:'涨粉奖励（1000粉丝）',    unit:'', price:80,   desc:'主播账号涨粉激励' },
+    { id:'kuaibi', icon:'💰', name:'快币奖励（100快币）',      unit:'', price:10,   desc:'直播间礼物打赏' },
+    { id:'slot',   icon:'📡', name:'流量名额（7天）',          unit:'', price:3000, desc:'大额推流名额一人（7天）' },
+    { id:'spark',  icon:'🔥', name:'火花流量（10万曝光）',     unit:'', price:1000, desc:'内容曝光加速' },
+    { id:'coupon', icon:'🎟', name:'流量券（10万曝光）',       unit:'', price:800,  desc:'通用曝光资源' },
   ];
 
   const SOURCE_GROUP_MAP = {
@@ -2269,7 +2269,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         onclick="${canAfford ? `selectReward('${item.id}')` : ''}">
         <div class="rc-top">
           <div class="rc-name">${item.icon} ${item.name}</div>
-          <div class="rc-unit">${item.unit}</div>
         </div>
         <div class="rc-desc">${item.desc}</div>
         <div class="rc-price-row">
