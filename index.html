@@ -110,6 +110,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   cursor:pointer; transition:all .2s; font-weight:600;
 }
 .tour-reopen-btn:hover { background:rgba(99,102,241,.25); }
+/* 登录记录日期快捷按钮 */
+.al-day-btn {
+  padding:4px 11px; background:#fff; color:#0369a1;
+  border:1px solid #bae6fd; border-radius:5px; font-size:12px;
+  font-weight:600; cursor:pointer; transition:all .15s;
+}
+.al-day-btn:hover { background:#e0f2fe; }
+.al-day-btn.active { background:#0369a1; color:#fff; border-color:#0369a1; }
 .help-modal-bg {
   display:none; position:fixed; inset:0; background:rgba(0,0,0,.5);
   z-index:3000; align-items:center; justify-content:center;
@@ -1036,12 +1044,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     <div class="upload-body" id="accessLogBody" style="display:none;background:#f0f9ff;border:1px solid #bae6fd;border-top:none">
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
         <input id="accessLogSearch" type="text" placeholder="搜索账号/机构..." oninput="loadAccessLogs()"
-          style="padding:5px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;width:160px">
-        <select id="accessLogLimit" onchange="loadAccessLogs()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px">
-          <option value="50">最近 50 条</option>
-          <option value="100">最近 100 条</option>
-          <option value="200">最近 200 条</option>
-        </select>
+          style="padding:5px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;width:150px">
+        <div style="display:flex;gap:4px;">
+          <button class="al-day-btn active" data-days="3"  onclick="setAccessLogDays(3)">近3天</button>
+          <button class="al-day-btn"        data-days="7"  onclick="setAccessLogDays(7)">近7天</button>
+          <button class="al-day-btn"        data-days="30" onclick="setAccessLogDays(30)">近30天</button>
+        </div>
         <button onclick="loadAccessLogs()" style="padding:5px 12px;background:#0369a1;color:white;border:none;border-radius:5px;font-size:13px;cursor:pointer">刷新</button>
       </div>
       <div id="accessLogContainer">
@@ -2734,28 +2742,47 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   }
 
   /* ===== 登录记录查看 ===== */
+  let accessLogDays = 3; // 默认近3天
+
+  window.setAccessLogDays = function(days) {
+    accessLogDays = days;
+    // 更新按钮激活态
+    document.querySelectorAll('.al-day-btn').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.days) === days);
+    });
+    loadAccessLogs();
+  };
+
   window.loadAccessLogs = async function() {
     const container = document.getElementById('accessLogContainer');
     if (!container) return;
     container.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;font-size:13px">加载中...</div>';
     try {
-      const search = (document.getElementById('accessLogSearch')?.value || '').trim().toLowerCase();
-      const limit  = parseInt(document.getElementById('accessLogLimit')?.value || '50');
+      const search  = (document.getElementById('accessLogSearch')?.value || '').trim().toLowerCase();
+      // 计算日期下限（近 N 天）
+      const cutoff  = new Date();
+      cutoff.setDate(cutoff.getDate() - accessLogDays);
+      const cutoffISO = cutoff.toISOString();
+
       const { data: rawData, error } = await db.from('access_logs')
         .select('username,source,action,login_time,user_agent')
-        .order('login_time', { ascending: false }).limit(limit);
+        .gte('login_time', cutoffISO)
+        .order('login_time', { ascending: false })
+        .limit(500);
+      if (error) throw error;
+
       const data = search
         ? rawData?.filter(r =>
             (r.username||'').toLowerCase().includes(search) ||
             (r.source||'').toLowerCase().includes(search)
           )
         : rawData;
-      if (error) throw error;
+
       if (!data || data.length === 0) {
-        container.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;font-size:13px">暂无记录</div>';
+        container.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;font-size:13px">该时间段内暂无记录</div>';
         return;
       }
-      // 统计各账号登录次数
+      // 统计各账号在当前结果集内的累计登录次数
       const countMap = {};
       data.forEach(r => { countMap[r.username] = (countMap[r.username] || 0) + 1; });
       container.innerHTML = `
@@ -2765,7 +2792,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
               <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">账号</th>
               <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">机构</th>
               <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">时间</th>
-              <th style="padding:7px 10px;text-align:right;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">本批次次数</th>
+              <th style="padding:7px 10px;text-align:right;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">累计登录次数</th>
             </tr>
           </thead>
           <tbody>
@@ -2781,7 +2808,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
             }).join('')}
           </tbody>
         </table>
-        <div style="padding:8px 10px;font-size:11px;color:#999">共 ${data.length} 条记录 · 共 ${Object.keys(countMap).length} 个账号</div>
+        <div style="padding:8px 10px;font-size:11px;color:#999">近 ${accessLogDays} 天 · 共 ${data.length} 条记录 · 共 ${Object.keys(countMap).length} 个账号</div>
       `;
     } catch(e) {
       container.innerHTML = `<div style="padding:16px;color:#ef4444;font-size:13px">加载失败: ${e.message}</div>`;
