@@ -659,6 +659,148 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   .mc-pct { font-size:34px; }
   .topbar-title { font-size:13px; }
 }
+
+/* ===== 新手引导系统 ===== */
+/* 遮罩层 */
+#tourOverlay {
+  display:none; position:fixed; inset:0; z-index:8000;
+  pointer-events:none;
+}
+#tourOverlay.active { display:block; }
+
+/* 聚光灯裁剪遮罩（四边形裁剪） */
+#tourOverlay .tour-mask-top,
+#tourOverlay .tour-mask-bottom,
+#tourOverlay .tour-mask-left,
+#tourOverlay .tour-mask-right {
+  position:fixed; background:rgba(0,0,0,.65); pointer-events:all;
+  transition: all .35s cubic-bezier(.4,0,.2,1);
+}
+
+/* 引导气泡 */
+.tour-bubble {
+  display:none; position:fixed; z-index:8100;
+  background:#fff; border-radius:14px;
+  box-shadow:0 8px 40px rgba(0,0,0,.22), 0 2px 12px rgba(0,0,0,.12);
+  padding:22px 24px 18px; max-width:320px; min-width:260px;
+  pointer-events:all;
+  transition: opacity .25s, transform .25s;
+}
+.tour-bubble.active { display:block; }
+.tour-bubble::before {
+  content:''; position:absolute;
+  border:8px solid transparent;
+}
+/* 气泡朝向：上箭头 */
+.tour-bubble.arrow-top::before {
+  top:-16px; left:28px;
+  border-bottom-color:#fff;
+}
+/* 气泡朝向：下箭头 */
+.tour-bubble.arrow-bottom::before {
+  bottom:-16px; left:28px;
+  border-top-color:#fff;
+}
+/* 气泡朝向：左箭头 */
+.tour-bubble.arrow-left::before {
+  left:-16px; top:20px;
+  border-right-color:#fff;
+}
+/* 气泡朝向：右箭头 */
+.tour-bubble.arrow-right::before {
+  right:-16px; top:20px;
+  border-left-color:#fff;
+}
+
+.tour-step-tag {
+  font-size:11px; font-weight:800; color:#6366f1;
+  letter-spacing:.5px; margin-bottom:8px; text-transform:uppercase;
+}
+.tour-bubble-title {
+  font-size:16px; font-weight:800; color:#111; margin-bottom:8px; line-height:1.35;
+}
+.tour-bubble-desc {
+  font-size:13px; color:#555; line-height:1.7; margin-bottom:16px;
+}
+.tour-bubble-desc strong { color:#111; }
+.tour-bubble-desc .highlight {
+  display:inline-block; background:#f0f4ff; color:#4f46e5;
+  border-radius:4px; padding:1px 6px; font-weight:700; font-size:12px;
+}
+.tour-bubble-footer {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:10px;
+}
+.tour-progress-dots {
+  display:flex; gap:5px; align-items:center;
+}
+.tour-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:#e5e7eb; transition:background .2s;
+}
+.tour-dot.active { background:#6366f1; width:16px; border-radius:3px; }
+.tour-actions { display:flex; gap:8px; }
+.tour-skip-btn {
+  font-size:12px; color:#aaa; background:none; border:none;
+  cursor:pointer; padding:5px 0; font-weight:500;
+}
+.tour-skip-btn:hover { color:#666; }
+.tour-next-btn {
+  padding:8px 20px; background:#6366f1; color:#fff;
+  border:none; border-radius:8px; font-size:13px; font-weight:700;
+  cursor:pointer; transition:background .18s;
+  white-space:nowrap;
+}
+.tour-next-btn:hover { background:#4f46e5; }
+.tour-next-btn.last { background:#059669; }
+.tour-next-btn.last:hover { background:#047857; }
+
+/* 欢迎全屏弹窗 */
+#tourWelcomeBg {
+  display:none; position:fixed; inset:0; z-index:9000;
+  background:rgba(20,20,40,.7); backdrop-filter:blur(4px);
+  align-items:center; justify-content:center;
+}
+#tourWelcomeBg.active { display:flex; }
+.tour-welcome-card {
+  background:#fff; border-radius:20px; padding:40px 44px 36px;
+  max-width:460px; width:92%; text-align:center;
+  box-shadow:0 24px 64px rgba(0,0,0,.22);
+  animation: tourWelcomeIn .4s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes tourWelcomeIn {
+  from { transform:scale(.88) translateY(20px); opacity:0; }
+  to   { transform:scale(1) translateY(0); opacity:1; }
+}
+.tour-welcome-emoji { font-size:52px; margin-bottom:16px; }
+.tour-welcome-title { font-size:22px; font-weight:900; color:#111; margin-bottom:10px; }
+.tour-welcome-desc { font-size:14px; color:#666; line-height:1.75; margin-bottom:28px; }
+.tour-welcome-desc strong { color:#4f46e5; }
+.tour-welcome-actions { display:flex; gap:12px; justify-content:center; }
+.tour-welcome-start {
+  padding:12px 32px; background:#6366f1; color:#fff;
+  border:none; border-radius:10px; font-size:15px; font-weight:700;
+  cursor:pointer; transition:background .18s;
+}
+.tour-welcome-start:hover { background:#4f46e5; }
+.tour-welcome-skip {
+  padding:12px 20px; background:#f3f4f6; color:#888;
+  border:none; border-radius:10px; font-size:14px; font-weight:600;
+  cursor:pointer; transition:background .18s;
+}
+.tour-welcome-skip:hover { background:#e5e7eb; color:#555; }
+
+/* 高亮目标元素的脉冲边框 */
+.tour-highlight-ring {
+  outline: 3px solid #6366f1 !important;
+  outline-offset: 4px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 6px rgba(99,102,241,.15) !important;
+  transition: outline .3s, box-shadow .3s !important;
+  position: relative;
+  z-index: 8050 !important;
+}
+
 </style>
 </head>
 <body>
@@ -1167,6 +1309,45 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   </div>
 </div>
 
+
+<!-- ===== 新手引导 - 欢迎弹窗 ===== -->
+<div id="tourWelcomeBg">
+  <div class="tour-welcome-card">
+    <div class="tour-welcome-emoji">👋</div>
+    <div class="tour-welcome-title">欢迎使用主播数据看板！</div>
+    <div class="tour-welcome-desc">
+      这里是你机构的<strong>本周任务追踪中心</strong>。<br>
+      我们为你准备了一个 <strong>30秒快速引导</strong>，帮你搞懂所有功能，开始吧？
+    </div>
+    <div class="tour-welcome-actions">
+      <button class="tour-welcome-start" onclick="tourStart()">🚀 开始引导（推荐）</button>
+      <button class="tour-welcome-skip" onclick="tourDismiss()">以后再说</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 新手引导 - 聚光灯遮罩 ===== -->
+<div id="tourOverlay">
+  <div class="tour-mask-top"  id="tourMaskTop"></div>
+  <div class="tour-mask-bottom" id="tourMaskBottom"></div>
+  <div class="tour-mask-left" id="tourMaskLeft"></div>
+  <div class="tour-mask-right" id="tourMaskRight"></div>
+</div>
+
+<!-- ===== 新手引导 - 说明气泡 ===== -->
+<div class="tour-bubble" id="tourBubble">
+  <div class="tour-step-tag" id="tourStepTag">步骤 1 / 7</div>
+  <div class="tour-bubble-title" id="tourBubbleTitle">标题</div>
+  <div class="tour-bubble-desc"  id="tourBubbleDesc">描述</div>
+  <div class="tour-bubble-footer">
+    <div class="tour-progress-dots" id="tourDots"></div>
+    <div class="tour-actions">
+      <button class="tour-skip-btn" onclick="tourDismiss()">跳过引导</button>
+      <button class="tour-next-btn" id="tourNextBtn" onclick="tourNext()">下一步 →</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- /mainApp -->
 
 <script>
@@ -1488,6 +1669,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       await loadOrgBalance(state.source, state.system);
       renderShop();
       document.getElementById('shopSection').style.display = '';
+      // 新手引导（首次登录触发）
+      checkAndShowTour(state.role, state.source);
     }
   }
 
@@ -2708,6 +2891,300 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   };
 
 })();
+
+
+  /* ===========================
+     新手引导系统 (Source账号专用)
+     =========================== */
+
+  const TOUR_STORAGE_KEY = 'anchor_tour_done_v1';
+
+  // 步骤定义（仅 source 账号使用）
+  function getTourSteps() {
+    return [
+      {
+        targetId: 'statsBar',
+        title: '📊 这里是你的实时进度总览',
+        desc: '顶部卡片实时显示你机构的<strong>任务完成度</strong>、<strong>本周可获积分</strong>和<strong>账户余额</strong>。数据每天更新，随时能看进展。',
+        arrow: 'top', placement: 'bottom',
+      },
+      {
+        targetId: 'd-time-badge',
+        title: '⏱ 时间进度 — 你的参照基准',
+        desc: '这个标签告诉你<strong>本周已过去多少时间比例</strong>。完成度<span class="highlight">超过时间进度</span> = 超前 🔴；低于时间进度 = 落后 🟢。',
+        arrow: 'top', placement: 'bottom',
+      },
+      {
+        targetId: 'dualBlock',
+        title: '🎯 任务口径 vs 📐 基期口径',
+        desc: '<strong>任务口径</strong>是你们本周的考核目标（含增长要求），<strong>必须完成</strong>。<br><strong>基期口径</strong>是历史自然基线——超出这条线的部分会换算成积分奖励你！',
+        arrow: 'top', placement: 'bottom',
+      },
+      {
+        targetId: 'shopSection',
+        title: '💎 积分商店 — 超额有奖励',
+        desc: '超出基期目标的部分 × 0.024 = 本周可获积分。<br>⚠️ 前提：<strong>任务口径完成度需达到 100%</strong>，周末才会把积分结算到余额，用来换涨粉、流量等奖励！',
+        arrow: 'top', placement: 'bottom',
+        beforeShow: () => {
+          // 确保商店卡片可见
+          const sec = document.getElementById('shopSection');
+          if (sec) sec.style.display = '';
+        }
+      },
+      {
+        targetId: 'anchor-tbody',
+        title: '📋 主播明细表',
+        desc: '这里能看到机构内每个主播的完成情况。点击表头可以<strong>排序</strong>，快速找出超前或落后的主播。',
+        arrow: 'top', placement: 'bottom',
+      },
+      {
+        targetId: 'helpBtn',
+        title: '🙋 随时可以问「我有疑问？」',
+        desc: '看不懂某个数值或规则？点顶栏右侧的<strong>「我有疑问？」</strong>按钮，里面有完整的问答解释。',
+        arrow: 'top', placement: 'bottom',
+        beforeShow: () => {
+          // 确保按钮可见
+          const btn = document.getElementById('helpBtn');
+          if (btn) btn.style.display = '';
+        }
+      },
+    ];
+  }
+
+  let tourCurrentStep = -1;
+  let tourSteps = [];
+  let tourHighlightedEl = null;
+
+  // 检查是否需要展示引导（首次登录，source账号）
+  window.checkAndShowTour = function(role, source) {
+    if (role !== 'source') return; // 仅 source 账号
+    const key = TOUR_STORAGE_KEY + '_' + source;
+    if (localStorage.getItem(key)) return; // 已看过
+    // 延迟显示，等页面渲染完
+    setTimeout(() => {
+      document.getElementById('tourWelcomeBg').classList.add('active');
+    }, 1200);
+  };
+
+  window.tourStart = function() {
+    document.getElementById('tourWelcomeBg').classList.remove('active');
+    tourSteps = getTourSteps();
+    tourCurrentStep = -1;
+    tourNext();
+  };
+
+  window.tourDismiss = function() {
+    document.getElementById('tourWelcomeBg').classList.remove('active');
+    tourEnd();
+  };
+
+  window.tourNext = function() {
+    tourCurrentStep++;
+    if (tourCurrentStep >= tourSteps.length) {
+      tourEnd(true);
+      return;
+    }
+    showTourStep(tourCurrentStep);
+  };
+
+  function showTourStep(idx) {
+    const step = tourSteps[idx];
+    if (!step) return;
+
+    // 执行前置操作（如展开商店）
+    if (step.beforeShow) step.beforeShow();
+
+    // 移除上一个高亮
+    if (tourHighlightedEl) {
+      tourHighlightedEl.classList.remove('tour-highlight-ring');
+      tourHighlightedEl = null;
+    }
+
+    const el = document.getElementById(step.targetId);
+    if (!el) {
+      // 跳过不存在的元素
+      tourCurrentStep++;
+      if (tourCurrentStep < tourSteps.length) showTourStep(tourCurrentStep);
+      else tourEnd(true);
+      return;
+    }
+
+    // 滚动目标到可视区
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    setTimeout(() => {
+      // 添加高亮环
+      el.classList.add('tour-highlight-ring');
+      tourHighlightedEl = el;
+
+      // 显示遮罩
+      positionMask(el);
+
+      // 定位气泡
+      positionBubble(el, step);
+
+      // 更新气泡内容
+      const total = tourSteps.length;
+      document.getElementById('tourStepTag').textContent = `步骤 ${idx + 1} / ${total}`;
+      document.getElementById('tourBubbleTitle').innerHTML = step.title;
+      document.getElementById('tourBubbleDesc').innerHTML = step.desc;
+
+      // 进度点
+      const dotsEl = document.getElementById('tourDots');
+      dotsEl.innerHTML = tourSteps.map((_,i) =>
+        `<div class="tour-dot ${i===idx?'active':''}"></div>`
+      ).join('');
+
+      // 按钮文案
+      const nextBtn = document.getElementById('tourNextBtn');
+      const isLast = idx === total - 1;
+      nextBtn.textContent = isLast ? '🎉 我知道了！' : '下一步 →';
+      nextBtn.className = 'tour-next-btn' + (isLast ? ' last' : '');
+
+      // 显示遮罩和气泡
+      document.getElementById('tourOverlay').classList.add('active');
+      document.getElementById('tourBubble').classList.add('active');
+    }, 400);
+  }
+
+  function positionMask(el) {
+    const rect = el.getBoundingClientRect();
+    const pad = 8;
+    const t  = Math.max(0, rect.top - pad);
+    const b  = Math.max(0, window.innerHeight - rect.bottom - pad);
+    const l  = Math.max(0, rect.left - pad);
+    const r  = Math.max(0, window.innerWidth - rect.right - pad);
+    const h  = rect.height + pad * 2;
+    const w  = rect.width  + pad * 2;
+
+    const top    = document.getElementById('tourMaskTop');
+    const bottom = document.getElementById('tourMaskBottom');
+    const left   = document.getElementById('tourMaskLeft');
+    const right  = document.getElementById('tourMaskRight');
+
+    top.style.cssText    = `top:0;left:0;right:0;height:${t}px`;
+    bottom.style.cssText = `bottom:0;left:0;right:0;height:${b}px`;
+    left.style.cssText   = `top:${t}px;left:0;width:${l}px;height:${h}px`;
+    right.style.cssText  = `top:${t}px;right:0;width:${r}px;height:${h}px`;
+  }
+
+  function positionBubble(el, step) {
+    const rect = el.getBoundingClientRect();
+    const bubble = document.getElementById('tourBubble');
+    const pad = 14;
+
+    // 重置class
+    bubble.className = 'tour-bubble active';
+
+    // 先暂时显示以获取尺寸
+    bubble.style.visibility = 'hidden';
+    bubble.style.top = '-9999px';
+    bubble.style.left = '-9999px';
+
+    requestAnimationFrame(() => {
+      const bw = bubble.offsetWidth;
+      const bh = bubble.offsetHeight;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      let top, left, arrowClass;
+
+      if (step.placement === 'bottom') {
+        // 气泡在目标下方
+        top = rect.bottom + pad;
+        left = rect.left + (rect.width / 2) - (bw / 2);
+        arrowClass = 'arrow-top';
+        // 如果下方空间不够，翻转到上方
+        if (top + bh > vh - 20) {
+          top = rect.top - bh - pad;
+          arrowClass = 'arrow-bottom';
+        }
+      } else if (step.placement === 'top') {
+        top = rect.top - bh - pad;
+        left = rect.left + (rect.width / 2) - (bw / 2);
+        arrowClass = 'arrow-bottom';
+        if (top < 20) {
+          top = rect.bottom + pad;
+          arrowClass = 'arrow-top';
+        }
+      } else if (step.placement === 'right') {
+        top = rect.top + (rect.height / 2) - (bh / 2);
+        left = rect.right + pad;
+        arrowClass = 'arrow-left';
+        if (left + bw > vw - 20) {
+          left = rect.left - bw - pad;
+          arrowClass = 'arrow-right';
+        }
+      } else {
+        top = rect.top + (rect.height / 2) - (bh / 2);
+        left = rect.left - bw - pad;
+        arrowClass = 'arrow-right';
+      }
+
+      // 边界修正
+      left = Math.max(12, Math.min(left, vw - bw - 12));
+      top  = Math.max(12, Math.min(top, vh - bh - 12));
+
+      bubble.classList.add(arrowClass);
+      bubble.style.visibility = '';
+      bubble.style.top  = top  + 'px';
+      bubble.style.left = left + 'px';
+    });
+  }
+
+  function tourEnd(completed) {
+    // 移除高亮
+    if (tourHighlightedEl) {
+      tourHighlightedEl.classList.remove('tour-highlight-ring');
+      tourHighlightedEl = null;
+    }
+    // 隐藏遮罩和气泡
+    document.getElementById('tourOverlay').classList.remove('active');
+    document.getElementById('tourBubble').classList.remove('active');
+    document.getElementById('tourWelcomeBg').classList.remove('active');
+
+    // 标记已看过
+    if (state.source) {
+      localStorage.setItem(TOUR_STORAGE_KEY + '_' + state.source, '1');
+    }
+
+    // 完成时给个小提示
+    if (completed) {
+      showTourToast('🎉 引导完成！随时点顶栏「我有疑问？」复习规则');
+    }
+  }
+
+  function showTourToast(msg) {
+    let toast = document.getElementById('tourToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'tourToast';
+      toast.style.cssText = [
+        'position:fixed','bottom:24px','left:50%','transform:translateX(-50%)',
+        'background:#1e1e2e','color:#fff','padding:12px 24px','border-radius:10px',
+        'font-size:14px','font-weight:600','z-index:9999','pointer-events:none',
+        'box-shadow:0 4px 20px rgba(0,0,0,.25)',
+        'transition:opacity .4s','opacity:0',
+        'white-space:nowrap',
+      ].join(';');
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    setTimeout(() => { toast.style.opacity = '0'; }, 3500);
+  }
+
+  // 窗口resize时重新定位
+  window.addEventListener('resize', () => {
+    if (tourCurrentStep >= 0 && tourCurrentStep < tourSteps.length) {
+      const el = document.getElementById(tourSteps[tourCurrentStep].targetId);
+      if (el && document.getElementById('tourBubble').classList.contains('active')) {
+        positionMask(el);
+        positionBubble(el, tourSteps[tourCurrentStep]);
+      }
+    }
+  });
+
 </script>
 </body>
 </html>
