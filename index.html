@@ -1035,11 +1035,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     </div>
     <div class="upload-body" id="accessLogBody" style="display:none;background:#f0f9ff;border:1px solid #bae6fd;border-top:none">
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-        <select id="accessLogSystem" onchange="loadAccessLogs()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px">
-          <option value="bet">BET 系统</option>
-          <option value="crc">CRC 系统</option>
-          <option value="">全部</option>
-        </select>
+        <input id="accessLogSearch" type="text" placeholder="搜索账号/机构..." oninput="loadAccessLogs()"
+          style="padding:5px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;width:160px">
         <select id="accessLogLimit" onchange="loadAccessLogs()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px">
           <option value="50">最近 50 条</option>
           <option value="100">最近 100 条</option>
@@ -2740,12 +2737,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (!container) return;
     container.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;font-size:13px">加载中...</div>';
     try {
-      const sys   = document.getElementById('accessLogSystem')?.value || '';
-      const limit = parseInt(document.getElementById('accessLogLimit')?.value || '50');
-      let query = db.from('access_logs').select('username,source,action,login_time,user_agent')
+      const search = (document.getElementById('accessLogSearch')?.value || '').trim().toLowerCase();
+      const limit  = parseInt(document.getElementById('accessLogLimit')?.value || '50');
+      const { data: rawData, error } = await db.from('access_logs')
+        .select('username,source,action,login_time,user_agent')
         .order('login_time', { ascending: false }).limit(limit);
-      if (sys) query = query.eq('system', sys);
-      const { data, error } = await query;
+      const data = search
+        ? rawData?.filter(r =>
+            (r.username||'').toLowerCase().includes(search) ||
+            (r.source||'').toLowerCase().includes(search)
+          )
+        : rawData;
       if (error) throw error;
       if (!data || data.length === 0) {
         container.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;font-size:13px">暂无记录</div>';
