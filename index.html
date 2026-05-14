@@ -1436,7 +1436,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     // 积分相关
     pointsView: false,    // admin 是否切换到积分视角
     orgBalance: 0,        // source账号机构余额
-    orgWeekPoints: 0,     // source账号本周可获积分（基期口径超出值×0.024，仅供展示）
+    orgWeekPoints: 0,     // source账号本周可获积分（基期口径超出值换算，仅供展示）
     taskDiffUAD: 0,       // 任务口径超出/缺口绝对值UAD（正=超出，负=缺口）
     baseDiffUAD: 0,       // 基期口径超出/缺口绝对值UAD（正=超出，负=缺口）
     taskComplete: false,  // 任务口径是否达到100%（结算前置条件）
@@ -2140,7 +2140,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       document.getElementById('d-time-badge').textContent = `⏱ 时间进度 ${tp.toFixed(2)}%（第 ${tpDay} 天 / 7 天）`;
 
       renderDualBlock(taskPct, basePct, totalActual, totalTarget, totalBase, tp, hasBase);
-      // 新积分规则：积分 = 超出基期口径部分 × 0.024；但任务口径需达100%才可结算
+      // 新积分规则：积分 = 超出基期口径部分换算；但任务口径需达100%才可结算
       state.taskComplete = totalTarget > 0 && totalActual >= totalTarget;
       state.orgWeekPoints = Math.max(0, state.baseDiffUAD) * 0.024;
       updateSourceStats(rows.length, taskPct, basePct, tp, totalBase);
@@ -2923,7 +2923,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       {
         targetId: 'shopSection',
         title: '💎 积分商店 — 超额有奖励',
-        desc: '超出基期目标的部分 × 0.024 = 本周可获积分。<br>⚠️ 前提：<strong>任务口径完成度需达到 100%</strong>，周末才会把积分结算到余额，用来换涨粉、流量等奖励！',
+        desc: '超出基期目标的部分会换算成积分。<br>⚠️ 前提：<strong>任务口径完成度需达到 100%</strong>，当周积分才会在周末结算至余额，用来换涨粉、流量等奖励！',
         arrow: 'top', placement: 'bottom',
         beforeShow: () => {
           // 确保商店卡片可见
