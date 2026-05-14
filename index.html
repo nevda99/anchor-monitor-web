@@ -1247,6 +1247,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
           <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
             <button class="warn-filter-btn" id="warnFilterBtn" onclick="toggleWarnFilter()" style="display:none">⚠️ 严重落后</button>
             <button class="download-excel-btn" onclick="downloadExcel()">📥 下载Excel</button>
+            <button class="download-excel-btn" id="downloadPtsBtn" onclick="downloadExcelPoints()" style="background:#7c3aed;display:none">💎 下载积分Excel</button>
           </div>
         </div>
         <div style="overflow-x:auto">
@@ -1691,6 +1692,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     // 积分视角切换按钮：仅 super_admin/sub_admin 可见
     const ptBtn = document.getElementById('pointsToggleBtn');
     if (ptBtn) ptBtn.style.display = (state.role === 'super_admin' || state.role === 'sub_admin') ? '' : 'none';
+    // 下载积分Excel按钮：仅 super_admin/sub_admin 可见
+    const dlPtsBtn = document.getElementById('downloadPtsBtn');
+    if (dlPtsBtn) dlPtsBtn.style.display = (state.role === 'super_admin' || state.role === 'sub_admin') ? '' : 'none';
     // 我有疑问按钮：仅 source 账号可见
     const helpBtn = document.getElementById('helpBtn');
     if (helpBtn) helpBtn.style.display = state.role === 'source' ? '' : 'none';
@@ -1830,6 +1834,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (switchBtn) switchBtn.style.display = 'none';
     const ptBtn = document.getElementById('pointsToggleBtn');
     if (ptBtn) ptBtn.style.display = 'none';
+    const dlPtsBtn2 = document.getElementById('downloadPtsBtn');
+    if (dlPtsBtn2) dlPtsBtn2.style.display = 'none';
     const helpBtnEl = document.getElementById('helpBtn');
     if (helpBtnEl) helpBtnEl.style.display = 'none';
     const tReopenBtn = document.getElementById('tourReopenBtn');
@@ -2978,6 +2984,41 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     } catch(err) { alert('下载失败: ' + err.message); }
     finally {
       if (btn) { btn.disabled = false; btn.textContent = '📥 下载Excel'; }
+    }
+  };
+
+  /* ===== 管理员专用：下载积分Excel ===== */
+  window.downloadExcelPoints = function() {
+    if (!state.currentData || state.currentData.length === 0) { alert('暂无数据可下载'); return; }
+    const btn = document.getElementById('downloadPtsBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '生成中...'; }
+    try {
+      const tp = state.timeProgress;
+      const toPoints = n => Number((Number(n) * 0.024).toFixed(1));
+      const excelData = state.currentData.map(item => {
+        const taskPct = item.completion_rate != null ? item.completion_rate : (item.target > 0 ? item.actual / item.target * 100 : 0);
+        const isAhead = taskPct >= tp;
+        return {
+          '主播ID': item.anchor_id,
+          '主播来源': item.source,
+          '主播名称': item.anchor_name,
+          '本周目标任务积分': toPoints(item.target),
+          '本周当前累计积分': toPoints(item.actual),
+          '当前任务完成度': taskPct.toFixed(2) + '%',
+          '当前时间进度': item.time_progress,
+          '状态': isAhead ? '超前' : '落后',
+          '昨日开播(小时)': item.streaming_minutes ? (item.streaming_minutes / 60).toFixed(2) : '0.00',
+        };
+      });
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelData);
+      ws['!cols'] = [{wch:14},{wch:16},{wch:22},{wch:18},{wch:18},{wch:16},{wch:14},{wch:6},{wch:16}];
+      XLSX.utils.book_append_sheet(wb, ws, '积分数据');
+      const orgName = (state.currentSource === '__ALL__' ? '全部汇总' : (state.currentSource || '数据')).replace(/[\/\\?%*:|"<>]/g,'_');
+      XLSX.writeFile(wb, `${orgName}_积分视角_${state.currentDate}.xlsx`);
+    } catch(err) { alert('下载失败: ' + err.message); }
+    finally {
+      if (btn) { btn.disabled = false; btn.textContent = '💎 下载积分Excel'; }
     }
   };
 
