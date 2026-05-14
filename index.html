@@ -343,6 +343,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   font-weight:600; cursor:pointer; transition:all .2s;
 }
 .download-excel-btn:hover { background:#d1fae5; }
+.warn-filter-btn {
+  padding:6px 14px; background:#fff7ed; color:#c2410c;
+  border:1px solid #fed7aa; border-radius:7px; font-size:12px;
+  font-weight:700; cursor:pointer; transition:all .18s; white-space:nowrap;
+}
+.warn-filter-btn:hover { background:#ffedd5; }
+.warn-filter-btn.active { background:#c2410c; color:#fff; border-color:#c2410c; }
 
 /* 列头排序箭头 */
 .th-sort { cursor:pointer; user-select:none; white-space:nowrap; }
@@ -1020,6 +1027,32 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     </div>
   </div>
 
+  <!-- 登录记录面板（仅 super_admin） -->
+  <div id="accessLogPanel">
+    <div class="upload-toggle-bar" style="background:#f0f9ff;border:1px solid #bae6fd;" onclick="togglePanel('accessLogBody','accessLogIcon')">
+      <span class="tog-title" style="color:#0369a1">🔍 登录记录查看</span>
+      <span class="tog-icon" id="accessLogIcon">▼ 展开</span>
+    </div>
+    <div class="upload-body" id="accessLogBody" style="display:none;background:#f0f9ff;border:1px solid #bae6fd;border-top:none">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <select id="accessLogSystem" onchange="loadAccessLogs()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px">
+          <option value="bet">BET 系统</option>
+          <option value="crc">CRC 系统</option>
+          <option value="">全部</option>
+        </select>
+        <select id="accessLogLimit" onchange="loadAccessLogs()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px">
+          <option value="50">最近 50 条</option>
+          <option value="100">最近 100 条</option>
+          <option value="200">最近 200 条</option>
+        </select>
+        <button onclick="loadAccessLogs()" style="padding:5px 12px;background:#0369a1;color:white;border:none;border-radius:5px;font-size:13px;cursor:pointer">刷新</button>
+      </div>
+      <div id="accessLogContainer" style="max-height:320px;overflow-y:auto;">
+        <div style="padding:20px;text-align:center;color:#aaa;font-size:13px">点击展开加载...</div>
+      </div>
+    </div>
+  </div>
+
   </div><!-- /admin-drawer-body -->
 </div><!-- /admin-drawer -->
 
@@ -1177,6 +1210,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         <div class="anchor-card-head">
           <h4>📋 主播明细</h4>
           <span class="anchor-count" id="d-anchor-count"></span>
+          <button class="warn-filter-btn" id="warnFilterBtn" onclick="toggleWarnFilter()" style="display:none">⚠️ 严重落后</button>
           <button class="download-excel-btn" onclick="downloadExcel()">📥 下载Excel</button>
         </div>
         <div style="overflow-x:auto">
@@ -2587,6 +2621,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   }
 
   function renderAnchorTable(rows, tp, hasBase) {
+    // 预警筛选按钮：仅管理员视角显示
+    const isAdminView = state.role === 'super_admin' || state.role === 'sub_admin';
+    const warnBtn = document.getElementById('warnFilterBtn');
+    if (warnBtn) {
+      const hasWarn = rows.some(r => isWarnBehind(r, tp));
+      warnBtn.style.display = (isAdminView && hasWarn) ? '' : 'none';
+      if (!hasWarn && warnFilterActive) {
+        warnFilterActive = false;
+        warnBtn.classList.remove('active');
+        warnBtn.textContent = '⚠️ 严重落后';
+      }
+    }
+    // 若预警筛选激活，只显示严重落后主播
+    if (warnFilterActive) rows = rows.filter(r => isWarnBehind(r, tp));
+
     const thBase     = document.getElementById('th-base-target');
     const thBaseComp = document.getElementById('th-base-comp');
     if (thBase)     thBase.style.display     = hasBase ? '' : 'none';
@@ -2660,6 +2709,81 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   };
 
   /* ===== 下载Excel ===== */
+
+  /* ===== 主播落后预警筛选 ===== */
+  let warnFilterActive = false;
+
+  window.toggleWarnFilter = function() {
+    warnFilterActive = !warnFilterActive;
+    const btn = document.getElementById('warnFilterBtn');
+    if (btn) {
+      btn.classList.toggle('active', warnFilterActive);
+      btn.textContent = warnFilterActive ? '⚠️ 显示全部' : '⚠️ 严重落后';
+    }
+    // 重新渲染表格（复用当前数据）
+    const tp = state.timeProgress;
+    const hasBase = state.currentData.some(r => (r.base_target || 0) > 0);
+    renderAnchorTable(state.currentData, tp, hasBase);
+  };
+
+  // 判断是否严重落后（完成度低于时间进度 20pp 以上）
+  function isWarnBehind(row, tp) {
+    const pct = row.completion_rate != null
+      ? row.completion_rate
+      : (row.target > 0 ? row.actual / row.target * 100 : 0);
+    return pct < tp - 20;
+  }
+
+  /* ===== 登录记录查看 ===== */
+  window.loadAccessLogs = async function() {
+    const container = document.getElementById('accessLogContainer');
+    if (!container) return;
+    container.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;font-size:13px">加载中...</div>';
+    try {
+      const sys   = document.getElementById('accessLogSystem')?.value || '';
+      const limit = parseInt(document.getElementById('accessLogLimit')?.value || '50');
+      let query = db.from('access_logs').select('username,source,action,created_at,user_agent')
+        .order('created_at', { ascending: false }).limit(limit);
+      if (sys) query = query.eq('system', sys);
+      const { data, error } = await query;
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        container.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;font-size:13px">暂无记录</div>';
+        return;
+      }
+      // 统计各账号登录次数
+      const countMap = {};
+      data.forEach(r => { countMap[r.username] = (countMap[r.username] || 0) + 1; });
+      container.innerHTML = `
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="background:rgba(3,105,161,.08)">
+              <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">账号</th>
+              <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">机构</th>
+              <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">时间</th>
+              <th style="padding:7px 10px;text-align:right;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">本批次次数</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map((r, i) => {
+              const dt = new Date(r.created_at);
+              const ts = dt.toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+              return `<tr style="border-bottom:1px solid #e0f2fe;${i%2===0 ? 'background:rgba(240,249,255,.4)' : ''}">
+                <td style="padding:6px 10px;color:#0c4a6e;font-weight:600">${r.username}</td>
+                <td style="padding:6px 10px;color:#555">${r.source || '—'}</td>
+                <td style="padding:6px 10px;color:#555">${ts}</td>
+                <td style="padding:6px 10px;text-align:right;color:#0369a1;font-weight:700">${countMap[r.username]}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        <div style="padding:8px 10px;font-size:11px;color:#999">共 ${data.length} 条记录 · 共 ${Object.keys(countMap).length} 个账号</div>
+      `;
+    } catch(e) {
+      container.innerHTML = `<div style="padding:16px;color:#ef4444;font-size:13px">加载失败: ${e.message}</div>`;
+    }
+  };
+
   window.downloadExcel = function() {
     if (!state.currentData || state.currentData.length === 0) { alert('暂无数据可下载'); return; }
     const btn = document.querySelector('.download-excel-btn');
@@ -2745,6 +2869,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     // 兑换申请面板：首次展开时加载数据
     if (!open && bodyId === 'redeemMgmtBody') {
       loadRedeemList();
+    }
+    if (!open && bodyId === 'accessLogBody') {
+      loadAccessLogs();
     }
   };
 
