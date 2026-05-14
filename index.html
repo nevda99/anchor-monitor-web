@@ -545,6 +545,28 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 .swc-week-val.neg { color:#ef4444; }
 .swc-week-sub { font-size:11px; color:#888; margin-top:2px; }
 .swc-note { font-size:11px; color:#a78bfa; line-height:1.5; }
+/* 积分结算规则说明框 */
+.settle-rule-box {
+  display:flex; gap:10px; align-items:flex-start;
+  background:rgba(251,191,36,.1); border:1px solid rgba(251,191,36,.3);
+  border-radius:8px; padding:10px 12px; margin-top:2px;
+}
+.settle-rule-box.ok {
+  background:rgba(5,150,105,.08); border-color:rgba(5,150,105,.25);
+}
+.srb-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+.srb-text { flex:1; min-width:0; }
+.srb-title { font-size:11px; font-weight:800; color:#b45309; margin-bottom:3px; }
+.settle-rule-box.ok .srb-title { color:#065f46; }
+.srb-desc { font-size:11px; color:#78716c; line-height:1.6; }
+.settle-rule-box.ok .srb-desc { color:#374151; }
+/* 顶部bar settle badge */
+.shop-settle-badge {
+  font-size:11px; font-weight:700; padding:2px 7px; border-radius:10px;
+  vertical-align:middle;
+}
+.shop-settle-badge.warn { background:rgba(251,191,36,.15); color:#b45309; border:1px solid rgba(251,191,36,.3); }
+.shop-settle-badge.ok   { background:rgba(5,150,105,.12); color:#065f46; border:1px solid rgba(5,150,105,.25); }
 /* 右侧奖励 Grid */
 .shop-rewards-col { flex:1; min-width:0; }
 .shop-rewards-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
@@ -900,6 +922,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
               <div class="shop-header-title">积分商店</div>
               <div class="shop-header-sub">💎余额：<span id="shop-balance-val" class="shop-bal-num">0.0</span>
                 &nbsp;·&nbsp; 💎本周可获：<span id="shop-week-pts-val" class="shop-week-num">0.0</span>
+                &nbsp;<span id="shop-settle-badge" class="shop-settle-badge" style="display:none"></span>
               </div>
             </div>
           </div>
@@ -923,6 +946,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
                   <div class="swc-week-sub" id="shop-week-pts-sub">本周已获得积分</div>
                 </div>
                 <div style="height:12px"></div>
+                <!-- 结算条件说明 -->
+                <div class="settle-rule-box" id="settleRuleBox">
+                  <div class="srb-icon" id="srbIcon">📋</div>
+                  <div class="srb-text">
+                    <div class="srb-title" id="srbTitle">积分结算规则</div>
+                    <div class="srb-desc" id="srbDesc">超出基期目标的部分换算为积分，<strong>每周任务口径完成度需达到 100%</strong>，当周积分才会在周末结算至余额，否则不予结算。</div>
+                  </div>
+                </div>
+                <div style="height:8px"></div>
                 <div class="swc-note">兑换后运营人员将与你联系发放奖励</div>
               </div>
             </div>
@@ -1071,10 +1103,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       <div class="help-q">「任务口径」和「基期口径」分别是什么？</div>
       <div class="help-a">
         <ul>
-          <li><strong>任务口径</strong>：你们本周的对赌目标，这个是考核红线</li>
-          <li><strong>基期口径</strong>：去年同期的历史参照线，供参考</li>
+          <li><strong>任务口径</strong>：你们本周的对赌目标，这个是考核红线，<strong>必须完成</strong></li>
+          <li><strong>基期口径</strong>：根据历史数据计算的自然增长基线，超出这条线的部分才能换算成积分</li>
         </ul>
-        考核看任务口径就够了，基期口径仅供对比参考。
+        简单说：任务口径是达标线，基期口径是积分起算线。两个都冲更好！
       </div>
     </div>
 
@@ -1083,21 +1115,24 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
     <div class="help-qa">
       <div class="help-q">积分是怎么来的？</div>
-      <div class="help-a">本周完成量<strong>超过目标进度</strong>的部分，系统每天自动换算成积分。超得越多，积分越多；没超出就没有，不扣分。</div>
+      <div class="help-a">
+        本周完成量<strong>超出基期目标</strong>的部分，系统每天自动换算成积分，超得越多，积分越多。<br>
+        但有一个前提：<strong>本周任务口径完成度必须达到 100%</strong>，积分才会在周末结算至余额。如果任务没完成，这周的积分就不会到账。
+      </div>
     </div>
     <div class="help-qa">
       <div class="help-q">「本周可获积分」和「账户余额」有什么区别？</div>
       <div class="help-a">
         <ul>
-          <li><strong>本周可获积分</strong>：今天为止超出部分估算出的积分，每天实时更新</li>
+          <li><strong>本周可获积分</strong>：今天为止超出基期目标部分估算出的积分，每天实时更新，<strong>仅供参考</strong></li>
           <li><strong>账户余额</strong>：每周结算后正式到账的积分，可以用来兑换奖励</li>
         </ul>
-        本周的积分要到<strong>每周结算后</strong>才会加进余额，结算前只能看，不能兑换。
+        ⚠️ 重要：本周积分只有在<strong>任务口径完成度达到 100%</strong> 的情况下，才会在周末结算至余额。任务没达标则这周积分不予结算。
       </div>
     </div>
     <div class="help-qa">
       <div class="help-q">我的积分是 0，正常吗？</div>
-      <div class="help-a">本周完成进度还没超过当前时间进度就是 0，追上来超过之后会自动更新。</div>
+      <div class="help-a">两种情况会显示 0：<br>① 本周完成量还没超过基期目标——继续冲！<br>② 超出了基期目标但任务口径还没完成 100%——积分已在累计，显示时会有⚠️提示，完成任务口径后即可结算。</div>
     </div>
 
     <hr class="help-divider">
@@ -1220,8 +1255,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     // 积分相关
     pointsView: false,    // admin 是否切换到积分视角
     orgBalance: 0,        // source账号机构余额
-    orgWeekPoints: 0,     // source账号本周可获积分（任务口径超出值）
-    taskDiffUAD: 0,       // 任务口径超出/缺口绝对值UAD
+    orgWeekPoints: 0,     // source账号本周可获积分（基期口径超出值×0.024，仅供展示）
+    taskDiffUAD: 0,       // 任务口径超出/缺口绝对值UAD（正=超出，负=缺口）
+    baseDiffUAD: 0,       // 基期口径超出/缺口绝对值UAD（正=超出，负=缺口）
+    taskComplete: false,  // 任务口径是否达到100%（结算前置条件）
     orgBalanceMap: {},    // 管理员视角：{ source: balance }
     redeemPending: null,  // 待确认的兑换
   };
@@ -1881,6 +1918,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     bdEl.className   = 'dg-val ' + (baseDiffN >= 0 ? 'c-red' : 'c-green');
     bdLbl.textContent = (baseDiffN >= 0 ? lbl('超出绝对值','💎 当前积分超出') : lbl('缺口绝对值','💎 当前积分差距'));
     document.getElementById('d-base-diff-cell').style.background = baseDiffN >= 0 ? '#fef2f2' : '#f0fdf4';
+    // 保存基期口径超出到 state，供积分计算使用
+    state.baseDiffUAD = baseDiffN;
   }
 
   /* ===== Source账号：直接加载本机构 ===== */
@@ -1918,8 +1957,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       document.getElementById('d-time-badge').textContent = `⏱ 时间进度 ${tp.toFixed(2)}%（第 ${tpDay} 天 / 7 天）`;
 
       renderDualBlock(taskPct, basePct, totalActual, totalTarget, totalBase, tp, hasBase);
-      // renderDualBlock 内会设置 state.taskDiffUAD，再更新积分卡片
-      state.orgWeekPoints = Math.max(0, state.taskDiffUAD) * 0.024;
+      // 新积分规则：积分 = 超出基期口径部分 × 0.024；但任务口径需达100%才可结算
+      state.taskComplete = totalTarget > 0 && totalActual >= totalTarget;
+      state.orgWeekPoints = Math.max(0, state.baseDiffUAD) * 0.024;
       updateSourceStats(rows.length, taskPct, basePct, tp, totalBase);
       renderAnchorTable(rows, tp, hasBase);
     } catch(err) {
@@ -1966,7 +2006,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       wPtsEl.textContent = wp.toFixed(1);
       wPtsEl.className = 'sc-val c-gold';
     }
-    if (wPtsSub) wPtsSub.textContent = wp > 0 ? '超出任务口径指标' : '暫无超出积分';
+    if (wPtsSub) {
+      if (!state.taskComplete && wp > 0) {
+        wPtsSub.textContent = '⚠️ 需完成任务口径100%才可结算';
+        wPtsSub.style.color = '#f59e0b';
+      } else if (wp > 0) {
+        wPtsSub.textContent = '✅ 周末结算后转入余额';
+        wPtsSub.style.color = '';
+      } else {
+        wPtsSub.textContent = '暂无超出积分';
+        wPtsSub.style.color = '';
+      }
+    }
     if (balEl) balEl.textContent = (state.orgBalance || 0).toFixed(1);
   }
 
@@ -2050,7 +2101,55 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       bigWp.textContent = wp.toFixed(1);
       bigWp.className = 'swc-week-val';
     }
-    if (bigWpSub) bigWpSub.textContent = wp > 0 ? '本周超额部分将转化为积分' : '暂无超额积分';
+    if (bigWpSub) {
+      if (!state.taskComplete && wp > 0) {
+        bigWpSub.textContent = '⚠️ 需完成任务口径100%才可结算';
+        bigWpSub.style.color = '#f59e0b';
+      } else if (wp > 0) {
+        bigWpSub.textContent = '✅ 周末结算后将转入余额';
+        bigWpSub.style.color = '';
+      } else {
+        bigWpSub.textContent = '暂无超额积分';
+        bigWpSub.style.color = '';
+      }
+    }
+    // 结算规则 Banner（settleRuleBox）
+    const ruleBox   = document.getElementById('settleRuleBox');
+    const ruleTitle = document.getElementById('srbTitle');
+    const ruleDesc  = document.getElementById('srbDesc');
+    if (ruleBox) {
+      if (wp <= 0) {
+        // 无积分：显示规则说明
+        ruleBox.className = 'settle-rule-box';
+        if (ruleTitle) ruleTitle.textContent = '积分结算规则';
+        if (ruleDesc)  ruleDesc.innerHTML = '超出基期目标的部分换算为积分，<strong>每周任务口径完成度需达到 100%</strong>，当周积分才会在周末结算至余额，否则不予结算。';
+      } else if (!state.taskComplete) {
+        // 有积分但任务未达100%：警告
+        ruleBox.className = 'settle-rule-box';
+        if (ruleTitle) ruleTitle.textContent = '⚠️ 当前积分暂不可结算';
+        if (ruleDesc)  ruleDesc.innerHTML = '你已积累了 <strong>' + wp.toFixed(1) + ' 积分</strong>，但本周任务口径完成度尚未达到 100%。<br>继续冲刺任务目标，达成后积分将在周末自动结算至余额。';
+      } else {
+        // 有积分且任务已达100%：恭喜
+        ruleBox.className = 'settle-rule-box ok';
+        if (ruleTitle) ruleTitle.textContent = '🎉 积分可结算';
+        if (ruleDesc)  ruleDesc.innerHTML = '任务口径已完成 100%，本周 <strong>' + wp.toFixed(1) + ' 积分</strong>将在周末结算至余额。继续超额越多，积分越多！';
+      }
+    }
+    // 顶部 header badge
+    const settleBadge = document.getElementById('shop-settle-badge');
+    if (settleBadge) {
+      if (wp <= 0) {
+        settleBadge.style.display = 'none';
+      } else if (!state.taskComplete) {
+        settleBadge.style.display = '';
+        settleBadge.className = 'shop-settle-badge warn';
+        settleBadge.textContent = '⚠️ 待达标';
+      } else {
+        settleBadge.style.display = '';
+        settleBadge.className = 'shop-settle-badge ok';
+        settleBadge.textContent = '✅ 可结算';
+      }
+    }
   }
 
   window.selectReward = function(itemId) {
