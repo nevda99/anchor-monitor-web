@@ -1050,6 +1050,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
           <button class="al-day-btn"        data-days="7"  onclick="setAccessLogDays(7)">近7天</button>
           <button class="al-day-btn"        data-days="30" onclick="setAccessLogDays(30)">近30天</button>
         </div>
+        <input type="date" id="accessLogDate" onchange="onAccessLogDateChange()"
+          title="选择具体日期查看当天记录，清空则恢复快捷按钮模式"
+          style="padding:4px 8px;border:1px solid #bae6fd;border-radius:5px;font-size:13px;color:#0369a1;background:#fff;cursor:pointer">
         <button onclick="loadAccessLogs()" style="padding:5px 12px;background:#0369a1;color:white;border:none;border-radius:5px;font-size:13px;cursor:pointer">刷新</button>
       </div>
       <div id="accessLogContainer">
@@ -2746,10 +2749,27 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
   window.setAccessLogDays = function(days) {
     accessLogDays = days;
+    // 清空日期选择器，回到近N天模式
+    const datePicker = document.getElementById('accessLogDate');
+    if (datePicker) datePicker.value = '';
     // 更新按钮激活态
     document.querySelectorAll('.al-day-btn').forEach(b => {
       b.classList.toggle('active', parseInt(b.dataset.days) === days);
     });
+    loadAccessLogs();
+  };
+
+  window.onAccessLogDateChange = function() {
+    const val = document.getElementById('accessLogDate')?.value;
+    if (val) {
+      // 选了具体日期：取消快捷按钮激活态
+      document.querySelectorAll('.al-day-btn').forEach(b => b.classList.remove('active'));
+    } else {
+      // 清空日期：恢复近N天激活态
+      document.querySelectorAll('.al-day-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.days) === accessLogDays);
+      });
+    }
     loadAccessLogs();
   };
 
@@ -2759,16 +2779,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     container.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;font-size:13px">加载中...</div>';
     try {
       const search  = (document.getElementById('accessLogSearch')?.value || '').trim().toLowerCase();
-      // 计算日期下限（近 N 天）
-      const cutoff  = new Date();
-      cutoff.setDate(cutoff.getDate() - accessLogDays);
-      const cutoffISO = cutoff.toISOString();
-
-      const { data: rawData, error } = await db.from('access_logs')
+      // 优先使用日期选择器；否则用近N天
+      const dateVal = document.getElementById('accessLogDate')?.value;
+      let query = db.from('access_logs')
         .select('username,source,action,login_time,user_agent')
-        .gte('login_time', cutoffISO)
         .order('login_time', { ascending: false })
         .limit(500);
+      if (dateVal) {
+        // 具体某天：当天 00:00:00 ~ 次日 00:00:00
+        query = query.gte('login_time', dateVal + 'T00:00:00').lt('login_time', dateVal + 'T23:59:59.999');
+      } else {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - accessLogDays);
+        query = query.gte('login_time', cutoff.toISOString());
+      }
+      const { data: rawData, error } = await query;
       if (error) throw error;
 
       const data = search
@@ -2808,7 +2833,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
             }).join('')}
           </tbody>
         </table>
-        <div style="padding:8px 10px;font-size:11px;color:#999">近 ${accessLogDays} 天 · 共 ${data.length} 条记录 · 共 ${Object.keys(countMap).length} 个账号</div>
+        <div style="padding:8px 10px;font-size:11px;color:#999">${document.getElementById('accessLogDate')?.value ? '日期：' + document.getElementById('accessLogDate').value : '近 ' + accessLogDays + ' 天'} · 共 ${data.length} 条记录 · 共 ${Object.keys(countMap).length} 个账号</div>
       `;
     } catch(e) {
       container.innerHTML = `<div style="padding:16px;color:#ef4444;font-size:13px">加载失败: ${e.message}</div>`;
