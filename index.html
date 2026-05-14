@@ -2646,34 +2646,67 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const btn = document.querySelector('.download-excel-btn');
     if (btn) { btn.disabled = true; btn.textContent = '生成中...'; }
     try {
-      const tp = state.timeProgress;
+      const tp       = state.timeProgress;
+      const isPts    = state.pointsView && state.role === 'source'; // 积分视角（source账号）
+      const toPoints = n => Number((Number(n) * 0.024).toFixed(1));
+
       const excelData = state.currentData.map((item, idx) => {
         const taskPct  = item.completion_rate != null ? item.completion_rate : (item.target > 0 ? item.actual / item.target * 100 : 0);
         const basePct  = item.base_target > 0 ? item.actual / item.base_target * 100 : 0;
         const isAhead  = taskPct >= tp;
         const diff     = (taskPct - tp).toFixed(2);
-        return {
-          '序号': idx + 1,
-          '主播ID': item.anchor_id,
-          '主播名称': item.anchor_name,
-          '主播来源': item.source,
-          '任务目标': item.target,
-          '基期目标': item.base_target || 0,
-          '实际完成': item.actual,
-          '任务完成度': taskPct.toFixed(2) + '%',
-          '基期完成度': item.base_target > 0 ? basePct.toFixed(2) + '%' : '',
-          '时间进度': item.time_progress,
-          '进度差异': (diff > 0 ? '+' : '') + diff + '%',
-          '状态': isAhead ? '超前' : '落后',
-          '昨日开播(小时)': item.streaming_minutes ? (item.streaming_minutes / 60).toFixed(2) : '0.00',
-        };
+
+        if (isPts) {
+          // ===== 积分视角导出 =====
+          const pts        = toPoints(item.actual);
+          const tgtPts     = toPoints(item.target);
+          const basePts    = item.base_target > 0 ? toPoints(item.base_target) : '';
+          const baseExcess = item.base_target > 0 ? Math.max(0, item.actual - item.base_target) : 0;
+          const weekPts    = toPoints(baseExcess); // 超出基期部分换算的积分
+          return {
+            '序号': idx + 1,
+            '主播ID': item.anchor_id,
+            '主播名称': item.anchor_name,
+            '累计积分': pts,
+            '任务目标积分': tgtPts,
+            '基期目标积分': basePts,
+            '超基期积分': weekPts,
+            '任务完成度': taskPct.toFixed(2) + '%',
+            '基期完成度': item.base_target > 0 ? basePct.toFixed(2) + '%' : '',
+            '时间进度': item.time_progress,
+            '状态': isAhead ? '超前' : '落后',
+            '昨日开播(小时)': item.streaming_minutes ? (item.streaming_minutes / 60).toFixed(2) : '0.00',
+          };
+        } else {
+          // ===== 原始UAD视角导出 =====
+          return {
+            '序号': idx + 1,
+            '主播ID': item.anchor_id,
+            '主播名称': item.anchor_name,
+            '主播来源': item.source,
+            '任务目标': item.target,
+            '基期目标': item.base_target || 0,
+            '实际完成': item.actual,
+            '任务完成度': taskPct.toFixed(2) + '%',
+            '基期完成度': item.base_target > 0 ? basePct.toFixed(2) + '%' : '',
+            '时间进度': item.time_progress,
+            '进度差异': (diff > 0 ? '+' : '') + diff + '%',
+            '状态': isAhead ? '超前' : '落后',
+            '昨日开播(小时)': item.streaming_minutes ? (item.streaming_minutes / 60).toFixed(2) : '0.00',
+          };
+        }
       });
+
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(excelData);
-      ws['!cols'] = [{wch:6},{wch:14},{wch:22},{wch:16},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:10},{wch:10},{wch:6},{wch:14}];
-      XLSX.utils.book_append_sheet(wb, ws, '主播数据');
+      // 列宽：积分视角12列，UAD视角13列
+      ws['!cols'] = isPts
+        ? [{wch:6},{wch:14},{wch:22},{wch:12},{wch:14},{wch:14},{wch:12},{wch:12},{wch:12},{wch:10},{wch:6},{wch:14}]
+        : [{wch:6},{wch:14},{wch:22},{wch:16},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:10},{wch:10},{wch:6},{wch:14}];
+      XLSX.utils.book_append_sheet(wb, ws, isPts ? '积分数据' : '主播数据');
       const orgName = (state.currentSource === '__ALL__' ? '全部汇总' : (state.currentSource || '数据')).replace(/[\/\\?%*:|"<>]/g,'_');
-      XLSX.writeFile(wb, `${orgName}_${state.currentDate}.xlsx`);
+      const suffix  = isPts ? '_积分视角' : '';
+      XLSX.writeFile(wb, `${orgName}${suffix}_${state.currentDate}.xlsx`);
     } catch(err) { alert('下载失败: ' + err.message); }
     finally {
       if (btn) { btn.disabled = false; btn.textContent = '📥 下载Excel'; }
