@@ -2742,8 +2742,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     try {
       const sys   = document.getElementById('accessLogSystem')?.value || '';
       const limit = parseInt(document.getElementById('accessLogLimit')?.value || '50');
-      let query = db.from('access_logs').select('username,source,action,created_at,user_agent')
-        .order('created_at', { ascending: false }).limit(limit);
+      let query = db.from('access_logs').select('username,source,action,login_time,user_agent')
+        .order('login_time', { ascending: false }).limit(limit);
       if (sys) query = query.eq('system', sys);
       const { data, error } = await query;
       if (error) throw error;
@@ -2766,7 +2766,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
           </thead>
           <tbody>
             ${data.map((r, i) => {
-              const dt = new Date(r.created_at);
+              const dt = new Date(r.login_time);
               const ts = dt.toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
               return `<tr style="border-bottom:1px solid #e0f2fe;${i%2===0 ? 'background:rgba(240,249,255,.4)' : ''}">
                 <td style="padding:6px 10px;color:#0c4a6e;font-weight:600">${r.username}</td>
