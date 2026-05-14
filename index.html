@@ -334,6 +334,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 .dg-cell { background:#f8f9fc; border-radius:10px; padding:12px 14px; }
 .dg-label { font-size:12px; color:#888; font-weight:600; margin-bottom:5px; }
 .dg-val { font-size:24px; font-weight:900; line-height:1.1; color:#111; }
+.mc-hint { margin-top:14px; font-size:12px; color:#aaa; line-height:1.6; }
 .dg-val.c-blue  { color:#2563eb; }
 .dg-val.c-dark  { color:#1a1a2e; }
 .dg-val.c-gray  { color:#94a3b8; }
@@ -1191,7 +1192,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
         <!-- 任务口径 -->
         <div class="metric-card">
-          <span class="mc-tag tag-task">🎯 任务口径（含涨幅）</span>
+          <span class="mc-tag tag-task">🎯 积分任务目标</span>
           <div class="mc-pct red" id="d-task-pct">—</div>
           <div class="mc-badge mb-red" id="d-task-badge">—</div>
           <div class="prog-wrap">
@@ -1211,11 +1212,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
             <div class="dg-cell"><div class="dg-label">当前应完成</div><div class="dg-val c-gray" id="d-task-should">—</div></div>
             <div class="dg-cell" id="d-task-diff-cell"><div class="dg-label" id="d-task-diff-label">—</div><div class="dg-val c-red" id="d-task-diff">—</div></div>
           </div>
+          <div class="mc-hint">每周上方任务目标完成100%即可参与积分结算</div>
         </div>
 
         <!-- 基期口径 -->
         <div class="metric-card" id="baseMetricCard">
-          <span class="mc-tag tag-base">📐 基期口径（不含涨幅）</span>
+          <span class="mc-tag tag-base">📐 积分结算目标</span>
           <div class="mc-pct green" id="d-base-pct">—</div>
           <div class="mc-badge mb-green" id="d-base-badge">—</div>
           <div class="prog-wrap">
@@ -1235,6 +1237,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
             <div class="dg-cell"><div class="dg-label">当前应完成</div><div class="dg-val c-gray" id="d-base-should">—</div></div>
             <div class="dg-cell" id="d-base-diff-cell"><div class="dg-label" id="d-base-diff-label">—</div><div class="dg-val c-green" id="d-base-diff">—</div></div>
           </div>
+          <div class="mc-hint">每周结束时，超出目标的部分即可结算至余额中</div>
         </div>
 
       </div>
