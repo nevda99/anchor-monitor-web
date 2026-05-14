@@ -104,6 +104,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   cursor:pointer; transition:all .2s; font-weight:600;
 }
 .help-btn-top:hover { background:rgba(251,191,36,.25); }
+.tour-reopen-btn {
+  padding:5px 14px; background:rgba(99,102,241,.12); color:#a5b4fc;
+  border:1px solid rgba(165,180,252,.3); border-radius:6px; font-size:12px;
+  cursor:pointer; transition:all .2s; font-weight:600;
+}
+.tour-reopen-btn:hover { background:rgba(99,102,241,.25); }
 .help-modal-bg {
   display:none; position:fixed; inset:0; background:rgba(0,0,0,.5);
   z-index:3000; align-items:center; justify-content:center;
@@ -869,6 +875,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     <button class="admin-drawer-btn" id="adminToolsBtn" onclick="openAdminDrawer()" style="display:none">🛠 管理工具</button>
     <button class="points-toggle-btn" id="pointsToggleBtn" onclick="togglePointsView()" style="display:none">💰 积分视图</button>
     <button class="help-btn-top" id="helpBtn" onclick="openHelpModal()" style="display:none">我有疑问？</button>
+    <button class="tour-reopen-btn" id="tourReopenBtn" onclick="reopenTour()" style="display:none">✨ 新手引导</button>
     <button class="switch-ui-btn" id="refreshBtn" onclick="refreshData()" style="display:none">🔄 刷新</button>
     <a class="switch-ui-btn" href="/index-v1.html" title="切换到经典UI版本" id="switchUiBtn" style="display:none">🔄 经典版</a>
     <button class="logout-btn-top" onclick="logout()">退出登录</button>
@@ -1617,6 +1624,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     // 我有疑问按钮：仅 source 账号可见
     const helpBtn = document.getElementById('helpBtn');
     if (helpBtn) helpBtn.style.display = state.role === 'source' ? '' : 'none';
+    // 新手引导按钮：仅 source 账号可见
+    const tourReopenBtn = document.getElementById('tourReopenBtn');
+    if (tourReopenBtn) tourReopenBtn.style.display = state.role === 'source' ? '' : 'none';
     // 刷新按钮：登录后所有角色可见
     const refreshBtn = document.getElementById('refreshBtn');
     if (refreshBtn) refreshBtn.style.display = '';
@@ -1752,6 +1762,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (ptBtn) ptBtn.style.display = 'none';
     const helpBtnEl = document.getElementById('helpBtn');
     if (helpBtnEl) helpBtnEl.style.display = 'none';
+    const tReopenBtn = document.getElementById('tourReopenBtn');
+    if (tReopenBtn) tReopenBtn.style.display = 'none';
+    // 同时关掉引导遮罩（防止退出时引导还开着）
+    if (typeof tourEnd === 'function') tourEnd(false);
     const refreshBtnEl = document.getElementById('refreshBtn');
     if (refreshBtnEl) refreshBtnEl.style.display = 'none';
     document.getElementById('sysToggleBar').style.display = 'none';
@@ -2219,6 +2233,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
   /* ===== 积分商店（版本A） ===== */
   /* ===== 玩法说明弹窗 ===== */
+  window.reopenTour = function() {
+    tourSteps = getTourSteps();
+    tourCurrentStep = -1;
+    tourNext();
+  };
+
   window.openHelpModal = function() {
     document.getElementById('helpModalBg').classList.add('open');
   };
@@ -2986,6 +3006,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (role !== 'source') return; // 仅 source 账号
     const key = TOUR_STORAGE_KEY + '_' + source;
     if (localStorage.getItem(key)) return; // 已看过
+    // 立刻标记已看过（防止刷新页面重复弹出）
+    localStorage.setItem(key, '1');
     // 延迟显示，等页面渲染完
     setTimeout(() => {
       document.getElementById('tourWelcomeBg').classList.add('active');
@@ -3176,7 +3198,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
     // 完成时给个小提示
     if (completed) {
-      showTourToast('🎉 引导完成！随时点顶栏「我有疑问？」复习规则');
+      showTourToast('🎉 引导完成！随时点「新手引导」可重新查看');
     }
   }
 
