@@ -2127,7 +2127,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
     document.getElementById('d-task-bar').style.width = Math.min(taskPct, 100) + '%';
     document.getElementById('d-task-tick').style.left = Math.min(tp, 100) + '%';
-    document.getElementById('d-task-prog-label').textContent = taskPct.toFixed(1) + '% ｜ 时间基准 ' + tpStr + '%';
+    document.getElementById('d-task-prog-label').textContent = taskPct.toFixed(1) + '% ｜ 时间进度 ' + tpStr + '%';
 
     // 更新标签文字
     const dgTaskActualLbl = document.querySelector('#d-task-actual')?.closest('.dg-cell')?.querySelector('.dg-label');
@@ -2173,7 +2173,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
     document.getElementById('d-base-bar').style.width = Math.min(basePct, 100) + '%';
     document.getElementById('d-base-tick').style.left = Math.min(tp, 100) + '%';
-    document.getElementById('d-base-prog-label').textContent = basePct.toFixed(1) + '% ｜ 时间基准 ' + tpStr + '%';
+    document.getElementById('d-base-prog-label').textContent = basePct.toFixed(1) + '% ｜ 时间进度 ' + tpStr + '%';
 
     const dgBaseActualLbl = document.querySelector('#d-base-actual')?.closest('.dg-cell')?.querySelector('.dg-label');
     const dgBaseTargetLbl = document.querySelector('#d-base-target')?.closest('.dg-cell')?.querySelector('.dg-label');
