@@ -2,15 +2,15 @@ export const config = { maxDuration: 60 };
 
 /**
  * 涨幅公式：作用于 base_target（= Q1/90*7）
+ * 2026-05-18 更新：base=0 保底改为10；小于5万统一改为+15%
  */
 function calcTarget(baseTarget) {
-  if (!baseTarget || baseTarget === 0) return 500;
+  if (!baseTarget || baseTarget === 0) return 10;
   if (baseTarget > 1000000) return Math.round(baseTarget * 1.1);
   if (baseTarget > 700000)  return Math.round(baseTarget * 1.12);
   if (baseTarget > 300000)  return Math.round(baseTarget * 1.15);
   if (baseTarget > 50000)   return Math.round(baseTarget * 1.17);
-  if (baseTarget >= 15000)  return Math.round(baseTarget * 1.1);
-  return 15000;
+  return Math.round(baseTarget * 1.15);  // <5万（含原15000以下区间）统一+15%
 }
 
 async function writeSystem(supabaseUrl, serviceKey, system, date, anchors) {
