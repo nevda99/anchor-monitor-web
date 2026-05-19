@@ -1106,6 +1106,55 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         </div>
       </div>
     </div>
+    <!-- 剔除机构 -->
+    <div style="margin-top:8px">
+      <div class="upload-toggle-bar" style="background:#fef2f2;border:1px solid #fecaca;" onclick="togglePanel('orgDeleteSourceBody','orgDeleteSourceIcon')">
+        <span class="tog-title" style="color:#b91c1c">🗑 剔除机构</span>
+        <span class="tog-icon" id="orgDeleteSourceIcon">▼ 展开</span>
+      </div>
+      <div class="upload-body" id="orgDeleteSourceBody" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-top:none">
+        <div class="upload-desc" style="color:#7f1d1d">⚠️ 剔除机构将同时删除：该机构所有主播数据（anchor_data）、积分余额（org_balance）、登录账号（user_accounts）、分组映射（source_groups）。<b>操作不可撤销。</b></div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+          <label style="font-size:13px;color:#333">选择机构：
+            <select id="deleteSourceSelect" style="margin-left:6px;padding:5px 8px;border:1px solid #fca5a5;border-radius:4px;font-size:13px;min-width:180px" onchange="onDeleteSourceChange()">
+              <option value="">— 选择要剔除的机构 —</option>
+            </select>
+          </label>
+          <div id="deleteSourceInfo" style="font-size:12px;color:#dc2626;min-height:18px;padding-left:2px"></div>
+        </div>
+        <div class="upload-footer">
+          <button class="confirm-btn" style="background:#b91c1c" onclick="doDeleteSource()">🗑 确认剔除机构</button>
+          <span id="deleteSourceResult" class="result-text"></span>
+        </div>
+      </div>
+    </div>
+    <!-- 剔除主播 -->
+    <div style="margin-top:8px">
+      <div class="upload-toggle-bar" style="background:#fff1f2;border:1px solid #fda4af;" onclick="togglePanel('orgDeleteAnchorBody','orgDeleteAnchorIcon')">
+        <span class="tog-title" style="color:#be123c">✂️ 剔除主播</span>
+        <span class="tog-icon" id="orgDeleteAnchorIcon">▼ 展开</span>
+      </div>
+      <div class="upload-body" id="orgDeleteAnchorBody" style="display:none;background:#fff1f2;border:1px solid #fda4af;border-top:none">
+        <div class="upload-desc" style="color:#881337">剔除单个主播仅删除其历史数据（anchor_data），不影响机构账号和积分余额。<b>操作不可撤销。</b></div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+          <label style="font-size:13px;color:#333">所属机构：
+            <select id="deleteAnchorSourceSelect" style="margin-left:6px;padding:5px 8px;border:1px solid #fda4af;border-radius:4px;font-size:13px;min-width:180px" onchange="onDeleteAnchorSourceChange()">
+              <option value="">— 先选机构 —</option>
+            </select>
+          </label>
+          <label style="font-size:13px;color:#333">选择主播：
+            <select id="deleteAnchorSelect" style="margin-left:6px;padding:5px 8px;border:1px solid #fda4af;border-radius:4px;font-size:13px;min-width:200px" onchange="onDeleteAnchorChange()">
+              <option value="">— 先选机构 —</option>
+            </select>
+          </label>
+          <div id="deleteAnchorInfo" style="font-size:12px;color:#be123c;min-height:18px;padding-left:2px"></div>
+        </div>
+        <div class="upload-footer">
+          <button class="confirm-btn" style="background:#be123c" onclick="doDeleteAnchor()">✂️ 确认剔除主播</button>
+          <span id="deleteAnchorResult" class="result-text"></span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 登录记录面板（仅 super_admin） -->
@@ -3036,8 +3085,128 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       const selOld = document.getElementById('orgRenameOld');
       selOld.innerHTML = '<option value="">— 选择要改名的机构 —</option>' +
         sources.map(s => `<option value="${s}">${s}</option>`).join('');
+      // 填充「剔除机构」下拉
+      const selDelSrc = document.getElementById('deleteSourceSelect');
+      selDelSrc.innerHTML = '<option value="">— 选择要剔除的机构 —</option>' +
+        sources.map(s => `<option value="${s}">${s}</option>`).join('');
+      document.getElementById('deleteSourceInfo').textContent = '';
+      document.getElementById('deleteSourceResult').textContent = '';
+      // 填充「剔除主播 - 机构」下拉
+      const selDelAncSrc = document.getElementById('deleteAnchorSourceSelect');
+      selDelAncSrc.innerHTML = '<option value="">— 先选机构 —</option>' +
+        sources.map(s => `<option value="${s}">${s}</option>`).join('');
+      document.getElementById('deleteAnchorSelect').innerHTML = '<option value="">— 先选机构 —</option>';
+      document.getElementById('deleteAnchorInfo').textContent = '';
+      document.getElementById('deleteAnchorResult').textContent = '';
     } else {
       document.getElementById('orgMgmtPanel').style.display = 'none';
+    }
+  };
+
+  // 剔除机构：选中机构时查询数据量提示
+  window.onDeleteSourceChange = async function() {
+    const src = document.getElementById('deleteSourceSelect').value;
+    const info = document.getElementById('deleteSourceInfo');
+    if (!src) { info.textContent = ''; return; }
+    info.textContent = '⏳ 查询中...';
+    const { count } = await adminDb.from('anchor_data')
+      .select('*', { count: 'exact', head: true })
+      .eq('source', src).eq('system', 'crc');
+    info.textContent = `该机构共有 ${count ?? 0} 条主播数据，剔除后将全部删除`;
+  };
+
+  // 剔除机构执行
+  window.doDeleteSource = async function() {
+    const src    = document.getElementById('deleteSourceSelect').value.trim();
+    const result = document.getElementById('deleteSourceResult');
+    if (!src) { result.textContent = '⚠️ 请先选择要剔除的机构'; result.style.color='#b91c1c'; return; }
+    const { count } = await adminDb.from('anchor_data')
+      .select('*', { count: 'exact', head: true })
+      .eq('source', src).eq('system', 'crc');
+    if (!confirm(`⚠️ 确认剔除机构「${src}」？\n将删除：${count ?? 0} 条主播数据 + 积分余额 + 登录账号 + 分组映射\n此操作不可撤销！`)) return;
+    result.textContent = '⏳ 删除中...'; result.style.color='#888';
+    try {
+      const sys = 'crc';
+      const r1 = await adminDb.from('anchor_data').delete().eq('source', src).eq('system', sys);
+      const r2 = await adminDb.from('org_balance').delete().eq('source', src).eq('system', sys);
+      const r3 = await adminDb.from('source_groups').delete().eq('source', src).eq('system', sys);
+      const r4 = await adminDb.from('user_accounts').delete().eq('source', src).eq('system', sys);
+      const errs = [r1,r2,r3,r4].map(r => r.error).filter(Boolean);
+      if (errs.length > 0) throw new Error(errs.map(e => e.message).join('; '));
+      // 更新内存
+      state.allSources = state.allSources.filter(s => s !== src);
+      result.textContent = `✅ 机构「${src}」已完全剔除`; result.style.color='#15803d';
+      // 刷新机构下拉
+      const sources = state.allSources;
+      ['deleteSourceSelect','orgRenameOld','deleteAnchorSourceSelect'].forEach(id => {
+        const el = document.getElementById(id);
+        const placeholder = id === 'deleteSourceSelect' ? '— 选择要剔除的机构 —'
+          : id === 'orgRenameOld' ? '— 选择要改名的机构 —' : '— 先选机构 —';
+        el.innerHTML = `<option value="">${placeholder}</option>` +
+          sources.map(s => `<option value="${s}">${s}</option>`).join('');
+      });
+      document.getElementById('deleteAnchorSelect').innerHTML = '<option value="">— 先选机构 —</option>';
+      document.getElementById('deleteSourceInfo').textContent = '';
+      await loadSidebarAndData();
+    } catch(e) {
+      result.textContent = '❌ 剔除失败: ' + e.message; result.style.color='#dc2626';
+    }
+  };
+
+  // 剔除主播：选机构后加载该机构主播列表
+  window.onDeleteAnchorSourceChange = async function() {
+    const src = document.getElementById('deleteAnchorSourceSelect').value;
+    const selAnc = document.getElementById('deleteAnchorSelect');
+    const info = document.getElementById('deleteAnchorInfo');
+    selAnc.innerHTML = '<option value="">⏳ 加载中...</option>';
+    info.textContent = '';
+    if (!src) { selAnc.innerHTML = '<option value="">— 先选机构 —</option>'; return; }
+    const { data } = await adminDb.from('anchor_data')
+      .select('anchor_id,anchor_name')
+      .eq('source', src).eq('system', 'crc');
+    // 去重
+    const anchorMap = {};
+    (data || []).forEach(r => { if (r.anchor_id) anchorMap[r.anchor_id] = r.anchor_name || r.anchor_id; });
+    const anchors = Object.entries(anchorMap).sort((a,b) => a[1].localeCompare(b[1]));
+    selAnc.innerHTML = '<option value="">— 选择要剔除的主播 —</option>' +
+      anchors.map(([id,name]) => `<option value="${id}">${name}（${id}）</option>`).join('');
+    info.textContent = `该机构共 ${anchors.length} 位主播`;
+  };
+
+  // 剔除主播：选中主播后查询数据量
+  window.onDeleteAnchorChange = async function() {
+    const ancId = document.getElementById('deleteAnchorSelect').value;
+    const info  = document.getElementById('deleteAnchorInfo');
+    if (!ancId) { info.textContent = ''; return; }
+    const { count } = await adminDb.from('anchor_data')
+      .select('*', { count: 'exact', head: true })
+      .eq('anchor_id', ancId).eq('system', 'crc');
+    const name = document.getElementById('deleteAnchorSelect').selectedOptions[0]?.text || ancId;
+    info.textContent = `「${name}」共 ${count ?? 0} 条数据记录，剔除后全部删除`;
+  };
+
+  // 剔除主播执行
+  window.doDeleteAnchor = async function() {
+    const ancId  = document.getElementById('deleteAnchorSelect').value;
+    const result = document.getElementById('deleteAnchorResult');
+    if (!ancId) { result.textContent = '⚠️ 请先选择要剔除的主播'; result.style.color='#be123c'; return; }
+    const name = document.getElementById('deleteAnchorSelect').selectedOptions[0]?.text || ancId;
+    const { count } = await adminDb.from('anchor_data')
+      .select('*', { count: 'exact', head: true })
+      .eq('anchor_id', ancId).eq('system', 'crc');
+    if (!confirm(`⚠️ 确认剔除主播「${name}」？\n将删除 ${count ?? 0} 条数据记录，不影响机构账号和积分余额。\n此操作不可撤销！`)) return;
+    result.textContent = '⏳ 删除中...'; result.style.color='#888';
+    try {
+      const { error } = await adminDb.from('anchor_data')
+        .delete().eq('anchor_id', ancId).eq('system', 'crc');
+      if (error) throw error;
+      result.textContent = `✅ 主播「${name}」已剔除，共删除 ${count ?? 0} 条数据`; result.style.color='#15803d';
+      // 刷新主播下拉
+      await window.onDeleteAnchorSourceChange();
+      document.getElementById('deleteAnchorInfo').textContent = '';
+      await loadSidebarAndData();
+    } catch(e) {
+      result.textContent = '❌ 剔除失败: ' + e.message; result.style.color='#dc2626';
     }
   };
 
