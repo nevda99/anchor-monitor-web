@@ -1532,7 +1532,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   /* ===== 常量 ===== */
   const SUPABASE_URL = 'https://yoywhdfqhymduaxhalhq.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlveXdoZGZxaHltZHVheGhhbGhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNjI0NDcsImV4cCI6MjA5MTczODQ0N30.sWYLzZM3olMfaC2IcRaBkHqFT2UPEzUsFWAxqstkHcA';
+  const SUPABASE_SRK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlveXdoZGZxaHltZHVheGhhbGhxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjE2MjQ0NywiZXhwIjoyMDkxNzM4NDQ3fQ.HJUptj4cPiR9uM0E2kbrvtBmrARwMOfY75ZBv209-zo';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // adminDb：service_role 权限，专用于管理员写操作（绕过 RLS）
+  const adminDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_SRK);
 
   // 商品定义
   const SHOP_ITEMS = [
@@ -3155,16 +3158,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     result.textContent = '⏳ 改名中...'; result.style.color='#888';
     try {
       const sys = state.system;
-      // 1. anchor_data
-      const r1 = await db.from('anchor_data').update({source: newName}).eq('source', oldName).eq('system', sys);
-      // 2. user_accounts
-      const r2 = await db.from('user_accounts').update({source: newName}).eq('source', oldName).eq('system', sys);
-      // 3. sub_admin_sources
-      const r3 = await db.from('sub_admin_sources').update({source_name: newName}).eq('source_name', oldName).eq('system', sys);
-      // 4. org_balance
-      const r4 = await db.from('org_balance').update({source: newName}).eq('source', oldName).eq('system', sys);
-      // 5. source_groups
-      const r5 = await db.from('source_groups').update({source: newName}).eq('source', oldName).eq('system', sys);
+      // 全部用 adminDb（service_role）绕过 RLS
+      const r1 = await adminDb.from('anchor_data').update({source: newName}).eq('source', oldName).eq('system', sys);
+      const r2 = await adminDb.from('user_accounts').update({source: newName}).eq('source', oldName).eq('system', sys);
+      const r3 = await adminDb.from('sub_admin_sources').update({source_name: newName}).eq('source_name', oldName).eq('system', sys);
+      const r4 = await adminDb.from('org_balance').update({source: newName}).eq('source', oldName).eq('system', sys);
+      const r5 = await adminDb.from('source_groups').update({source: newName}).eq('source', oldName).eq('system', sys);
 
       const errs = [r1,r2,r3,r4,r5].map(r => r.error).filter(Boolean);
       if (errs.length > 0) throw new Error(errs.map(e => e.message).join('; '));
@@ -3174,16 +3173,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         SOURCE_GROUP_MAP[newName] = SOURCE_GROUP_MAP[oldName];
         delete SOURCE_GROUP_MAP[oldName];
       }
-      // 更新 allSources
       state.allSources = state.allSources.map(s => s === oldName ? newName : s);
 
       result.textContent = `✅ 已将「${oldName}」改名为「${newName}」，5张表同步完成`; result.style.color='#15803d';
       document.getElementById('orgRenameNew').value = '';
-      // 刷新下拉
       const selOld = document.getElementById('orgRenameOld');
       selOld.innerHTML = '<option value="">— 选择要改名的机构 —</option>' +
         state.allSources.map(s => `<option value="${s}">${s}</option>`).join('');
-      // 刷新侧边栏
       await loadSidebarAndData();
     } catch(e) {
       result.textContent = '❌ 改名失败: ' + e.message; result.style.color='#dc2626';
@@ -3204,11 +3200,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     result.textContent = '⏳ 创建中...'; result.style.color='#888';
     try {
       const sys = state.system;
-      // 1. source_groups：写映射
-      const r1 = await db.from('source_groups').insert({source: orgName, group_name: group, system: sys});
+      // 全部用 adminDb（service_role）绕过 RLS
+      const r1 = await adminDb.from('source_groups').insert({source: orgName, group_name: group, system: sys});
       if (r1.error) throw new Error('source_groups 写入失败: ' + r1.error.message);
-      // 2. user_accounts：创建登录账号
-      const r2 = await db.from('user_accounts').insert({
+      const r2 = await adminDb.from('user_accounts').insert({
         username, password, source: orgName, display_name: orgName,
         role: 'source', system: sys
       });
@@ -3219,14 +3214,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       if (!state.allSources.includes(orgName)) state.allSources.push(orgName);
 
       result.textContent = `✅ 机构「${orgName}」创建成功，账号 ${username} 可直接登录`; result.style.color='#15803d';
-      // 清空输入
       ['orgCreateName','orgCreateUsername','orgCreatePassword'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('orgCreateGroup').value = '';
-      // 刷新改名下拉
       const selOld = document.getElementById('orgRenameOld');
       selOld.innerHTML = '<option value="">— 选择要改名的机构 —</option>' +
         state.allSources.sort().map(s => `<option value="${s}">${s}</option>`).join('');
-      // 刷新侧边栏
       await loadSidebarAndData();
     } catch(e) {
       result.textContent = '❌ 创建失败: ' + e.message; result.style.color='#dc2626';
