@@ -1050,6 +1050,64 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     </div>
   </div>
 
+  <!-- 机构管理（改名 + 新建）：仅 super_admin crc系统可见 -->
+  <div id="orgMgmtPanel" style="display:none">
+    <!-- 机构改名 -->
+    <div>
+      <div class="upload-toggle-bar" style="background:#fff7ed;border:1px solid #fed7aa;" onclick="togglePanel('orgRenameBody','orgRenameIcon')">
+        <span class="tog-title" style="color:#c2410c">✏️ 机构改名</span>
+        <span class="tog-icon" id="orgRenameIcon">▼ 展开</span>
+      </div>
+      <div class="upload-body" id="orgRenameBody" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-top:none">
+        <div class="upload-desc" style="color:#7c2d12">改名后将同步修改：anchor_data、user_accounts、sub_admin_sources、org_balance、source_groups 五张表。历史数据 source 字段一并更新。</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+          <label style="font-size:13px;color:#333">旧机构名称：
+            <select id="orgRenameOld" style="margin-left:6px;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px;min-width:180px">
+              <option value="">— 选择要改名的机构 —</option>
+            </select>
+          </label>
+          <label style="font-size:13px;color:#333">新机构名称：
+            <input type="text" id="orgRenameNew" placeholder="输入新名称" style="margin-left:6px;padding:5px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;width:180px">
+          </label>
+        </div>
+        <div class="upload-footer">
+          <button class="confirm-btn" style="background:#c2410c" onclick="doOrgRename()">✏️ 确认改名</button>
+          <span id="orgRenameResult" class="result-text"></span>
+        </div>
+      </div>
+    </div>
+    <!-- 新建机构 -->
+    <div style="margin-top:8px">
+      <div class="upload-toggle-bar" style="background:#f0fdf4;border:1px solid #bbf7d0;" onclick="togglePanel('orgCreateBody','orgCreateIcon')">
+        <span class="tog-title" style="color:#15803d">➕ 新建机构</span>
+        <span class="tog-icon" id="orgCreateIcon">▼ 展开</span>
+      </div>
+      <div class="upload-body" id="orgCreateBody" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-top:none">
+        <div class="upload-desc" style="color:#14532d">新建机构将同时创建：机构↔二级组织映射（source_groups）+ 登录账号（user_accounts）。</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+          <label style="font-size:13px;color:#333">机构名称：
+            <input type="text" id="orgCreateName" placeholder="新机构名称（即source字段值）" style="margin-left:6px;padding:5px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;width:200px">
+          </label>
+          <label style="font-size:13px;color:#333">所属二级组织：
+            <select id="orgCreateGroup" style="margin-left:6px;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px;min-width:160px">
+              <option value="">— 选择二级组织 —</option>
+            </select>
+          </label>
+          <label style="font-size:13px;color:#333">登录账号：
+            <input type="text" id="orgCreateUsername" placeholder="新账号名（英文）" style="margin-left:6px;padding:5px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;width:180px">
+          </label>
+          <label style="font-size:13px;color:#333">登录密码：
+            <input type="text" id="orgCreatePassword" placeholder="新密码" style="margin-left:6px;padding:5px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;width:180px">
+          </label>
+        </div>
+        <div class="upload-footer">
+          <button class="confirm-btn green" onclick="doOrgCreate()">➕ 确认新建</button>
+          <span id="orgCreateResult" class="result-text"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 登录记录面板（仅 super_admin） -->
   <div id="accessLogPanel">
     <div class="upload-toggle-bar" style="background:#f0f9ff;border:1px solid #bae6fd;" onclick="togglePanel('accessLogBody','accessLogIcon')">
@@ -1485,18 +1543,39 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     { id:'coupon', icon:'🎟', name:'流量券（10万曝光）',       unit:'', price:800,  desc:'通用曝光资源' },
   ];
 
-  const SOURCE_GROUP_MAP = {
+  // SOURCE_GROUP_MAP 从数据库动态加载，初始兜底值（防止加载前报错）
+  let SOURCE_GROUP_MAP = {
     '不可控个播':'个播大类','可控个播':'个播大类','个播（需建联）':'个播大类',
     '二后生家':'电商家族','马美如团队':'电商家族',
     '艺术垂类':'艺术垂类','艺术垂类-妍妍家族':'艺术垂类',
     '大勇':'机构-魏家班','魏三':'机构-魏家班',
     '李广':'机构-李广','臻医堂':'机构-臻医堂',
     '星恒-百万粉':'机构-星恒','星恒-非百万粉':'机构-星恒',
-    '南徒':'机构-星恒','宝哥':'机构-星恒','小张帝':'机构-星恒','李小帅':'机构-星恒','火胖':'机构-星恒',
     '徐小二':'机构-徐小二','李小帅':'机构-徐小二','南徒':'机构-徐小二','小张帝':'机构-徐小二',
     '杨泽-百万粉':'杨润泽个人','润泽-宝哥':'杨润泽个人',
     '润泽-火胖':'杨润泽个人','润泽-非百万粉':'杨润泽个人',
   };
+
+  // 从 source_groups 表加载映射（crc系统登录后调用）
+  async function loadSourceGroupMap(system) {
+    if (system !== 'crc') return;
+    try {
+      let all = [], from = 0;
+      while (true) {
+        const { data, error } = await db.from('source_groups').select('source,group_name')
+          .eq('system', 'crc').range(from, from + 999);
+        if (error || !data || data.length === 0) break;
+        all = all.concat(data);
+        if (data.length < 1000) break;
+        from += 1000;
+      }
+      if (all.length > 0) {
+        SOURCE_GROUP_MAP = {};
+        all.forEach(r => { SOURCE_GROUP_MAP[r.source] = r.group_name; });
+        console.log('[source_groups] 加载完成，共', all.length, '条');
+      }
+    } catch(e) { console.warn('[source_groups] 加载失败，使用内置映射', e); }
+  }
 
   /* ===== 应用状态 ===== */
   let state = {
@@ -1708,6 +1787,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const refreshBtn = document.getElementById('refreshBtn');
     if (refreshBtn) refreshBtn.style.display = '';
 
+    // 加载 crc 机构↔二级组织映射（从 DB，仅 crc 系统）
+    await loadSourceGroupMap(state.system);
+
     if (state.role === 'super_admin') {
       // super_admin：显示侧边栏
       document.getElementById('targetWeekMonday').textContent = getThisMonday();
@@ -1809,6 +1891,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const sysLabel = sys === 'crc' ? '国艺核心主播' : '主动看播对赌';
     document.getElementById('topbarInfo').textContent =
       `${state.user.display_name || state.user.username} · ${sysLabel} · 管理员视图`;
+    // 切换系统时重新加载 SOURCE_GROUP_MAP
+    await loadSourceGroupMap(sys);
     // 取新系统最新日期
     const { data: latestRow } = await db.from('anchor_data').select('date')
       .eq('system', sys).order('date', {ascending:false}).limit(1);
@@ -3033,6 +3117,120 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   window.closeAdminDrawer = function() {
     document.getElementById('adminDrawer').classList.remove('open');
     document.getElementById('adminDrawerOverlay').classList.remove('open');
+  };
+
+  /* ===== 机构管理：改名 & 新建 ===== */
+
+  // 打开管理抽屉时，如果是 crc super_admin，填充机构下拉 & 二级组织下拉
+  const _origOpenDrawer = window.openAdminDrawer;
+  window.openAdminDrawer = function() {
+    _origOpenDrawer();
+    if (state.role === 'super_admin' && state.system === 'crc') {
+      document.getElementById('orgMgmtPanel').style.display = '';
+      // 填充「旧机构名」下拉（来自当前 SOURCE_GROUP_MAP + allSources）
+      const sources = state.allSources && state.allSources.length > 0
+        ? state.allSources
+        : Object.keys(SOURCE_GROUP_MAP);
+      const selOld = document.getElementById('orgRenameOld');
+      selOld.innerHTML = '<option value="">— 选择要改名的机构 —</option>' +
+        sources.map(s => `<option value="${s}">${s}</option>`).join('');
+      // 填充「二级组织」下拉（去重）
+      const groups = [...new Set(Object.values(SOURCE_GROUP_MAP))].sort();
+      const selGrp = document.getElementById('orgCreateGroup');
+      selGrp.innerHTML = '<option value="">— 选择二级组织 —</option>' +
+        groups.map(g => `<option value="${g}">${g}</option>`).join('');
+    } else {
+      document.getElementById('orgMgmtPanel').style.display = 'none';
+    }
+  };
+
+  // 机构改名执行
+  window.doOrgRename = async function() {
+    const oldName = document.getElementById('orgRenameOld').value.trim();
+    const newName = document.getElementById('orgRenameNew').value.trim();
+    const result  = document.getElementById('orgRenameResult');
+    if (!oldName || !newName) { result.textContent = '⚠️ 请填写旧名称和新名称'; result.style.color='#c2410c'; return; }
+    if (oldName === newName)  { result.textContent = '⚠️ 新旧名称相同，无需修改'; result.style.color='#c2410c'; return; }
+    if (!confirm(`确认将「${oldName}」改名为「${newName}」？\n这将同步修改5张数据表，历史数据一并更新，操作不可撤销。`)) return;
+    result.textContent = '⏳ 改名中...'; result.style.color='#888';
+    try {
+      const sys = state.system;
+      // 1. anchor_data
+      const r1 = await db.from('anchor_data').update({source: newName}).eq('source', oldName).eq('system', sys);
+      // 2. user_accounts
+      const r2 = await db.from('user_accounts').update({source: newName}).eq('source', oldName).eq('system', sys);
+      // 3. sub_admin_sources
+      const r3 = await db.from('sub_admin_sources').update({source_name: newName}).eq('source_name', oldName).eq('system', sys);
+      // 4. org_balance
+      const r4 = await db.from('org_balance').update({source: newName}).eq('source', oldName).eq('system', sys);
+      // 5. source_groups
+      const r5 = await db.from('source_groups').update({source: newName}).eq('source', oldName).eq('system', sys);
+
+      const errs = [r1,r2,r3,r4,r5].map(r => r.error).filter(Boolean);
+      if (errs.length > 0) throw new Error(errs.map(e => e.message).join('; '));
+
+      // 更新内存映射
+      if (SOURCE_GROUP_MAP[oldName] !== undefined) {
+        SOURCE_GROUP_MAP[newName] = SOURCE_GROUP_MAP[oldName];
+        delete SOURCE_GROUP_MAP[oldName];
+      }
+      // 更新 allSources
+      state.allSources = state.allSources.map(s => s === oldName ? newName : s);
+
+      result.textContent = `✅ 已将「${oldName}」改名为「${newName}」，5张表同步完成`; result.style.color='#15803d';
+      document.getElementById('orgRenameNew').value = '';
+      // 刷新下拉
+      const selOld = document.getElementById('orgRenameOld');
+      selOld.innerHTML = '<option value="">— 选择要改名的机构 —</option>' +
+        state.allSources.map(s => `<option value="${s}">${s}</option>`).join('');
+      // 刷新侧边栏
+      await loadSidebarAndData();
+    } catch(e) {
+      result.textContent = '❌ 改名失败: ' + e.message; result.style.color='#dc2626';
+    }
+  };
+
+  // 新建机构执行
+  window.doOrgCreate = async function() {
+    const orgName  = document.getElementById('orgCreateName').value.trim();
+    const group    = document.getElementById('orgCreateGroup').value;
+    const username = document.getElementById('orgCreateUsername').value.trim();
+    const password = document.getElementById('orgCreatePassword').value.trim();
+    const result   = document.getElementById('orgCreateResult');
+    if (!orgName || !group || !username || !password) {
+      result.textContent = '⚠️ 请填写所有字段'; result.style.color='#c2410c'; return;
+    }
+    if (!confirm(`确认新建机构「${orgName}」？\n登录账号：${username} / ${password}\n二级组织：${group}`)) return;
+    result.textContent = '⏳ 创建中...'; result.style.color='#888';
+    try {
+      const sys = state.system;
+      // 1. source_groups：写映射
+      const r1 = await db.from('source_groups').insert({source: orgName, group_name: group, system: sys});
+      if (r1.error) throw new Error('source_groups 写入失败: ' + r1.error.message);
+      // 2. user_accounts：创建登录账号
+      const r2 = await db.from('user_accounts').insert({
+        username, password, source: orgName, display_name: orgName,
+        role: 'source', system: sys
+      });
+      if (r2.error) throw new Error('user_accounts 写入失败: ' + r2.error.message);
+
+      // 更新内存
+      SOURCE_GROUP_MAP[orgName] = group;
+      if (!state.allSources.includes(orgName)) state.allSources.push(orgName);
+
+      result.textContent = `✅ 机构「${orgName}」创建成功，账号 ${username} 可直接登录`; result.style.color='#15803d';
+      // 清空输入
+      ['orgCreateName','orgCreateUsername','orgCreatePassword'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('orgCreateGroup').value = '';
+      // 刷新改名下拉
+      const selOld = document.getElementById('orgRenameOld');
+      selOld.innerHTML = '<option value="">— 选择要改名的机构 —</option>' +
+        state.allSources.sort().map(s => `<option value="${s}">${s}</option>`).join('');
+      // 刷新侧边栏
+      await loadSidebarAndData();
+    } catch(e) {
+      result.textContent = '❌ 创建失败: ' + e.message; result.style.color='#dc2626';
+    }
   };
 
   /* ===== 上传面板 ===== */
