@@ -1050,10 +1050,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     </div>
   </div>
 
-  <!-- 机构管理（改名 + 新建）：仅 super_admin crc系统可见 -->
+  <!-- 机构管理（改名 + 新建）：仅 super_admin 可见；改名/新建 仅 crc 显示 -->
   <div id="orgMgmtPanel" style="display:none">
     <!-- 机构改名 -->
-    <div>
+    <div id="orgRenamePanelWrap">
       <div class="upload-toggle-bar" style="background:#fff7ed;border:1px solid #fed7aa;" onclick="togglePanel('orgRenameBody','orgRenameIcon')">
         <span class="tog-title" style="color:#c2410c">✏️ 机构改名</span>
         <span class="tog-icon" id="orgRenameIcon">▼ 展开</span>
@@ -1077,7 +1077,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       </div>
     </div>
     <!-- 新建机构 -->
-    <div style="margin-top:8px">
+    <div id="orgCreatePanelWrap" style="margin-top:8px">
       <div class="upload-toggle-bar" style="background:#f0fdf4;border:1px solid #bbf7d0;" onclick="togglePanel('orgCreateBody','orgCreateIcon')">
         <span class="tog-title" style="color:#15803d">➕ 新建机构</span>
         <span class="tog-icon" id="orgCreateIcon">▼ 展开</span>
@@ -3073,18 +3073,22 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
   /* ===== 机构管理：改名 & 新建 ===== */
 
-  // 打开管理抽屉时，如果是 crc super_admin，填充机构下拉 & 二级组织下拉
+  // 打开管理抽屉时，super_admin 均可见剔除面板；crc 额外显示改名/新建面板
   const _origOpenDrawer = window.openAdminDrawer;
   window.openAdminDrawer = function() {
     _origOpenDrawer();
-    if (state.role === 'super_admin' && state.system === 'crc') {
+    if (state.role === 'super_admin') {
       document.getElementById('orgMgmtPanel').style.display = '';
-      // 填充「旧机构名」下拉
       const sources = state.allSources && state.allSources.length > 0
         ? state.allSources : [];
+      // 填充「旧机构名」下拉（改名/新建仅 crc 有，但下拉通用）
       const selOld = document.getElementById('orgRenameOld');
       selOld.innerHTML = '<option value="">— 选择要改名的机构 —</option>' +
         sources.map(s => `<option value="${s}">${s}</option>`).join('');
+      // 改名/新建面板：仅 crc 显示
+      const crcOnly = state.system === 'crc' ? '' : 'none';
+      document.getElementById('orgRenamePanelWrap').style.display = crcOnly;
+      document.getElementById('orgCreatePanelWrap').style.display = crcOnly;
       // 填充「剔除机构」下拉
       const selDelSrc = document.getElementById('deleteSourceSelect');
       selDelSrc.innerHTML = '<option value="">— 选择要剔除的机构 —</option>' +
@@ -3111,7 +3115,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     info.textContent = '⏳ 查询中...';
     const { count } = await adminDb.from('anchor_data')
       .select('*', { count: 'exact', head: true })
-      .eq('source', src).eq('system', 'crc');
+      .eq('source', src).eq('system', state.system);
     info.textContent = `该机构共有 ${count ?? 0} 条主播数据，剔除后将全部删除`;
   };
 
@@ -3122,11 +3126,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (!src) { result.textContent = '⚠️ 请先选择要剔除的机构'; result.style.color='#b91c1c'; return; }
     const { count } = await adminDb.from('anchor_data')
       .select('*', { count: 'exact', head: true })
-      .eq('source', src).eq('system', 'crc');
+      .eq('source', src).eq('system', state.system);
     if (!confirm(`⚠️ 确认剔除机构「${src}」？\n将删除：${count ?? 0} 条主播数据 + 积分余额 + 登录账号 + 分组映射\n此操作不可撤销！`)) return;
     result.textContent = '⏳ 删除中...'; result.style.color='#888';
     try {
-      const sys = 'crc';
+      const sys = state.system;
       const r1 = await adminDb.from('anchor_data').delete().eq('source', src).eq('system', sys);
       const r2 = await adminDb.from('org_balance').delete().eq('source', src).eq('system', sys);
       const r3 = await adminDb.from('source_groups').delete().eq('source', src).eq('system', sys);
@@ -3163,7 +3167,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (!src) { selAnc.innerHTML = '<option value="">— 先选机构 —</option>'; return; }
     const { data } = await adminDb.from('anchor_data')
       .select('anchor_id,anchor_name')
-      .eq('source', src).eq('system', 'crc');
+      .eq('source', src).eq('system', state.system);
     // 去重
     const anchorMap = {};
     (data || []).forEach(r => { if (r.anchor_id) anchorMap[r.anchor_id] = r.anchor_name || r.anchor_id; });
@@ -3180,7 +3184,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (!ancId) { info.textContent = ''; return; }
     const { count } = await adminDb.from('anchor_data')
       .select('*', { count: 'exact', head: true })
-      .eq('anchor_id', ancId).eq('system', 'crc');
+      .eq('anchor_id', ancId).eq('system', state.system);
     const name = document.getElementById('deleteAnchorSelect').selectedOptions[0]?.text || ancId;
     info.textContent = `「${name}」共 ${count ?? 0} 条数据记录，剔除后全部删除`;
   };
@@ -3193,12 +3197,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const name = document.getElementById('deleteAnchorSelect').selectedOptions[0]?.text || ancId;
     const { count } = await adminDb.from('anchor_data')
       .select('*', { count: 'exact', head: true })
-      .eq('anchor_id', ancId).eq('system', 'crc');
+      .eq('anchor_id', ancId).eq('system', state.system);
     if (!confirm(`⚠️ 确认剔除主播「${name}」？\n将删除 ${count ?? 0} 条数据记录，不影响机构账号和积分余额。\n此操作不可撤销！`)) return;
     result.textContent = '⏳ 删除中...'; result.style.color='#888';
     try {
       const { error } = await adminDb.from('anchor_data')
-        .delete().eq('anchor_id', ancId).eq('system', 'crc');
+        .delete().eq('anchor_id', ancId).eq('system', state.system);
       if (error) throw error;
       result.textContent = `✅ 主播「${name}」已剔除，共删除 ${count ?? 0} 条数据`; result.style.color='#15803d';
       // 刷新主播下拉
