@@ -1146,12 +1146,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       <h3>📋 机构导航</h3>
       <div class="sh-sub" id="sidebarSub">加载中...</div>
     </div>
-    <!-- crc 二级组织过滤 -->
-    <div class="group-filter-bar" id="groupFilterBar" style="display:none">
-      <select id="groupSelector" onchange="onGroupChange()">
-        <option value="">— 全部 —</option>
-      </select>
-    </div>
     <div class="sidebar-scroll" id="sidebarList">
       <div class="loading-tip">加载中...</div>
     </div>
@@ -1546,52 +1540,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     { id:'coupon', icon:'🎟', name:'流量券（10万曝光）',       unit:'', price:800,  desc:'通用曝光资源' },
   ];
 
-  // SOURCE_GROUP_MAP 从数据库动态加载，初始兜底值（防止加载前报错）
-  let SOURCE_GROUP_MAP = {
-    '不可控个播':'个播大类','可控个播':'个播大类','个播（需建联）':'个播大类',
-    '二后生家':'电商家族','马美如团队':'电商家族',
-    '艺术垂类':'艺术垂类','艺术垂类-妍妍家族':'艺术垂类',
-    '大勇':'机构-魏家班','魏三':'机构-魏家班',
-    '李广':'机构-李广','臻医堂':'机构-臻医堂',
-    '星恒-百万粉':'机构-星恒','星恒-非百万粉':'机构-星恒',
-    '徐小二':'机构-徐小二','李小帅':'机构-徐小二','南徒':'机构-徐小二','小张帝':'机构-徐小二',
-    '杨泽-百万粉':'杨润泽个人','润泽-宝哥':'杨润泽个人',
-    '润泽-火胖':'杨润泽个人','润泽-非百万粉':'杨润泽个人',
-  };
-
-  // 从 source_groups 表加载映射（crc系统登录后调用）
-  async function loadSourceGroupMap(system) {
-    if (system !== 'crc') return;
-    try {
-      let all = [], from = 0;
-      while (true) {
-        const { data, error } = await db.from('source_groups').select('source,group_name')
-          .eq('system', 'crc').range(from, from + 999);
-        if (error || !data || data.length === 0) break;
-        all = all.concat(data);
-        if (data.length < 1000) break;
-        from += 1000;
-      }
-      if (all.length > 0) {
-        SOURCE_GROUP_MAP = {};
-        all.forEach(r => { SOURCE_GROUP_MAP[r.source] = r.group_name; });
-        console.log('[source_groups] 加载完成，共', all.length, '条');
-      }
-    } catch(e) { console.warn('[source_groups] 加载失败，使用内置映射', e); }
-  }
+  // SOURCE_GROUP_MAP 和 source_groups 表已废弃（三级结构已移除）
 
   /* ===== 应用状态 ===== */
   let state = {
     user: null,           // 登录用户数据
-    role: 'source',       // super_admin / sub_admin / source
+    role: 'source',       // super_admin / source
     system: 'bet',        // 当前系统
     source: null,         // 当前机构（source账号专用）
     currentSource: null,  // 右侧详情当前机构（__ALL__=汇总）
     currentDate: '',
     timeProgress: 0,
     allSources: [],
-    subAdminSources: [],
-    currentGroupFilter: '',
     currentData: [],      // 右侧表格当前数据
     allOrgData: [],       // 全量数据（管理员视图）
     sortKey: 'completion_rate',
@@ -1736,8 +1696,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     state.role   = userData.role || 'source';
     state.system = userData.system || 'bet';
     state.source = userData.source;
-    state.subAdminSources = [];
-    state.currentGroupFilter = '';
 
     logAccess(userData.username, userData.source);
 
@@ -1759,13 +1717,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
     // 更新顶栏右侧信息
     const sysLabel = state.system === 'crc' ? '国艺核心主播' : '主动看播对赌';
-    const roleLabel = state.role === 'super_admin' ? '管理员视图'
-                    : state.role === 'sub_admin'   ? '二级管理视图'
-                    : '机构视图';
+    const roleLabel = state.role === 'super_admin' ? '管理员视图' : '机构视图';
     document.getElementById('topbarInfo').textContent =
       `${userData.display_name || userData.username} · ${sysLabel} · ${roleLabel}`;
 
-    // 上传面板 / 管理工具按钮：仅 super_admin 可见（双重防护）
+    // 上传面板 / 管理工具按钮：仅 super_admin 可见
     const adminBtn = document.getElementById('adminToolsBtn');
     if (adminBtn) adminBtn.style.display = state.role === 'super_admin' ? '' : 'none';
     // 经典版切换按钮：仅 super_admin 可见
@@ -1774,12 +1730,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     // 系统切换 Tab：仅 super_admin 可见
     document.getElementById('sysToggleBar').style.display =
       state.role === 'super_admin' ? '' : 'none';
-    // 积分视角切换按钮：仅 super_admin/sub_admin 可见
+    // 积分视角切换按钮：仅 super_admin 可见
     const ptBtn = document.getElementById('pointsToggleBtn');
-    if (ptBtn) ptBtn.style.display = (state.role === 'super_admin' || state.role === 'sub_admin') ? '' : 'none';
-    // 下载积分Excel按钮：仅 super_admin/sub_admin 可见
+    if (ptBtn) ptBtn.style.display = state.role === 'super_admin' ? '' : 'none';
+    // 下载积分Excel按钮：仅 super_admin 可见
     const dlPtsBtn = document.getElementById('downloadPtsBtn');
-    if (dlPtsBtn) dlPtsBtn.style.display = (state.role === 'super_admin' || state.role === 'sub_admin') ? '' : 'none';
+    if (dlPtsBtn) dlPtsBtn.style.display = state.role === 'super_admin' ? '' : 'none';
     // 我有疑问按钮：仅 source 账号可见
     const helpBtn = document.getElementById('helpBtn');
     if (helpBtn) helpBtn.style.display = state.role === 'source' ? '' : 'none';
@@ -1790,11 +1746,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     const refreshBtn = document.getElementById('refreshBtn');
     if (refreshBtn) refreshBtn.style.display = '';
 
-    // 加载 crc 机构↔二级组织映射（从 DB，仅 crc 系统）
-    await loadSourceGroupMap(state.system);
-
     if (state.role === 'super_admin') {
-      // super_admin：显示侧边栏
       document.getElementById('targetWeekMonday').textContent = getThisMonday();
       // BET系统admin账号才可切换系统
       if (userData.username === 'admin' && userData.system === 'bet') {
@@ -1804,18 +1756,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         document.getElementById('badge-bet').classList.add('disabled');
         document.getElementById('badge-crc').classList.add('disabled');
       }
-      document.getElementById('bodyWrap').classList.remove('no-sidebar');
-      document.getElementById('sidebar').style.display = 'flex';
-      document.getElementById('mobileSidebarToggle').classList.remove('hidden');
-      showAdminStatsCards();
-      await loadSidebarAndData();
-
-    } else if (state.role === 'sub_admin') {
-      const { data: mappings } = await db.from('sub_admin_sources')
-        .select('source_name').eq('username', userData.username).eq('system', state.system);
-      state.subAdminSources = (mappings || []).map(m => m.source_name);
-      document.getElementById('badge-bet').classList.add('disabled');
-      document.getElementById('badge-crc').classList.add('disabled');
       document.getElementById('bodyWrap').classList.remove('no-sidebar');
       document.getElementById('sidebar').style.display = 'flex';
       document.getElementById('mobileSidebarToggle').classList.remove('hidden');
@@ -1889,13 +1829,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (state.system === sys) return;
     state.system = sys;
     state.currentSource = null;
-    state.currentGroupFilter = '';
     updateSysBadges();
     const sysLabel = sys === 'crc' ? '国艺核心主播' : '主动看播对赌';
     document.getElementById('topbarInfo').textContent =
       `${state.user.display_name || state.user.username} · ${sysLabel} · 管理员视图`;
-    // 切换系统时重新加载 SOURCE_GROUP_MAP
-    await loadSourceGroupMap(sys);
     // 取新系统最新日期
     const { data: latestRow } = await db.from('anchor_data').select('date')
       .eq('system', sys).order('date', {ascending:false}).limit(1);
@@ -1908,8 +1845,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
   window.logout = function() {
     state = { user:null, role:'source', system:'bet', source:null, currentSource:null,
-      currentDate:'', timeProgress:0, allSources:[], subAdminSources:[],
-      currentGroupFilter:'', currentData:[], allOrgData:[], sortKey:'completion_rate', sortDir:'desc',
+      currentDate:'', timeProgress:0, allSources:[],
+      currentData:[], allOrgData:[], sortKey:'completion_rate', sortDir:'desc',
       pointsView:false, orgBalance:0, orgWeekPoints:0, redeemPending:null };
     document.getElementById('mainApp').style.display = 'none';
     document.getElementById('loginPage').style.display = 'flex';
@@ -1980,9 +1917,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       // 分页拉取全量数据
       const data = await fetchAllPages((from, to) => {
         let q = db.from('anchor_data').select('*').eq('date', date).eq('system', state.system);
-        if (state.role === 'sub_admin' && state.subAdminSources.length > 0) {
-          q = q.in('source', state.subAdminSources);
-        }
         return q.range(from, to);
       });
 
@@ -2021,34 +1955,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
       state.allSources = Object.keys(orgMap).sort();
 
-      // crc 显示二级组织过滤
-      if (state.system === 'crc') {
-        const groups = [...new Set(state.allSources.map(s => SOURCE_GROUP_MAP[s] || '其他'))].sort();
-        const gSel = document.getElementById('groupSelector');
-        gSel.innerHTML = '<option value="">— 全部 —</option>';
-        groups.forEach(g => {
-          const o = document.createElement('option'); o.value = g; o.textContent = g;
-          gSel.appendChild(o);
-        });
-        gSel.value = state.currentGroupFilter;
-        document.getElementById('groupFilterBar').style.display = '';
-      } else {
-        document.getElementById('groupFilterBar').style.display = 'none';
-        state.currentGroupFilter = '';
-      }
-
       // 汇总数据
-      const filtered = state.currentGroupFilter
-        ? data.filter(d => (SOURCE_GROUP_MAP[d.source] || '其他') === state.currentGroupFilter)
-        : data;
-      const totalActual     = filtered.reduce((s,i) => s + i.actual, 0);
-      const totalTarget     = filtered.reduce((s,i) => s + i.target, 0);
-      const totalBase       = filtered.reduce((s,i) => s + (i.base_target||0), 0);
+      const totalActual     = data.reduce((s,i) => s + i.actual, 0);
+      const totalTarget     = data.reduce((s,i) => s + i.target, 0);
+      const totalBase       = data.reduce((s,i) => s + (i.base_target||0), 0);
       const totalTaskPct    = totalTarget > 0 ? totalActual / totalTarget * 100 : 0;
       const totalBasePct    = totalBase   > 0 ? totalActual / totalBase   * 100 : 0;
 
       // 更新顶部5卡片
-      updateTopStats(filtered.length, totalActual, totalTarget, totalBase, totalTaskPct, totalBasePct, tp);
+      updateTopStats(data.length, totalActual, totalTarget, totalBase, totalTaskPct, totalBasePct, tp);
 
       // 渲染侧边栏
       renderSidebar(orgMap, totalActual, totalTarget, totalBase, totalTaskPct, totalBasePct, tp, date);
@@ -2057,7 +1972,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       if (!state.currentSource) {
         state.currentSource = '__ALL__';
       }
-      await selectOrg(state.currentSource, orgMap, filtered, data);
+      await selectOrg(state.currentSource, orgMap, data, data);
 
     } catch(err) {
       console.error('loadSidebarAndData 失败', err);
@@ -2066,10 +1981,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   }
 
   function renderSidebar(orgMap, totalActual, totalTarget, totalBase, totalTaskPct, totalBasePct, tp, date) {
-    const filteredSources = state.currentGroupFilter
-      ? state.allSources.filter(s => (SOURCE_GROUP_MAP[s] || '其他') === state.currentGroupFilter)
-      : state.allSources;
-
     const taskAhead = totalTaskPct >= tp;
     const baseAhead = totalBasePct >= tp;
 
@@ -2078,7 +1989,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
            onclick="onSidebarClick('__ALL__')">
         <div class="ni-left">
           <div class="ni-name tot">🔷 全部汇总</div>
-          <div class="ni-count">共 ${fmtNum(state.allOrgData.filter(d => !state.currentGroupFilter || (SOURCE_GROUP_MAP[d.source]||'其他')===state.currentGroupFilter).length)} 名主播</div>
+          <div class="ni-count">共 ${fmtNum(state.allOrgData.length)} 名主播</div>
         </div>
         <div class="ni-right">
           <div class="ni-task ${taskAhead ? 'r' : 'g'}">${totalTaskPct.toFixed(1)}%</div>
@@ -2088,9 +1999,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     `;
 
     const sysLabel = state.system.toUpperCase();
-    html += `<div class="group-label">${sysLabel} 系统 · ${filteredSources.length} 机构</div>`;
+    html += `<div class="group-label">${sysLabel} 系统 · ${state.allSources.length} 机构</div>`;
 
-    filteredSources.forEach(src => {
+    state.allSources.forEach(src => {
       const o = orgMap[src];
       if (!o) return;
       const tPct = o.target > 0 ? o.actual / o.target * 100 : 0;
@@ -2121,9 +2032,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 
   window.onSidebarClick = async function(src) {
     state.currentSource = src;
-    // 刷新侧边栏高亮
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    // 找到对应元素高亮
     const allItems = document.querySelectorAll('.nav-item');
     allItems.forEach(el => {
       const onclick = el.getAttribute('onclick') || '';
@@ -2135,20 +2044,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     await selectOrg(src, null, null, state.allOrgData);
   };
 
-  window.onGroupChange = async function() {
-    state.currentGroupFilter = document.getElementById('groupSelector').value;
-    state.currentSource = '__ALL__';
-    await loadSidebarAndData();
-  };
-
   async function selectOrg(src, orgMap, filteredTotal, allData) {
     const date = state.currentDate;
     let rows;
     if (src === '__ALL__') {
-      // 汇总：取当前组过滤后数据
-      rows = state.currentGroupFilter
-        ? allData.filter(d => (SOURCE_GROUP_MAP[d.source]||'其他') === state.currentGroupFilter)
-        : allData;
+      rows = allData;
       document.getElementById('d-orgname').textContent = '🔷 全部汇总';
     } else {
       rows = allData.filter(d => d.source === src);
@@ -3130,18 +3030,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     _origOpenDrawer();
     if (state.role === 'super_admin' && state.system === 'crc') {
       document.getElementById('orgMgmtPanel').style.display = '';
-      // 填充「旧机构名」下拉（来自当前 SOURCE_GROUP_MAP + allSources）
+      // 填充「旧机构名」下拉
       const sources = state.allSources && state.allSources.length > 0
-        ? state.allSources
-        : Object.keys(SOURCE_GROUP_MAP);
+        ? state.allSources : [];
       const selOld = document.getElementById('orgRenameOld');
       selOld.innerHTML = '<option value="">— 选择要改名的机构 —</option>' +
         sources.map(s => `<option value="${s}">${s}</option>`).join('');
-      // 填充「二级组织」下拉（去重）
-      const groups = [...new Set(Object.values(SOURCE_GROUP_MAP))].sort();
-      const selGrp = document.getElementById('orgCreateGroup');
-      selGrp.innerHTML = '<option value="">— 选择二级组织 —</option>' +
-        groups.map(g => `<option value="${g}">${g}</option>`).join('');
     } else {
       document.getElementById('orgMgmtPanel').style.display = 'none';
     }
@@ -3168,11 +3062,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       const errs = [r1,r2,r3,r4,r5].map(r => r.error).filter(Boolean);
       if (errs.length > 0) throw new Error(errs.map(e => e.message).join('; '));
 
-      // 更新内存映射
-      if (SOURCE_GROUP_MAP[oldName] !== undefined) {
-        SOURCE_GROUP_MAP[newName] = SOURCE_GROUP_MAP[oldName];
-        delete SOURCE_GROUP_MAP[oldName];
-      }
+      // 更新内存映射（无需 SOURCE_GROUP_MAP）
       state.allSources = state.allSources.map(s => s === oldName ? newName : s);
 
       result.textContent = `✅ 已将「${oldName}」改名为「${newName}」，5张表同步完成`; result.style.color='#15803d';
@@ -3210,7 +3100,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       if (r2.error) throw new Error('user_accounts 写入失败: ' + r2.error.message);
 
       // 更新内存
-      SOURCE_GROUP_MAP[orgName] = group;
       if (!state.allSources.includes(orgName)) state.allSources.push(orgName);
 
       result.textContent = `✅ 机构「${orgName}」创建成功，账号 ${username} 可直接登录`; result.style.color='#15803d';
