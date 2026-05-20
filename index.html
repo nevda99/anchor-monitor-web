@@ -4003,7 +4003,8 @@ highlights 最多3个。严格JSON输出。`;
           max_tokens: 1200,
           response_format: { type: 'json_object' }
         })
-      });
+      }).catch(fetchErr => { throw new Error('网络请求失败（CORS或网络问题）: ' + fetchErr.message); });
+      if (!resp.ok) throw new Error(`DeepSeek HTTP ${resp.status}: ${await resp.text()}`);
       const result = await resp.json();
       if (!result.choices) throw new Error('AI 接口异常: ' + JSON.stringify(result.error || result));
       const ai = JSON.parse(result.choices[0].message.content);
