@@ -3993,18 +3993,16 @@ ${tableLines.join('\n')}
 alerts 最多5个（综合考虑UAD同比大幅下降、完成度严重落后、开播时长骤降）。
 highlights 最多3个。严格JSON输出。`;
 
-      const resp = await fetch('https://api.deepseek.com/chat/completions', {
+      const resp = await fetch('/api/ai-analysis', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${DEEPSEEK_KEY}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'deepseek-chat',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.6,
-          max_tokens: 1200,
-          response_format: { type: 'json_object' }
+          max_tokens: 1200
         })
-      }).catch(fetchErr => { throw new Error('网络请求失败（CORS或网络问题）: ' + fetchErr.message); });
-      if (!resp.ok) throw new Error(`DeepSeek HTTP ${resp.status}: ${await resp.text()}`);
+      }).catch(fetchErr => { throw new Error('网络请求失败: ' + fetchErr.message); });
+      if (!resp.ok) throw new Error(`AI接口错误 HTTP ${resp.status}: ${await resp.text()}`);
       const result = await resp.json();
       if (!result.choices) throw new Error('AI 接口异常: ' + JSON.stringify(result.error || result));
       const ai = JSON.parse(result.choices[0].message.content);
