@@ -104,12 +104,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   cursor:pointer; transition:all .2s; font-weight:600;
 }
 .help-btn-top:hover { background:rgba(251,191,36,.25); }
-.ai-report-btn {
-  padding:5px 14px; background:rgba(139,92,246,.15); color:#c4b5fd;
-  border:1px solid rgba(196,181,253,.3); border-radius:6px; font-size:12px;
-  cursor:pointer; transition:all .2s; font-weight:600;
-}
-.ai-report-btn:hover { background:rgba(139,92,246,.28); }
 .tour-reopen-btn {
   padding:5px 14px; background:rgba(99,102,241,.12); color:#a5b4fc;
   border:1px solid rgba(165,180,252,.3); border-radius:6px; font-size:12px;
@@ -910,7 +904,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     <span id="topbarInfo"></span>
     <button class="admin-drawer-btn" id="adminToolsBtn" onclick="openAdminDrawer()" style="display:none">🛠 管理工具</button>
     <button class="points-toggle-btn" id="pointsToggleBtn" onclick="togglePointsView()" style="display:none">💰 积分视图</button>
-    <button class="ai-report-btn" id="aiReportBtn" onclick="openAiReport()" style="display:none">🤖 AI 分析</button>
     <button class="help-btn-top" id="helpBtn" onclick="openHelpModal()" style="display:none">我有疑问？</button>
     <button class="tour-reopen-btn" id="tourReopenBtn" onclick="reopenTour()" style="display:none">✨ 新手引导</button>
     <button class="switch-ui-btn" id="refreshBtn" onclick="refreshData()" style="display:none">🔄 刷新</button>
@@ -1499,41 +1492,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 </div>
 
 
-<!-- ===== AI 分析抽屉 ===== -->
-<div id="aiReportDrawerBg" onclick="closeAiReportOnBg(event)" style="display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.5);backdrop-filter:blur(3px)">
-  <div id="aiReportDrawer" style="position:fixed;top:0;right:0;width:min(720px,100vw);height:100vh;background:#f0f4f8;overflow-y:auto;box-shadow:-8px 0 32px rgba(0,0,0,.2);transition:transform .3s cubic-bezier(.4,0,.2,1);transform:translateX(100%)">
-    <!-- 顶栏 -->
-    <div style="background:linear-gradient(135deg,#1e3a5f,#2d5a8e);padding:20px 24px;position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:flex-start">
-      <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-          <span style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 12px;font-size:11px;color:#fff">🤖 AI 运营分析</span>
-        </div>
-        <div id="aiDrawerTitle" style="font-size:18px;font-weight:700;color:#fff">正在加载…</div>
-        <div id="aiDrawerMeta" style="font-size:12px;color:rgba(255,255,255,.7);margin-top:3px"></div>
-      </div>
-      <button onclick="closeAiReport()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px">✕ 关闭</button>
-    </div>
-
-    <!-- 内容区 -->
-    <div id="aiReportContent" style="padding:20px 24px 40px">
-      <!-- 加载中 -->
-      <div id="aiReportLoading" style="text-align:center;padding:60px 0;color:#64748b">
-        <div style="font-size:36px;margin-bottom:16px">🤖</div>
-        <div style="font-size:15px;font-weight:600;margin-bottom:8px">AI 分析中…</div>
-        <div style="font-size:13px">正在拉取数据并调用 DeepSeek 分析，请稍候</div>
-        <div id="aiLoadingStep" style="font-size:12px;color:#94a3b8;margin-top:16px">初始化…</div>
-      </div>
-      <!-- 报告主体（动态注入） -->
-      <div id="aiReportBody" style="display:none"></div>
-      <!-- 错误 -->
-      <div id="aiReportError" style="display:none;text-align:center;padding:60px 0;color:#ef4444">
-        <div style="font-size:32px;margin-bottom:12px">⚠️</div>
-        <div id="aiErrorMsg" style="font-size:14px"></div>
-        <button onclick="openAiReport()" style="margin-top:16px;padding:8px 20px;background:#2d5a8e;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">重试</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- ===== 新手引导 - 欢迎弹窗 ===== -->
 <div id="tourWelcomeBg">
@@ -1831,9 +1789,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     // 我有疑问按钮：仅 source 账号可见
     const helpBtn = document.getElementById('helpBtn');
     if (helpBtn) helpBtn.style.display = state.role === 'source' ? '' : 'none';
-    // AI 分析按钮：仅 source 账号可见
-    const aiReportBtn = document.getElementById('aiReportBtn');
-    if (aiReportBtn) aiReportBtn.style.display = state.role === 'source' ? '' : 'none';
     // 新手引导按钮：仅 source 账号可见
     const tourReopenBtn = document.getElementById('tourReopenBtn');
     if (tourReopenBtn) tourReopenBtn.style.display = state.role === 'source' ? '' : 'none';
@@ -1960,9 +1915,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (dlPtsBtn2) dlPtsBtn2.style.display = 'none';
     const helpBtnEl = document.getElementById('helpBtn');
     if (helpBtnEl) helpBtnEl.style.display = 'none';
-    const aiReportBtnEl = document.getElementById('aiReportBtn');
-    if (aiReportBtnEl) aiReportBtnEl.style.display = 'none';
-    closeAiReport();
     const tReopenBtn = document.getElementById('tourReopenBtn');
     if (tReopenBtn) tReopenBtn.style.display = 'none';
     // 同时关掉引导遮罩（防止退出时引导还开着）
@@ -2977,45 +2929,33 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         container.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;font-size:13px">该时间段内暂无记录</div>';
         return;
       }
-      // 统计各账号在当前结果集内的累计登录次数和 AI 分析次数
+      // 统计各账号在当前结果集内的累计登录次数
       const countMap = {};
-      const aiMap = {};
-      data.forEach(r => {
-        countMap[r.username] = (countMap[r.username] || 0) + 1;
-        if (r.action === 'ai_report') aiMap[r.username] = (aiMap[r.username] || 0) + 1;
-      });
+      data.forEach(r => { countMap[r.username] = (countMap[r.username] || 0) + 1; });
       container.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>
             <tr style="background:rgba(3,105,161,.08)">
               <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">账号</th>
               <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">机构</th>
-              <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">行为</th>
               <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">时间</th>
-              <th style="padding:7px 10px;text-align:right;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">累计登录</th>
-              <th style="padding:7px 10px;text-align:right;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">🤖 AI分析</th>
+              <th style="padding:7px 10px;text-align:right;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">累计登录次数</th>
             </tr>
           </thead>
           <tbody>
             ${data.map((r, i) => {
               const dt = new Date(r.login_time);
               const ts = dt.toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-              const actionLabel = r.action === 'ai_report'
-                ? '<span style="background:#ede9fe;color:#7c3aed;padding:1px 7px;border-radius:10px;font-weight:600;font-size:11px">🤖 AI分析</span>'
-                : '<span style="background:#e0f2fe;color:#0369a1;padding:1px 7px;border-radius:10px;font-size:11px">登录</span>';
-              const aiCount = aiMap[r.username] || 0;
               return `<tr style="border-bottom:1px solid #e0f2fe;${i%2===0 ? 'background:rgba(240,249,255,.4)' : ''}">
                 <td style="padding:6px 10px;color:#0c4a6e;font-weight:600">${r.username}</td>
                 <td style="padding:6px 10px;color:#555">${r.source || '—'}</td>
-                <td style="padding:6px 10px">${actionLabel}</td>
                 <td style="padding:6px 10px;color:#555">${ts}</td>
                 <td style="padding:6px 10px;text-align:right;color:#0369a1;font-weight:700">${countMap[r.username]}</td>
-                <td style="padding:6px 10px;text-align:right;color:${aiCount > 0 ? '#7c3aed' : '#94a3b8'};font-weight:700">${aiCount > 0 ? aiCount : '—'}</td>
               </tr>`;
             }).join('')}
           </tbody>
         </table>
-        <div style="padding:8px 10px;font-size:11px;color:#999">${document.getElementById('accessLogDate')?.value ? '日期：' + document.getElementById('accessLogDate').value : '近 ' + accessLogDays + ' 天'} · 共 ${data.length} 条记录 · 共 ${Object.keys(countMap).length} 个账号 · 🤖 AI分析共 ${Object.values(aiMap).reduce((a,b)=>a+b,0)} 次</div>
+        <div style="padding:8px 10px;font-size:11px;color:#999">${document.getElementById('accessLogDate')?.value ? '日期：' + document.getElementById('accessLogDate').value : '近 ' + accessLogDays + ' 天'} · 共 ${data.length} 条记录 · 共 ${Object.keys(countMap).length} 个账号</div>
       `;
     } catch(e) {
       container.innerHTML = `<div style="padding:16px;color:#ef4444;font-size:13px">加载失败: ${e.message}</div>`;
@@ -3848,42 +3788,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     }
   });
 
-  // =============================================
-  // 🤖 AI 分析功能
-  // =============================================
-  const DEEPSEEK_KEY = 'sk-303263562b3147d3974bce180b40a4e5';
+  window.closeAiReport = function() {}; // stub for logout
 
-  // 打开抽屉并触发分析
-  window.openAiReport = async function() {
-    const bg = document.getElementById('aiReportDrawerBg');
-    const drawer = document.getElementById('aiReportDrawer');
-    bg.style.display = 'block';
-    setTimeout(() => { drawer.style.transform = 'translateX(0)'; }, 10);
-    document.body.style.overflow = 'hidden';
-    // 埋点：记录 AI 分析点击
-    logAccess(state.user?.username || '', state.source || '', 'ai_report');
-    await runAiAnalysis();
-  };
-
-  window.closeAiReport = function() {
-    const bg = document.getElementById('aiReportDrawerBg');
-    const drawer = document.getElementById('aiReportDrawer');
-    if (!bg) return;
-    drawer.style.transform = 'translateX(100%)';
-    setTimeout(() => { bg.style.display = 'none'; }, 300);
-    document.body.style.overflow = '';
-  };
-
-  window.closeAiReportOnBg = function(e) {
-    if (e.target === document.getElementById('aiReportDrawerBg')) closeAiReport();
-  };
-
-  function setAiStep(msg) {
-    const el = document.getElementById('aiLoadingStep');
-    if (el) el.textContent = msg;
-  }
-
-  async function runAiAnalysis() {
+  /* async function runAiAnalysis() {
     // 重置状态
     document.getElementById('aiReportLoading').style.display = '';
     document.getElementById('aiReportBody').style.display = 'none';
@@ -4152,10 +4059,13 @@ highlights 最多3个。严格JSON输出。`;
       </div>`;
 
     const bodyEl = document.getElementById('aiReportBody');
-    bodyEl.innerHTML = kpiHtml + summaryHtml + panelHtml + suggestHtml + tableHtml;
-    document.getElementById('aiReportLoading').style.display = 'none';
-    bodyEl.style.display = '';
+    if (bodyEl) {
+      bodyEl.innerHTML = kpiHtml + summaryHtml + panelHtml + suggestHtml + tableHtml;
+      document.getElementById('aiReportLoading').style.display = 'none';
+      bodyEl.style.display = '';
+    }
   }
+  */ // END AI analysis (removed)
 
 </script>
 </body>
