@@ -1985,10 +1985,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     }
   };
 
-  async function logAccess(username, source) {
+  async function logAccess(username, source, action = 'login') {
     try {
       await db.from('access_logs').insert([{
-        username, source, action:'login', user_agent: navigator.userAgent
+        username, source, action, user_agent: navigator.userAgent
       }]);
     } catch(e) { console.warn('访问日志失败', e); }
   }
@@ -2977,33 +2977,45 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
         container.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;font-size:13px">该时间段内暂无记录</div>';
         return;
       }
-      // 统计各账号在当前结果集内的累计登录次数
+      // 统计各账号在当前结果集内的累计登录次数和 AI 分析次数
       const countMap = {};
-      data.forEach(r => { countMap[r.username] = (countMap[r.username] || 0) + 1; });
+      const aiMap = {};
+      data.forEach(r => {
+        countMap[r.username] = (countMap[r.username] || 0) + 1;
+        if (r.action === 'ai_report') aiMap[r.username] = (aiMap[r.username] || 0) + 1;
+      });
       container.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>
             <tr style="background:rgba(3,105,161,.08)">
               <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">账号</th>
               <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">机构</th>
+              <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">行为</th>
               <th style="padding:7px 10px;text-align:left;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">时间</th>
-              <th style="padding:7px 10px;text-align:right;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">累计登录次数</th>
+              <th style="padding:7px 10px;text-align:right;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">累计登录</th>
+              <th style="padding:7px 10px;text-align:right;color:#0369a1;font-weight:700;border-bottom:1px solid #bae6fd">🤖 AI分析</th>
             </tr>
           </thead>
           <tbody>
             ${data.map((r, i) => {
               const dt = new Date(r.login_time);
               const ts = dt.toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+              const actionLabel = r.action === 'ai_report'
+                ? '<span style="background:#ede9fe;color:#7c3aed;padding:1px 7px;border-radius:10px;font-weight:600;font-size:11px">🤖 AI分析</span>'
+                : '<span style="background:#e0f2fe;color:#0369a1;padding:1px 7px;border-radius:10px;font-size:11px">登录</span>';
+              const aiCount = aiMap[r.username] || 0;
               return `<tr style="border-bottom:1px solid #e0f2fe;${i%2===0 ? 'background:rgba(240,249,255,.4)' : ''}">
                 <td style="padding:6px 10px;color:#0c4a6e;font-weight:600">${r.username}</td>
                 <td style="padding:6px 10px;color:#555">${r.source || '—'}</td>
+                <td style="padding:6px 10px">${actionLabel}</td>
                 <td style="padding:6px 10px;color:#555">${ts}</td>
                 <td style="padding:6px 10px;text-align:right;color:#0369a1;font-weight:700">${countMap[r.username]}</td>
+                <td style="padding:6px 10px;text-align:right;color:${aiCount > 0 ? '#7c3aed' : '#94a3b8'};font-weight:700">${aiCount > 0 ? aiCount : '—'}</td>
               </tr>`;
             }).join('')}
           </tbody>
         </table>
-        <div style="padding:8px 10px;font-size:11px;color:#999">${document.getElementById('accessLogDate')?.value ? '日期：' + document.getElementById('accessLogDate').value : '近 ' + accessLogDays + ' 天'} · 共 ${data.length} 条记录 · 共 ${Object.keys(countMap).length} 个账号</div>
+        <div style="padding:8px 10px;font-size:11px;color:#999">${document.getElementById('accessLogDate')?.value ? '日期：' + document.getElementById('accessLogDate').value : '近 ' + accessLogDays + ' 天'} · 共 ${data.length} 条记录 · 共 ${Object.keys(countMap).length} 个账号 · 🤖 AI分析共 ${Object.values(aiMap).reduce((a,b)=>a+b,0)} 次</div>
       `;
     } catch(e) {
       container.innerHTML = `<div style="padding:16px;color:#ef4444;font-size:13px">加载失败: ${e.message}</div>`;
@@ -3848,6 +3860,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     bg.style.display = 'block';
     setTimeout(() => { drawer.style.transform = 'translateX(0)'; }, 10);
     document.body.style.overflow = 'hidden';
+    // 埋点：记录 AI 分析点击
+    logAccess(state.user?.username || '', state.source || '', 'ai_report');
     await runAiAnalysis();
   };
 
