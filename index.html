@@ -104,6 +104,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
   cursor:pointer; transition:all .2s; font-weight:600;
 }
 .help-btn-top:hover { background:rgba(251,191,36,.25); }
+.ai-report-btn {
+  padding:5px 14px; background:rgba(139,92,246,.15); color:#c4b5fd;
+  border:1px solid rgba(196,181,253,.3); border-radius:6px; font-size:12px;
+  cursor:pointer; transition:all .2s; font-weight:600;
+}
+.ai-report-btn:hover { background:rgba(139,92,246,.28); }
 .tour-reopen-btn {
   padding:5px 14px; background:rgba(99,102,241,.12); color:#a5b4fc;
   border:1px solid rgba(165,180,252,.3); border-radius:6px; font-size:12px;
@@ -904,6 +910,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     <span id="topbarInfo"></span>
     <button class="admin-drawer-btn" id="adminToolsBtn" onclick="openAdminDrawer()" style="display:none">🛠 管理工具</button>
     <button class="points-toggle-btn" id="pointsToggleBtn" onclick="togglePointsView()" style="display:none">💰 积分视图</button>
+    <button class="ai-report-btn" id="aiReportBtn" onclick="openAiReport()" style="display:none">🤖 AI 分析</button>
     <button class="help-btn-top" id="helpBtn" onclick="openHelpModal()" style="display:none">我有疑问？</button>
     <button class="tour-reopen-btn" id="tourReopenBtn" onclick="reopenTour()" style="display:none">✨ 新手引导</button>
     <button class="switch-ui-btn" id="refreshBtn" onclick="refreshData()" style="display:none">🔄 刷新</button>
@@ -1492,6 +1499,42 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
 </div>
 
 
+<!-- ===== AI 分析抽屉 ===== -->
+<div id="aiReportDrawerBg" onclick="closeAiReportOnBg(event)" style="display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.5);backdrop-filter:blur(3px)">
+  <div id="aiReportDrawer" style="position:fixed;top:0;right:0;width:min(720px,100vw);height:100vh;background:#f0f4f8;overflow-y:auto;box-shadow:-8px 0 32px rgba(0,0,0,.2);transition:transform .3s cubic-bezier(.4,0,.2,1);transform:translateX(100%)">
+    <!-- 顶栏 -->
+    <div style="background:linear-gradient(135deg,#1e3a5f,#2d5a8e);padding:20px 24px;position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <span style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 12px;font-size:11px;color:#fff">🤖 AI 运营分析</span>
+        </div>
+        <div id="aiDrawerTitle" style="font-size:18px;font-weight:700;color:#fff">正在加载…</div>
+        <div id="aiDrawerMeta" style="font-size:12px;color:rgba(255,255,255,.7);margin-top:3px"></div>
+      </div>
+      <button onclick="closeAiReport()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px">✕ 关闭</button>
+    </div>
+
+    <!-- 内容区 -->
+    <div id="aiReportContent" style="padding:20px 24px 40px">
+      <!-- 加载中 -->
+      <div id="aiReportLoading" style="text-align:center;padding:60px 0;color:#64748b">
+        <div style="font-size:36px;margin-bottom:16px">🤖</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:8px">AI 分析中…</div>
+        <div style="font-size:13px">正在拉取数据并调用 DeepSeek 分析，请稍候</div>
+        <div id="aiLoadingStep" style="font-size:12px;color:#94a3b8;margin-top:16px">初始化…</div>
+      </div>
+      <!-- 报告主体（动态注入） -->
+      <div id="aiReportBody" style="display:none"></div>
+      <!-- 错误 -->
+      <div id="aiReportError" style="display:none;text-align:center;padding:60px 0;color:#ef4444">
+        <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+        <div id="aiErrorMsg" style="font-size:14px"></div>
+        <button onclick="openAiReport()" style="margin-top:16px;padding:8px 20px;background:#2d5a8e;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">重试</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== 新手引导 - 欢迎弹窗 ===== -->
 <div id="tourWelcomeBg">
   <div class="tour-welcome-card">
@@ -1788,6 +1831,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     // 我有疑问按钮：仅 source 账号可见
     const helpBtn = document.getElementById('helpBtn');
     if (helpBtn) helpBtn.style.display = state.role === 'source' ? '' : 'none';
+    // AI 分析按钮：仅 source 账号可见
+    const aiReportBtn = document.getElementById('aiReportBtn');
+    if (aiReportBtn) aiReportBtn.style.display = state.role === 'source' ? '' : 'none';
     // 新手引导按钮：仅 source 账号可见
     const tourReopenBtn = document.getElementById('tourReopenBtn');
     if (tourReopenBtn) tourReopenBtn.style.display = state.role === 'source' ? '' : 'none';
@@ -1914,6 +1960,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
     if (dlPtsBtn2) dlPtsBtn2.style.display = 'none';
     const helpBtnEl = document.getElementById('helpBtn');
     if (helpBtnEl) helpBtnEl.style.display = 'none';
+    const aiReportBtnEl = document.getElementById('aiReportBtn');
+    if (aiReportBtnEl) aiReportBtnEl.style.display = 'none';
+    closeAiReport();
     const tReopenBtn = document.getElementById('tourReopenBtn');
     if (tReopenBtn) tReopenBtn.style.display = 'none';
     // 同时关掉引导遮罩（防止退出时引导还开着）
@@ -3786,6 +3835,314 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica
       }
     }
   });
+
+  // =============================================
+  // 🤖 AI 分析功能
+  // =============================================
+  const DEEPSEEK_KEY = 'sk-303263562b3147d3974bce180b40a4e5';
+
+  // 打开抽屉并触发分析
+  window.openAiReport = async function() {
+    const bg = document.getElementById('aiReportDrawerBg');
+    const drawer = document.getElementById('aiReportDrawer');
+    bg.style.display = 'block';
+    setTimeout(() => { drawer.style.transform = 'translateX(0)'; }, 10);
+    document.body.style.overflow = 'hidden';
+    await runAiAnalysis();
+  };
+
+  window.closeAiReport = function() {
+    const bg = document.getElementById('aiReportDrawerBg');
+    const drawer = document.getElementById('aiReportDrawer');
+    if (!bg) return;
+    drawer.style.transform = 'translateX(100%)';
+    setTimeout(() => { bg.style.display = 'none'; }, 300);
+    document.body.style.overflow = '';
+  };
+
+  window.closeAiReportOnBg = function(e) {
+    if (e.target === document.getElementById('aiReportDrawerBg')) closeAiReport();
+  };
+
+  function setAiStep(msg) {
+    const el = document.getElementById('aiLoadingStep');
+    if (el) el.textContent = msg;
+  }
+
+  async function runAiAnalysis() {
+    // 重置状态
+    document.getElementById('aiReportLoading').style.display = '';
+    document.getElementById('aiReportBody').style.display = 'none';
+    document.getElementById('aiReportError').style.display = 'none';
+
+    const source = state.source;
+    const system = state.system;
+    document.getElementById('aiDrawerTitle').textContent = `${source} · 本周运营分析`;
+
+    try {
+      // 计算日期
+      const today = new Date();
+      const dow = today.getDay() === 0 ? 6 : today.getDay() - 1; // 0=周一
+      const thisMon = new Date(today); thisMon.setDate(today.getDate() - dow);
+      const lastMon = new Date(thisMon); lastMon.setDate(thisMon.getDate() - 7);
+      const fmt = d => d.toISOString().slice(0, 10);
+      const THIS_DATE = fmt(thisMon);
+      const LAST_DATE = fmt(lastMon);
+
+      document.getElementById('aiDrawerMeta').textContent =
+        `本周 ${THIS_DATE} · 上周同期 ${LAST_DATE} · 时间进度 ${state.timeProgress.toFixed(2)}%`;
+
+      // 拉本周数据
+      setAiStep('正在拉取本周数据…');
+      const { data: thisWeek, error: e1 } = await db
+        .from('anchor_data')
+        .select('anchor_id,anchor_name,actual,streaming_minutes,target,base_target,completion_rate,time_progress')
+        .eq('system', system).eq('source', source).eq('date', THIS_DATE);
+      if (e1) throw new Error('本周数据拉取失败: ' + e1.message);
+
+      // 拉上周数据
+      setAiStep('正在拉取上周同期数据…');
+      const { data: lastWeek, error: e2 } = await db
+        .from('anchor_data')
+        .select('anchor_id,anchor_name,actual,streaming_minutes,target,base_target,completion_rate')
+        .eq('system', system).eq('source', source).eq('date', LAST_DATE);
+      if (e2) throw new Error('上周数据拉取失败: ' + e2.message);
+
+      const tp = state.timeProgress || 28.57;
+      const lastMap = {};
+      (lastWeek || []).forEach(r => { lastMap[r.anchor_id] = r; });
+
+      const anchors = (thisWeek || []).map(r => {
+        const lw = lastMap[r.anchor_id] || {};
+        const thisUad = r.actual || 0;
+        const lastUad = lw.actual || 0;
+        const thisSt  = ((r.streaming_minutes || 0) / 60).toFixed(1) * 1;
+        const lastSt  = ((lw.streaming_minutes || 0) / 60).toFixed(1) * 1;
+        const uadChg  = lastUad > 0 ? +((thisUad - lastUad) / lastUad * 100).toFixed(1) : null;
+        const stChg   = lastSt  > 0 ? +((thisSt  - lastSt)  / lastSt  * 100).toFixed(1) : null;
+        const cr = +(r.completion_rate || 0).toFixed(1);
+        return {
+          name: r.anchor_name || '未知',
+          id: r.anchor_id,
+          target: r.target || 0,
+          thisUad, lastUad, uadChg,
+          thisSt, lastSt, stChg,
+          cr, diff: +(cr - tp).toFixed(1)
+        };
+      });
+
+      if (anchors.length === 0) throw new Error('暂无本周数据，请等待数据更新后再试');
+
+      // 构建给AI的prompt
+      setAiStep('正在调用 DeepSeek AI 分析…');
+      const hasLast = (lastWeek || []).length > 0;
+      const fmtChg = v => v === null ? 'N/A' : (v >= 0 ? `+${v}%` : `${v}%`);
+
+      const tableLines = ['主播名 | 本周UAD | 目标 | 完成度 | vs进度 | 上周UAD | UAD同比 | 昨开播h | 上周开播h | 开播同比'];
+      tableLines.push('-'.repeat(110));
+      anchors.sort((a,b) => a.diff - b.diff).forEach(a => {
+        tableLines.push(
+          `${a.name.slice(0,12).padEnd(12)} | ${String(a.thisUad).padStart(8)} | ${String(a.target).padStart(8)} | ${a.cr.toFixed(1).padStart(6)}% | ` +
+          `${(a.diff >= 0 ? '+' : '') + a.diff}pp | ${String(a.lastUad).padStart(7)} | ${fmtChg(a.uadChg).padStart(8)} | ` +
+          `${a.thisSt.toFixed(1).padStart(6)}h | ${a.lastSt.toFixed(1).padStart(7)}h | ${fmtChg(a.stChg).padStart(8)}`
+        );
+      });
+
+      const severeBehind = anchors.filter(a => a.diff < -20);
+      const uadDropSevere = anchors.filter(a => a.uadChg !== null && a.uadChg < -30);
+
+      const prompt = `你是一名专业的快手直播运营分析师。
+
+【机构】：${source}
+【系统】：${system === 'crc' ? '国艺核心主播' : '主动看播对赌'}
+【数据日期】：本周截至 ${THIS_DATE}，时间进度 ${tp.toFixed(2)}%
+【主播总数】：${anchors.length} 人
+【上周同期数据】：${hasLast ? '有（' + LAST_DATE + '）' : '无，仅分析本周截面'}
+
+${tableLines.join('\n')}
+
+说明：
+- "vs进度" = 完成度 - 时间进度，负数表示落后于节奏
+- "UAD同比" = 本周UAD vs 上周同期变化幅度（参考价值：时间进度相近时对比有意义）
+- 严重落后（差距>20pp）：${severeBehind.length} 人
+- UAD同比下降超30%：${uadDropSevere.length} 人
+
+请输出JSON格式分析报告（严格JSON，不要Markdown包裹）：
+{
+  "summary": "整体评价（2-3句，数字准确，包含关键亮点和问题）",
+  "alerts": [{"name":"主播名","reason":"问题描述（含数据）","action":"具体行动建议"}],
+  "highlights": [{"name":"主播名","reason":"亮点描述（含数据）"}],
+  "suggestions": ["行动建议1（可操作）","行动建议2","行动建议3"],
+  "yoy_insight": "${hasLast ? '同比趋势洞察（2句，说明与上周相比的整体变化）' : ''}"
+}
+
+alerts 最多5个（综合考虑UAD同比大幅下降、完成度严重落后、开播时长骤降）。
+highlights 最多3个。严格JSON输出。`;
+
+      const resp = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${DEEPSEEK_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.6,
+          max_tokens: 1200,
+          response_format: { type: 'json_object' }
+        })
+      });
+      const result = await resp.json();
+      if (!result.choices) throw new Error('AI 接口异常: ' + JSON.stringify(result.error || result));
+      const ai = JSON.parse(result.choices[0].message.content);
+
+      // 渲染报告
+      setAiStep('生成报告…');
+      renderAiReport(anchors, ai, tp, THIS_DATE, LAST_DATE, hasLast);
+
+    } catch (err) {
+      console.error('AI分析失败', err);
+      document.getElementById('aiReportLoading').style.display = 'none';
+      document.getElementById('aiReportError').style.display = '';
+      document.getElementById('aiErrorMsg').textContent = err.message || '分析失败，请重试';
+    }
+  }
+
+  function renderAiReport(anchors, ai, tp, thisDate, lastDate, hasLast) {
+    const crColor = diff => {
+      if (diff < -20) return ['#ef4444', '严重落后'];
+      if (diff < -10) return ['#f97316', '落后'];
+      if (diff < 5)   return ['#64748b', '正常'];
+      return ['#16a34a', '超前'];
+    };
+    const chgColor = v => {
+      if (v === null) return '#94a3b8';
+      if (v < -20) return '#ef4444';
+      if (v < 0)   return '#f97316';
+      if (v > 20)  return '#16a34a';
+      return '#64748b';
+    };
+    const fmtChg = v => {
+      if (v === null) return '<span style="color:#94a3b8">N/A</span>';
+      const c = chgColor(v); const arr = v > 0 ? '▲' : (v < 0 ? '▼' : '—');
+      return `<span style="color:${c};font-weight:600">${arr}${Math.abs(v).toFixed(1)}%</span>`;
+    };
+
+    const severeBehind = anchors.filter(a => a.diff < -20).length;
+    const behind = anchors.filter(a => a.diff >= -20 && a.diff < -10).length;
+    const ahead = anchors.filter(a => a.diff >= 5).length;
+    const zeroActual = anchors.filter(a => a.thisUad === 0).length;
+    const uadDropBig = anchors.filter(a => a.uadChg !== null && a.uadChg < -20).length;
+
+    // KPI
+    const kpiHtml = `
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">
+        ${[
+          ['#ef4444', severeBehind, '严重落后<br>(&gt;20pp)'],
+          ['#f97316', behind,       '偏落后<br>(10~20pp)'],
+          ['#16a34a', ahead,        '超前完成'],
+          ['#ef4444', zeroActual,   '零产出'],
+          ['#2563eb', uadDropBig,   'UAD同比<br>↓20%+']
+        ].map(([c,v,l]) => `
+          <div style="background:#fff;border-radius:10px;padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+            <div style="font-size:26px;font-weight:800;color:${c};line-height:1;margin-bottom:4px">${v}</div>
+            <div style="font-size:10px;color:#64748b;line-height:1.3">${l}</div>
+          </div>`).join('')}
+      </div>`;
+
+    // 综合评价
+    const summaryHtml = `
+      <div style="background:#fff;border-radius:12px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+        <div style="font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:10px">📋 AI 综合评价</div>
+        <div style="font-size:13.5px;line-height:1.8;color:#374151">${ai.summary || ''}</div>
+        ${ai.yoy_insight ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-top:12px;font-size:13px;line-height:1.7;color:#92400e">📊 <strong>同比趋势：</strong>${ai.yoy_insight}</div>` : ''}
+      </div>`;
+
+    // alerts + highlights 双列
+    const alertCards = (ai.alerts || []).map(a => `
+      <div style="padding:12px;border-radius:8px;background:#fef2f2;border-left:3px solid #ef4444;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px">🔴 ${a.name}</div>
+        <div style="font-size:12px;color:#374151;margin-bottom:4px;line-height:1.5">${a.reason}</div>
+        <div style="font-size:12px;color:#2563eb;font-weight:500">👉 ${a.action}</div>
+      </div>`).join('');
+
+    const hlCards = (ai.highlights || []).map(a => `
+      <div style="padding:12px;border-radius:8px;background:#f0fdf4;border-left:3px solid #16a34a;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px">🟢 ${a.name}</div>
+        <div style="font-size:12px;color:#374151;line-height:1.5">${a.reason}</div>
+      </div>`).join('');
+
+    const panelHtml = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+          <div style="font-size:13px;font-weight:700;color:#ef4444;margin-bottom:12px">🔴 重点关注（需介入）</div>
+          ${alertCards || '<div style="color:#94a3b8;font-size:13px;padding:8px 0">暂无严重问题</div>'}
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+          <div style="font-size:13px;font-weight:700;color:#16a34a;margin-bottom:12px">🟢 表现亮眼</div>
+          ${hlCards || '<div style="color:#94a3b8;font-size:13px;padding:8px 0">暂无超前主播</div>'}
+        </div>
+      </div>`;
+
+    // 建议
+    const icons = ['🎯','⚡','💡','📅'];
+    const suggestHtml = `
+      <div style="background:#fff;border-radius:12px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+        <div style="font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:12px">📋 行动建议</div>
+        ${(ai.suggestions || []).slice(0,4).map((s, i) => `
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #f1f5f9;font-size:13px;line-height:1.6">
+            <span style="font-size:17px;flex-shrink:0">${icons[i]}</span><span>${s}</span>
+          </div>`).join('')}
+      </div>`;
+
+    // 明细表
+    const tableRows = anchors.map(a => {
+      const [c, label] = crColor(a.diff);
+      const diffS = (a.diff >= 0 ? '+' : '') + a.diff + 'pp';
+      return `<tr>
+        <td style="font-weight:500;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 6px">${a.name.slice(0,14)}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums;padding:8px 6px">${a.thisUad.toLocaleString()}</td>
+        <td style="text-align:right;padding:8px 6px">${fmtChg(a.uadChg)}</td>
+        <td style="text-align:right;color:#94a3b8;font-variant-numeric:tabular-nums;padding:8px 6px">${a.lastUad.toLocaleString()}</td>
+        <td style="padding:8px 6px">
+          <div style="width:60px;height:4px;background:#f1f5f9;border-radius:2px;margin-bottom:3px">
+            <div style="width:${Math.min(a.cr,100).toFixed(0)}%;height:4px;background:${c};border-radius:2px"></div>
+          </div>
+          <span style="color:${c};font-size:11px;font-weight:600">${a.cr.toFixed(1)}%</span>
+        </td>
+        <td style="color:${c};font-weight:600;font-size:12px;padding:8px 6px">${diffS}</td>
+        <td style="text-align:right;padding:8px 6px">${a.thisSt}h</td>
+        <td style="text-align:right;padding:8px 6px">${fmtChg(a.stChg)}</td>
+        <td style="padding:8px 6px"><span style="background:${c}20;color:${c};padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600;white-space:nowrap">${label}</span></td>
+      </tr>`;
+    }).join('');
+
+    const tableHtml = `
+      <div style="background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+        <div style="font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:14px">📊 全部主播明细（含同比对比）</div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="border-bottom:2px solid #e2e8f0">
+                <th style="text-align:left;padding:8px 6px;color:#64748b;font-weight:600;font-size:11px;white-space:nowrap">主播名称</th>
+                <th style="text-align:right;padding:8px 6px;color:#64748b;font-weight:600;font-size:11px;white-space:nowrap">本周UAD</th>
+                <th style="text-align:right;padding:8px 6px;color:#64748b;font-weight:600;font-size:11px;white-space:nowrap">UAD同比</th>
+                <th style="text-align:right;padding:8px 6px;color:#64748b;font-weight:600;font-size:11px;white-space:nowrap">上周UAD</th>
+                <th style="padding:8px 6px;color:#64748b;font-weight:600;font-size:11px;white-space:nowrap">完成度</th>
+                <th style="padding:8px 6px;color:#64748b;font-weight:600;font-size:11px;white-space:nowrap">vs进度</th>
+                <th style="text-align:right;padding:8px 6px;color:#64748b;font-weight:600;font-size:11px;white-space:nowrap">昨开播</th>
+                <th style="text-align:right;padding:8px 6px;color:#64748b;font-weight:600;font-size:11px;white-space:nowrap">开播同比</th>
+                <th style="padding:8px 6px;color:#64748b;font-weight:600;font-size:11px;white-space:nowrap">状态</th>
+              </tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </div>
+      </div>`;
+
+    const bodyEl = document.getElementById('aiReportBody');
+    bodyEl.innerHTML = kpiHtml + summaryHtml + panelHtml + suggestHtml + tableHtml;
+    document.getElementById('aiReportLoading').style.display = 'none';
+    bodyEl.style.display = '';
+  }
 
 </script>
 </body>
